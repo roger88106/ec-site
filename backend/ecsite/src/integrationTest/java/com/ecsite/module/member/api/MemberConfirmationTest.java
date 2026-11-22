@@ -1,5 +1,6 @@
 package com.ecsite.module.member.api;
 
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
 import com.ecsite.support.async.Concurrently;
@@ -84,7 +85,7 @@ class MemberConfirmationTest {
             assertThat(memberId).isNotNull();
             assertThat(dsl.fetchCount(MEMBER_, MEMBER_.IDP_SUBJECT.eq(subject))).isEqualTo(1);
             assertThat(dsl.select(MEMBER_.ID).from(MEMBER_).where(MEMBER_.IDP_SUBJECT.eq(subject)).fetchOne(MEMBER_.ID))
-                    .isEqualTo(memberId);
+                    .isEqualTo(memberId.value());
         }
 
         @Test
@@ -92,7 +93,7 @@ class MemberConfirmationTest {
         void createsOnlyOneMemberOnConcurrentFirstRequests() throws Exception {
             // 操作：同じ初めてのアカウントで、同時に会員 ID を求める
             var subject = newSubject();
-            var memberIds = new HashSet<UUID>(Concurrently.run(CONCURRENT_REQUESTS, i -> {
+            var memberIds = new HashSet<MemberId>(Concurrently.run(CONCURRENT_REQUESTS, i -> {
                 try {
                     return memberIdOf(subject);
                 } finally {
@@ -133,7 +134,7 @@ class MemberConfirmationTest {
             var memberId = memberIdOf(subject);
 
             // 確認：アカウントの ID をそのまま使わない
-            assertThat(memberId.toString()).isNotEqualTo(subject);
+            assertThat(memberId.value().toString()).isNotEqualTo(subject);
         }
 
         @Test
@@ -230,8 +231,8 @@ class MemberConfirmationTest {
      * @param subject IdP のアカウントの ID
      * @return 作った会員の会員 ID
      */
-    private UUID insertMemberDirectly(String subject) {
-        var id = UUID.randomUUID();
+    private MemberId insertMemberDirectly(String subject) {
+        var id = new MemberId(UUID.randomUUID());
         memberRepository.createOrGetId(new Member(id, subject, Instant.now()));
         return id;
     }
@@ -242,7 +243,7 @@ class MemberConfirmationTest {
      * @param subject IdP のアカウントの ID
      * @return 会員 ID
      */
-    private UUID memberIdOf(String subject) {
+    private MemberId memberIdOf(String subject) {
         var jwt = Jwt.withTokenValue("token").header("alg", "none").subject(subject).build();
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
         return currentMemberIds.require();

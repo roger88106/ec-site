@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.OrderId;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -14,7 +15,7 @@ import java.util.UUID;
  * @param occurredAt 発生時刻
  * @param orderId    注文 ID
  */
-public record PaymentAuthorized(UUID eventId, Instant occurredAt, UUID orderId) implements DomainEvent {
+public record PaymentAuthorized(UUID eventId, Instant occurredAt, OrderId orderId) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -23,7 +24,7 @@ public record PaymentAuthorized(UUID eventId, Instant occurredAt, UUID orderId) 
      * @param orderId    注文 ID
      * @return イベント
      */
-    public static PaymentAuthorized of(Instant occurredAt, UUID orderId) {
-        return new PaymentAuthorized(UUID.randomUUID(), occurredAt, orderId);
+    public static PaymentAuthorized of(Instant occurredAt, OrderId orderId) {
+        return new PaymentAuthorized(DomainEvent.newEventId(), occurredAt, orderId);
     }
 }

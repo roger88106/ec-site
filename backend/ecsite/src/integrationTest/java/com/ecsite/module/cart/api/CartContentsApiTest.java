@@ -1,5 +1,8 @@
 package com.ecsite.module.cart.api;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.api.model.CartContents;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
@@ -59,7 +62,7 @@ class CartContentsApiTest {
         @DisplayName("会員のカートがあれば、その ID を返す")
         void returnsIdOfExistingCart() throws Exception {
             // 準備：会員のカートを作る
-            var cartId = new OrderTestData(mockMvc).cart(TestTokens.member().subject(UUID.randomUUID()).bearer());
+            var cartId = new CartId(new OrderTestData(mockMvc).cart(TestTokens.member().subject(UUID.randomUUID()).bearer()));
             var memberId = api.find(cartId).orElseThrow().memberId();
 
             // 操作と確認：カートの ID を返す
@@ -70,13 +73,13 @@ class CartContentsApiTest {
         @DisplayName("会員のカートがなければ空を返し、呼んだ後もカートは作られない")
         void returnsEmptyWithoutCreatingCart() {
             // 準備：カートを持たない会員
-            var memberId = UUID.randomUUID();
+            var memberId = new MemberId(UUID.randomUUID());
 
             // 操作と確認：空を返す
             assertThat(api.findMemberCartId(memberId)).isEmpty();
 
             // 確認：カートは作られていない
-            assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId))).isZero();
+            assertThat(dsl.fetchCount(CART_, CART_.MEMBER_ID.eq(memberId.value()))).isZero();
         }
     }
 
@@ -97,13 +100,13 @@ class CartContentsApiTest {
             orders.add(cartId, variantId, 1, member);
 
             // 操作と確認：トランザクションの外で除くと失敗する
-            assertThatThrownBy(() -> api.removeItems(cartId, List.of(variantId), clock.instant()))
+            assertThatThrownBy(() -> api.removeItems(new CartId(cartId), List.of(new VariantId(variantId)), clock.instant()))
                     .isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：品目は除かれずに残る
-            assertThat(api.find(cartId).orElseThrow().items())
+            assertThat(api.find(new CartId(cartId)).orElseThrow().items())
                     .extracting(CartContents.Item::variantId)
-                    .containsExactly(variantId);
+                    .containsExactly(new VariantId(variantId));
         }
     }
 }

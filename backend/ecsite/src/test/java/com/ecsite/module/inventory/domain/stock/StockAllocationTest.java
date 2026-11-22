@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.domain.stock;
 
+import com.ecsite.common.model.id.VariantId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,12 +23,12 @@ class StockAllocationTest {
     /**
      * T シャツのバリアント ID
      */
-    private static final UUID SHIRT = UUID.randomUUID();
+    private static final VariantId SHIRT = new VariantId(UUID.randomUUID());
 
     /**
      * 帽子のバリアント ID
      */
-    private static final UUID CAP = UUID.randomUUID();
+    private static final VariantId CAP = new VariantId(UUID.randomUUID());
 
     // ============================== テスト ==============================
 
@@ -70,8 +71,8 @@ class StockAllocationTest {
     @DisplayName("AC-82 足りない品目だけを、求めた並びで返す")
     void returnsOnlyShortInRequestedOrder() {
         // 準備：帽子（足りない）、T シャツ（足りる）、3 つ目（足りない）の順に求める
-        var third = UUID.randomUUID();
-        var requested = new LinkedHashMap<UUID, Integer>();
+        var third = new VariantId(UUID.randomUUID());
+        var requested = new LinkedHashMap<VariantId, Integer>();
         requested.put(CAP, 2);
         requested.put(SHIRT, 1);
         requested.put(third, 1);

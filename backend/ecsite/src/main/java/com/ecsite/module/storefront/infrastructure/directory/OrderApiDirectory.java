@@ -1,6 +1,8 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.order.api.OrderQuoteApi;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.CartQuote;
@@ -11,7 +13,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の腐敗防止層
@@ -31,7 +32,7 @@ class OrderApiDirectory implements OrderDirectory {
      * {@inheritDoc}
      */
     @Override
-    public Optional<CartView> findCart(UUID cartId, @Nullable UUID requester) {
+    public Optional<CartView> findCart(CartId cartId, @Nullable MemberId requester) {
         return orderQuoteApi.quoteCart(cartId, requester).map(OrderApiDirectory::toView);
     }
 

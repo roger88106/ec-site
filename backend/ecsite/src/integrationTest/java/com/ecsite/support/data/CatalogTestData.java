@@ -1,5 +1,7 @@
 package com.ecsite.support.data;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.application.product.ProductImageCommandService;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
@@ -531,11 +533,11 @@ public class CatalogTestData {
          */
         public TestProduct image() throws Exception {
             Objects.requireNonNull(applicationContext, "画像を追加するときは ApplicationContext を渡すコンストラクタで作る");
-            var uploadId = UUID.fromString(upload());
+            var uploadId = new UploadId(UUID.fromString(upload()));
             var suspended = new TransactionTemplate(applicationContext.getBean(PlatformTransactionManager.class),
                     new DefaultTransactionDefinition(TransactionDefinition.PROPAGATION_NOT_SUPPORTED));
-            var prepared = suspended.execute(status -> applicationContext.getBean(MediaDirectory.class).prepareImage(id, uploadId));
-            applicationContext.getBean(ProductImageCommandService.class).saveAddedImage(id, version, Objects.requireNonNull(prepared));
+            var prepared = suspended.execute(status -> applicationContext.getBean(MediaDirectory.class).prepareImage(new ProductId(id), uploadId));
+            applicationContext.getBean(ProductImageCommandService.class).saveAddedImage(new ProductId(id), version, Objects.requireNonNull(prepared));
             version++;
             var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
             imageUrls.clear();

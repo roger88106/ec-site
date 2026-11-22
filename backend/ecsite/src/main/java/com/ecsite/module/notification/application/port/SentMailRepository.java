@@ -1,7 +1,8 @@
 package com.ecsite.module.notification.application.port;
 
+import com.ecsite.common.model.id.OrderId;
+
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 送ったメールの記録のリポジトリ
@@ -21,7 +22,7 @@ public interface SentMailRepository {
      * @param sentAt    送った日時
      * @return 記録したら true。すでに記録があれば false
      */
-    boolean recordIfAbsent(UUID orderId, Kind kind, String recipient, Instant sentAt);
+    boolean recordIfAbsent(OrderId orderId, Kind kind, String recipient, Instant sentAt);
 
     /**
      * メールの種類

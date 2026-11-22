@@ -1,12 +1,14 @@
 package com.ecsite.module.inventory.domain.stock.port;
 
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
+import com.ecsite.module.inventory.domain.stock.vo.StockItemId;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 引当のリポジトリ
@@ -21,7 +23,7 @@ public interface StockReservationRepository {
      * @param variantIds バリアント ID
      * @return 在庫（バリアント ID の順）。在庫のないバリアントは含まない
      */
-    List<LockedStock> lockStocks(Collection<UUID> variantIds);
+    List<LockedStock> lockStocks(Collection<VariantId> variantIds);
 
     /**
      * 在庫ごとに、有効な（期限の切れていない）引当の数量を合計する。
@@ -31,7 +33,7 @@ public interface StockReservationRepository {
      * @param now              現在時刻
      * @return 在庫 ID → 引当の数量の合計。引当のない在庫は含まない
      */
-    Map<UUID, Integer> sumActiveReservations(Collection<UUID> stockItemIds, UUID excludedHolderId, Instant now);
+    Map<StockItemId, Integer> sumActiveReservations(Collection<StockItemId> stockItemIds, ReservationHolderId excludedHolderId, Instant now);
 
     /**
      * 持ち主の引当を加える。持ち主の前の引当は、呼ぶ側が先に削除しておく。
@@ -41,7 +43,7 @@ public interface StockReservationRepository {
      * @param expiresAt              期限
      * @param now                    現在時刻
      */
-    void insert(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now);
+    void insert(ReservationHolderId holderId, Map<StockItemId, Integer> quantitiesByStockItem, Instant expiresAt, Instant now);
 
     /**
      * 持ち主の引当を消す。
@@ -50,7 +52,7 @@ public interface StockReservationRepository {
      *
      * @param holderId 持ち主 ID
      */
-    void deleteByHolder(UUID holderId);
+    void deleteByHolder(ReservationHolderId holderId);
 
     /**
      * 複数の持ち主の引当を、1 回の削除で消す。
@@ -59,7 +61,7 @@ public interface StockReservationRepository {
      *
      * @param holderIds 持ち主 ID
      */
-    void deleteByHolders(Collection<UUID> holderIds);
+    void deleteByHolders(Collection<ReservationHolderId> holderIds);
 
     /**
      * 期限が指定した時刻より前の引当を、件数の上限まで消す。

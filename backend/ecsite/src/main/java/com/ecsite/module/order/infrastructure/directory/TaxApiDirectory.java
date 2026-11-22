@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
@@ -14,7 +15,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税の腐敗防止層
@@ -34,7 +34,7 @@ class TaxApiDirectory implements TaxDirectory {
      * 指定した時点の税率を返す。
      */
     @Override
-    public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
+    public Optional<BigDecimal> rateAt(TaxCategoryId taxCategoryId, Instant instant) {
         return taxRateApi.rateAt(taxCategoryId, instant);
     }
 
@@ -42,7 +42,7 @@ class TaxApiDirectory implements TaxDirectory {
      * 指定した時点の税率を、税区分ごとにまとめて返す。
      */
     @Override
-    public Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant) {
+    public Map<TaxCategoryId, BigDecimal> ratesAt(Collection<TaxCategoryId> taxCategoryIds, Instant instant) {
         return taxRateApi.ratesAt(taxCategoryIds, instant);
     }
 

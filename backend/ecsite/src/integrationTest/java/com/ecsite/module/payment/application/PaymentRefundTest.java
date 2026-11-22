@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
@@ -261,7 +262,7 @@ class PaymentRefundTest {
             var orderId = payments.captured(ORDERED_AT);
             cancel(orderId);
             awaitRefunded(orderId);
-            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+            var payment = paymentRepository.findByOrderId(new OrderId(orderId)).orElseThrow();
 
             // 操作：返金済みの反映がもう一度届く
             commandService.markRefunded(payment.id());
@@ -299,7 +300,7 @@ class PaymentRefundTest {
             var orderId = payments.authorized(ORDERED_AT);
             var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
             gateway.expireAuthorization(authorizationRef);
-            assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
+            assertBusinessError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
             // 操作：注文の支払を取り消す
             cancel(orderId);
@@ -323,7 +324,7 @@ class PaymentRefundTest {
             var orderId = cancelledDuringCapture();
 
             // 操作：売上を確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：返金は 1 回
             awaitRefunded(orderId);
@@ -336,7 +337,7 @@ class PaymentRefundTest {
             // 準備：確定の最中にキャンセルされ、返金済みになった
             var orderId = cancelledDuringCapture();
             var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
             awaitRefunded(orderId);
 
             // 操作：失敗した与信の取消の依頼を再発行する
@@ -397,6 +398,6 @@ class PaymentRefundTest {
      * @param orderId 注文 ID
      */
     private void cancel(UUID orderId) {
-        transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId));
+        transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(new OrderId(orderId)));
     }
 }

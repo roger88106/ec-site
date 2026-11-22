@@ -1,5 +1,6 @@
 package com.ecsite.module.member.application;
 
+import com.ecsite.common.model.id.MemberId;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
@@ -7,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 
@@ -22,7 +22,7 @@ public class MemberIdCache {
     /**
      * IdP のアカウントの ID → 会員 ID
      */
-    private final Cache<String, UUID> cache;
+    private final Cache<String, MemberId> cache;
 
     /**
      * 設定から作る。
@@ -56,7 +56,7 @@ public class MemberIdCache {
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID。キャッシュになければ空
      */
-    public Optional<UUID> find(String idpSubject) {
+    public Optional<MemberId> find(String idpSubject) {
         return Optional.ofNullable(cache.getIfPresent(idpSubject));
     }
 
@@ -66,7 +66,7 @@ public class MemberIdCache {
      * @param idpSubject IdP のアカウントの ID
      * @param memberId   会員 ID
      */
-    public void put(String idpSubject, UUID memberId) {
+    public void put(String idpSubject, MemberId memberId) {
         cache.put(idpSubject, memberId);
     }
 

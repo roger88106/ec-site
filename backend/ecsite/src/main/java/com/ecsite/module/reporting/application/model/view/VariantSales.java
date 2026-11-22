@@ -1,9 +1,9 @@
 package com.ecsite.module.reporting.application.model.view;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * バリアントの売れ行き
@@ -14,7 +14,7 @@ import java.util.UUID;
  * @param quantity    販売数量
  * @param amount      売上額
  */
-public record VariantSales(UUID variantId, String variantCode, List<AxisValue> axisValues, long quantity, Money amount) {
+public record VariantSales(VariantId variantId, String variantCode, List<AxisValue> axisValues, long quantity, Money amount) {
 
     /**
      * 軸の名前と値

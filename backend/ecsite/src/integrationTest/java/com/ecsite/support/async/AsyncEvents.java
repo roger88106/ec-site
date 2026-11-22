@@ -1,5 +1,6 @@
 package com.ecsite.support.async;
 
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.support.config.IntegrationTest;
 import org.springframework.modulith.events.CompletedEventPublications;
@@ -117,7 +118,7 @@ public class AsyncEvents {
      * @param cartId カート ID
      */
     public void awaitCartChanged(UUID cartId) {
-        awaitHandled(event -> event instanceof CartChanged changed && changed.cartId().equals(cartId));
+        awaitHandled(event -> event instanceof CartChanged changed && changed.cartId().equals(new CartId(cartId)));
     }
 
     /**

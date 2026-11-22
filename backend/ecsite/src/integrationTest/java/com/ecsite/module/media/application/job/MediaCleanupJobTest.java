@@ -1,5 +1,6 @@
 package com.ecsite.module.media.application.job;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.application.MediaService;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.application.port.PendingAssetRepository;
@@ -191,7 +192,7 @@ class MediaCleanupJobTest {
             smallBatch.cleanUp();
 
             // 確認：古い 2 つだけが削除され、最も新しいものが残る
-            assertThat(remaining(List.of(oldest, middle, newest))).containsExactly(newest.id());
+            assertThat(remaining(List.of(oldest, middle, newest))).containsExactly(newest.id().value());
 
             // 操作：もう 1 回片付ける
             smallBatch.cleanUp();
@@ -239,7 +240,7 @@ class MediaCleanupJobTest {
      * @return あれば true
      */
     private boolean exists(PendingAsset pending) {
-        return dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.ID.eq(pending.id()));
+        return dsl.fetchExists(PENDING_ASSET, PENDING_ASSET.ID.eq(pending.id().value()));
     }
 
     /**
@@ -250,7 +251,7 @@ class MediaCleanupJobTest {
      */
     private List<UUID> remaining(List<PendingAsset> pendings) {
         return dsl.select(PENDING_ASSET.ID).from(PENDING_ASSET)
-                .where(PENDING_ASSET.ID.in(pendings.stream().map(PendingAsset::id).toList()))
+                .where(PENDING_ASSET.ID.in(pendings.stream().map(pending -> pending.id().value()).toList()))
                 .fetch(PENDING_ASSET.ID);
     }
 
@@ -276,8 +277,8 @@ class MediaCleanupJobTest {
      * @return 仮のアセット
      */
     private PendingAsset pendingWithFile(Instant preparedAt) {
-        var id = UUID.randomUUID();
-        var pending = new PendingAsset(id, "assets/" + id + ".webp", preparedAt);
+        var id = new AssetId(UUID.randomUUID());
+        var pending = new PendingAsset(id, "assets/" + id.value() + ".webp", preparedAt);
         storage.putPublished(pending.storageKey(), CONTENT, "image/webp");
         transactionTemplate.executeWithoutResult(status -> pendingAssets.insert(pending));
         return pending;

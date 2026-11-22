@@ -1,11 +1,12 @@
 package com.ecsite.module.cart.application.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.cart.domain.Cart;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * カートのリポジトリ
@@ -31,7 +32,7 @@ public interface CartRepository {
      * @param cart 会員の空のカート
      * @return カート ID（作ったとき {@code cart} の ID、すでにあったとき既存のカートの ID）
      */
-    UUID createForMemberOrGetId(Cart cart);
+    CartId createForMemberOrGetId(Cart cart);
 
     /**
      * 会員のカートの ID を探す。
@@ -39,7 +40,7 @@ public interface CartRepository {
      * @param memberId 会員 ID
      * @return カート ID。なければ空
      */
-    Optional<UUID> findIdByMemberId(UUID memberId);
+    Optional<CartId> findIdByMemberId(MemberId memberId);
 
     /**
      * カートを取得する。
@@ -47,7 +48,7 @@ public interface CartRepository {
      * @param id カート ID
      * @return カート（品目は入れた順）。なければ空
      */
-    Optional<Cart> findById(UUID id);
+    Optional<Cart> findById(CartId id);
 
     /**
      * カートの変更を保存する。

@@ -2,6 +2,8 @@ package com.ecsite.module.catalog.application.category;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.module.catalog.application.model.command.CreateCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.RenameCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderCategoriesCommand;
@@ -13,8 +15,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 /**
  * カテゴリのコマンドサービス
@@ -35,6 +35,11 @@ public class CategoryCommandService {
     private final CategoryFactory categoryFactory;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * カテゴリを登録する。
      *
      * <p>兄弟の最後に並べる。
@@ -46,13 +51,13 @@ public class CategoryCommandService {
      * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      * @throws BusinessException 同じ親の下で名称が重複している（{@code CATEGORY_NAME_ALREADY_EXISTS}）
      */
-    public UUID createCategory(@NonNull CreateCategoryCommand command) {
+    public CategoryId createCategory(@NonNull CreateCategoryCommand command) {
         // 親カテゴリ取得 ※深さは親の深さで決まる
         var parent = command.parentId() == null ? null : getCategory(command.parentId());
 
         // カテゴリ作成
         int displayOrder = categoryRepository.nextDisplayOrder(command.parentId());
-        var category = categoryFactory.create(parent, command.name(), displayOrder);
+        var category = categoryFactory.create(new CategoryId(idGenerator.generate()), parent, command.name(), displayOrder);
 
         // カテゴリ登録 ※名称の重複は DB の一意制約で検出する
         categoryRepository.add(category);
@@ -113,7 +118,7 @@ public class CategoryCommandService {
      * @throws BusinessException 子カテゴリを持つ（{@code CATEGORY_HAS_CHILDREN}）
      * @throws BusinessException 商品が所属している（{@code CATEGORY_HAS_PRODUCTS}）
      */
-    public void deleteCategory(@NonNull UUID categoryId) {
+    public void deleteCategory(@NonNull CategoryId categoryId) {
         // カテゴリ取得
         var category = getCategory(categoryId);
 
@@ -140,7 +145,7 @@ public class CategoryCommandService {
      * @return カテゴリ
      * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）
      */
-    private Category getCategory(UUID id) {
+    private Category getCategory(CategoryId id) {
         return categoryRepository.findById(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 }

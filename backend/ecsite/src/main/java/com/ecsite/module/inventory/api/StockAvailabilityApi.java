@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.application.StockQueryService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 在庫の有無の API
@@ -33,9 +33,9 @@ public class StockAvailabilityApi {
      * @param variantIds バリアント ID
      * @return バリアント ID → 在庫があれば true（指定したすべてのバリアントを含む）
      */
-    public Map<UUID, Boolean> availabilityOf(@NonNull Collection<UUID> variantIds) {
+    public Map<VariantId, Boolean> availabilityOf(@NonNull Collection<VariantId> variantIds) {
         var sellable = queryService.sellableQuantities(variantIds, null);
-        var availability = new LinkedHashMap<UUID, Boolean>();
+        var availability = new LinkedHashMap<VariantId, Boolean>();
         sellable.forEach((variantId, quantity) -> availability.put(variantId, quantity > 0));
         return Collections.unmodifiableMap(availability);
     }

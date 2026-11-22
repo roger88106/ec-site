@@ -1,5 +1,7 @@
 package com.ecsite.module.inventory.application.job;
 
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.application.StockReservationCommandService;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -253,7 +255,7 @@ class StockReservationCleanupJobTest {
      */
     private UUID reserve(UUID variant, Instant expiresAt) {
         var holder = UUID.randomUUID();
-        assertThat(reservations.reserve(holder, Map.of(variant, 1), expiresAt)).isEmpty();
+        assertThat(reservations.reserve(new ReservationHolderId(holder), Map.of(new VariantId(variant), 1), expiresAt)).isEmpty();
         return holder;
     }
 }

@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.event.OrderShipped;
@@ -243,7 +244,7 @@ class ShipmentMailTest {
      * @return 注文の出荷
      */
     private OrderShipped shipped() {
-        var event = OrderShipped.of(clock.instant(), UUID.randomUUID(), ORDER_NUMBER, OrderShipped.Carrier.YAMATO,
+        var event = OrderShipped.of(clock.instant(), new OrderId(UUID.randomUUID()), ORDER_NUMBER, OrderShipped.Carrier.YAMATO,
                 TRACKING_NUMBER);
         when(orderDirectory.email(event.orderId())).thenReturn(email);
         return event;

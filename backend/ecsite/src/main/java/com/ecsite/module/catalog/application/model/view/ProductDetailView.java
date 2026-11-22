@@ -1,14 +1,18 @@
 package com.ecsite.module.catalog.application.model.view;
 
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.product.vo.ProductActions;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import org.jspecify.annotations.Nullable;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品の詳細のビュー
@@ -35,8 +39,8 @@ import java.util.UUID;
  * @param createdAt     登録日時
  * @param updatedAt     更新日時
  */
-public record ProductDetailView(UUID id, String productCode, String name, String description, UUID taxCategoryId,
-                                Money priceExclTax, @Nullable Money priceInclTax, List<UUID> categoryIds,
+public record ProductDetailView(ProductId id, String productCode, String name, String description, TaxCategoryId taxCategoryId,
+                                Money priceExclTax, @Nullable Money priceInclTax, List<CategoryId> categoryIds,
                                 List<String> axes, PublicationStatus status, @Nullable Instant firstShownAt,
                                 @Nullable Instant publishStart, @Nullable Instant publishEnd,
                                 List<ImageView> images, List<VariantView> variants, ProductActions actions,
@@ -51,8 +55,8 @@ public record ProductDetailView(UUID id, String productCode, String name, String
      * @param salesSuspended 販売停止
      * @param imageId        指定した画像。なければ null
      */
-    public record VariantView(UUID id, String variantCode, List<String> axisValues, boolean salesSuspended,
-                              @Nullable UUID imageId) {
+    public record VariantView(VariantId id, String variantCode, List<String> axisValues, boolean salesSuspended,
+                              @Nullable ProductImageId imageId) {
     }
 
     /**
@@ -61,6 +65,6 @@ public record ProductDetailView(UUID id, String productCode, String name, String
      * @param id  画像 ID
      * @param url 配信の URL
      */
-    public record ImageView(UUID id, @Nullable URI url) {
+    public record ImageView(ProductImageId id, @Nullable URI url) {
     }
 }

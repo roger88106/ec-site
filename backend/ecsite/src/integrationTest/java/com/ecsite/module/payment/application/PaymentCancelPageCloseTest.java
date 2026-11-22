@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -115,7 +116,7 @@ class PaymentCancelPageCloseTest {
 
         // 操作：注文のキャンセルと同じく、トランザクションの中で取り消す
         transactionTemplate.executeWithoutResult(status -> {
-            paymentApi.cancel(orderId);
+            paymentApi.cancel(new OrderId(orderId));
             pageInTransaction.set(gateway.page(pageId).orElseThrow().status());
         });
 
@@ -241,6 +242,6 @@ class PaymentCancelPageCloseTest {
      * @param orderId 注文 ID
      */
     private void cancel(UUID orderId) {
-        transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId));
+        transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(new OrderId(orderId)));
     }
 }

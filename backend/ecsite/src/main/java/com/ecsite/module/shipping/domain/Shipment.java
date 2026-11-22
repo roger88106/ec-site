@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.domain;
 
+import com.ecsite.common.model.id.OrderId;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -12,7 +13,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 出荷
@@ -32,13 +32,13 @@ public class Shipment {
     @Identity
     @EqualsAndHashCode.Include
     @NonNull
-    private final UUID id;
+    private final ShipmentId id;
 
     /**
      * 注文 ID（注文 1 つにつき出荷は 1 つ）
      */
     @NonNull
-    private final UUID orderId;
+    private final OrderId orderId;
 
     /**
      * 配送業者
@@ -85,7 +85,7 @@ public class Shipment {
      * @param shippedAt      出荷日時
      * @return 出荷
      */
-    public static Shipment create(UUID id, UUID orderId, Carrier carrier, TrackingNumber trackingNumber, Instant shippedAt) {
+    public static Shipment create(ShipmentId id, OrderId orderId, Carrier carrier, TrackingNumber trackingNumber, Instant shippedAt) {
         return new Shipment(id, orderId, carrier, trackingNumber, DeliveryStatus.SHIPPED, shippedAt, null);
     }
 
@@ -101,7 +101,7 @@ public class Shipment {
      * @param lastNotifiedAt 最後に通知を反映した日時。なければ null
      * @return 出荷
      */
-    public static Shipment restore(UUID id, UUID orderId, Carrier carrier, TrackingNumber trackingNumber,
+    public static Shipment restore(ShipmentId id, OrderId orderId, Carrier carrier, TrackingNumber trackingNumber,
                                    DeliveryStatus status, Instant shippedAt, @Nullable Instant lastNotifiedAt) {
         return new Shipment(id, orderId, carrier, trackingNumber, status, shippedAt, lastNotifiedAt);
     }

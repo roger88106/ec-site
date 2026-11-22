@@ -7,6 +7,7 @@ import com.ecsite.api.admin.model.ReportBasis;
 import com.ecsite.api.admin.model.ReportSettings;
 import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSalesReport;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.reporting.application.CustomerBreakdownQueryService;
 import com.ecsite.module.reporting.application.ReportSettingsQueryService;
 import com.ecsite.module.reporting.application.SalesTrendQueryService;
@@ -77,7 +78,8 @@ class ReportController implements ReportApi {
                                                           @Nullable ReportBasis basis, @Nullable UUID productId,
                                                           Boolean excludeTax, Boolean excludeShipping) {
         var query = new SalesTrendQuery(new ReportPeriod(from, to),
-                mapper.toGranularity(granularity), mapper.toBasis(basis), new SalesScope(productId, excludeTax, excludeShipping));
+                mapper.toGranularity(granularity), mapper.toBasis(basis),
+                new SalesScope(productId == null ? null : new ProductId(productId), excludeTax, excludeShipping));
         return ResponseEntity.ok(mapper.toSalesTrendReport(salesTrendService.trend(query)));
     }
 
@@ -95,7 +97,7 @@ class ReportController implements ReportApi {
     public ResponseEntity<VariantSalesReport> getVariantSales(UUID productId, LocalDate from, LocalDate to,
                                                               @Nullable ReportBasis basis, Boolean excludeTax) {
         var query = new VariantSalesQuery(new ReportPeriod(from, to), mapper.toBasis(basis),
-                SalesScope.ofProduct(productId, excludeTax));
+                SalesScope.ofProduct(new ProductId(productId), excludeTax));
         return ResponseEntity.ok(mapper.toVariantSalesReport(variantSalesService.variants(query)));
     }
 
@@ -116,7 +118,7 @@ class ReportController implements ReportApi {
                                                                         @Nullable UUID productId, Boolean excludeTax,
                                                                         Boolean excludeShipping) {
         var query = new CustomerBreakdownQuery(new ReportPeriod(from, to), mapper.toBasis(basis),
-                new SalesScope(productId, excludeTax, excludeShipping));
+                new SalesScope(productId == null ? null : new ProductId(productId), excludeTax, excludeShipping));
         return ResponseEntity.ok(mapper.toCustomerBreakdownReport(customerBreakdownService.breakdown(query)));
     }
 

@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
@@ -11,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 
@@ -41,7 +41,7 @@ class PostgresProductSearch implements ProductSearch {
      */
     @Override
     public PageResult<StoreProductSummaryView> search(String keyword, PageRequest request, Instant now,
-                                                  Map<UUID, BigDecimal> rates) {
+                                                  Map<TaxCategoryId, BigDecimal> rates) {
         var pattern = LikePatterns.contains(keyword);
         return storeProductPages.find(request, now, rates,
                 priceInclTax -> PRODUCT.NAME.likeIgnoreCase(pattern, LikePatterns.ESCAPE)

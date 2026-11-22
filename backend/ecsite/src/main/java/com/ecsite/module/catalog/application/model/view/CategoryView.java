@@ -1,8 +1,7 @@
 package com.ecsite.module.catalog.application.model.view;
 
+import com.ecsite.common.model.id.CategoryId;
 import org.jspecify.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * カテゴリのビュー
@@ -16,5 +15,5 @@ import java.util.UUID;
  * @param displayOrder 兄弟の中の表示順
  * @param version      バージョン
  */
-public record CategoryView(UUID id, @Nullable UUID parentId, String name, int depth, int displayOrder, long version) {
+public record CategoryView(CategoryId id, @Nullable CategoryId parentId, String name, int depth, int displayOrder, long version) {
 }

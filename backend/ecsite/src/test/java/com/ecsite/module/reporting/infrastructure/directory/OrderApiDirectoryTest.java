@@ -1,5 +1,8 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.AxisValue;
@@ -97,7 +100,7 @@ class OrderApiDirectoryTest {
         @DisplayName("税抜単価 × 数量を求める")
         void multipliesUnitPriceByQuantity() {
             // 準備：税抜単価 1,000 円、数量 2 の明細
-            var line = new OrderSnapshot.Line(1, UUID.randomUUID(), "P-1", "V-1", "T シャツ",
+            var line = new OrderSnapshot.Line(1, new VariantId(UUID.randomUUID()), "P-1", "V-1", "T シャツ",
                     List.of(new AxisValue("色", "白")), 2, BigDecimal.TEN, Money.of(1000), Money.of(2200));
 
             // 操作と確認：2,000 円
@@ -113,7 +116,7 @@ class OrderApiDirectoryTest {
         @DisplayName("AC-277 キャンセルでない注文は、キャンセル日時・種類・在庫に戻したかを持たない")
         void keepsNoCancellationFields() {
             // 準備：キャンセルのない注文
-            var snapshot = new OrderSnapshot(UUID.randomUUID(), "O-1", UUID.randomUUID(),
+            var snapshot = new OrderSnapshot(new OrderId(UUID.randomUUID()), "O-1", new MemberId(UUID.randomUUID()),
                     Instant.parse("2026-01-01T00:00:00Z"), OrderStatusChanged.Status.ACCEPTED, null, "1000001", "13",
                     null, null, new Amounts(Money.of(1000), Money.ZERO, Money.of(1000), List.of()), Money.ZERO,
                     List.of());

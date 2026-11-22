@@ -1,11 +1,10 @@
 package com.ecsite.module.inventory.application.model.command;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * 在庫の調整コマンド
@@ -16,6 +15,6 @@ import java.util.UUID;
  * @param memo      メモ。理由が「その他」なら必須
  * @param operator  調整した運営者
  */
-public record AdjustStockCommand(@NonNull UUID variantId, int delta, @NonNull StockAdjustmentReason reason,
+public record AdjustStockCommand(@NonNull VariantId variantId, int delta, @NonNull StockAdjustmentReason reason,
                                  @Nullable String memo, @NonNull Operator operator) {
 }

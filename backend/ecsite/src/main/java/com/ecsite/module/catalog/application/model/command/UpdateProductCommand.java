@@ -1,10 +1,12 @@
 package com.ecsite.module.catalog.application.model.command;
 
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import lombok.NonNull;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品の編集コマンド
@@ -17,7 +19,7 @@ import java.util.UUID;
  * @param categoryIds   所属カテゴリの ID
  * @param version       取得時のバージョン
  */
-public record UpdateProductCommand(@NonNull UUID productId, @NonNull String name, @NonNull String description,
-                                   @NonNull UUID taxCategoryId, @NonNull Money priceExclTax,
-                                   @NonNull List<UUID> categoryIds, long version) {
+public record UpdateProductCommand(@NonNull ProductId productId, @NonNull String name, @NonNull String description,
+                                   @NonNull TaxCategoryId taxCategoryId, @NonNull Money priceExclTax,
+                                   @NonNull List<CategoryId> categoryIds, long version) {
 }

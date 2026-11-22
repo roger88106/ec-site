@@ -1,5 +1,7 @@
 package com.ecsite.module.order.application.port;
 
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.model.view.OrderSummaryView;
@@ -8,7 +10,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.UUID;
 
 /**
  * 注文の一覧のクエリリポジトリ
@@ -38,8 +39,8 @@ public interface OrderQueryRepository {
      * @param orderedUntil      注文日時の上限（この時刻を含まない）
      * @param orderIds          注文 ID のどれか（他のモジュールで絞り込んだ結果）。空なら 1 件も合わない
      */
-    record Filter(@Nullable UUID memberId, @Nullable String orderNumberPrefix, @Nullable OrderStatus status, @Nullable Instant orderedFrom,
-                  @Nullable Instant orderedUntil, @Nullable Collection<UUID> orderIds) {
+    record Filter(@Nullable MemberId memberId, @Nullable String orderNumberPrefix, @Nullable OrderStatus status, @Nullable Instant orderedFrom,
+                  @Nullable Instant orderedUntil, @Nullable Collection<OrderId> orderIds) {
 
         /**
          * 会員の注文だけの条件を作る。
@@ -47,7 +48,7 @@ public interface OrderQueryRepository {
          * @param memberId 会員 ID
          * @return 会員の注文だけの条件
          */
-        public static Filter ofMember(UUID memberId) {
+        public static Filter ofMember(MemberId memberId) {
             return new Filter(memberId, null, null, null, null, null);
         }
     }

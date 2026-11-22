@@ -7,6 +7,7 @@ import com.ecsite.api.admin.model.CreateCategoryRequest;
 import com.ecsite.api.admin.model.CreatedId;
 import com.ecsite.api.admin.model.RenameCategoryRequest;
 import com.ecsite.api.admin.model.ReorderCategoriesRequest;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.catalog.application.category.CategoryCommandService;
 import com.ecsite.module.catalog.application.category.CategoryQueryService;
@@ -60,7 +61,7 @@ class CategoryController implements CategoryApi {
      */
     @Override
     public ResponseEntity<Category> getCategory(UUID categoryId) {
-        return ResponseEntity.ok(mapper.toCategory(queryService.getCategory(categoryId)));
+        return ResponseEntity.ok(mapper.toCategory(queryService.getCategory(new CategoryId(categoryId))));
     }
 
 // ============================== POST ==============================
@@ -74,10 +75,10 @@ class CategoryController implements CategoryApi {
     @Override
     public ResponseEntity<CreatedId> createCategory(CreateCategoryRequest request) {
         // カテゴリ登録
-        UUID id = commandService.createCategory(mapper.toCreateCategoryCommand(request));
+        CategoryId id = commandService.createCategory(mapper.toCreateCategoryCommand(request));
 
         // ロケーション：登録したカテゴリの URL
-        return CreatedResponses.admin(id);
+        return CreatedResponses.admin(id.value());
     }
 
 // ============================== PUT ==============================
@@ -117,7 +118,7 @@ class CategoryController implements CategoryApi {
      */
     @Override
     public ResponseEntity<Void> deleteCategory(UUID categoryId) {
-        commandService.deleteCategory(categoryId);
+        commandService.deleteCategory(new CategoryId(categoryId));
         return ResponseEntity.noContent().build();
     }
 }

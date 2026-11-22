@@ -1,5 +1,8 @@
 package com.ecsite.module.catalog.domain.product;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
@@ -59,7 +62,7 @@ class ProductPublicationTest {
      *
      * <p>税モジュールの ID なので、存在しなくてよい。
      */
-    private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final TaxCategoryId TAX_CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
     /**
      * 商品の生成
@@ -839,7 +842,7 @@ class ProductPublicationTest {
      * @return 非公開の商品
      */
     private Product productWithoutVariant() {
-        return factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+        return factory.create(new ProductId(UUID.randomUUID()), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of());
     }
 
@@ -852,7 +855,7 @@ class ProductPublicationTest {
      */
     private Product productWithVariant() {
         var product = productWithoutVariant();
-        product.addVariant(VariantCode.of("ABC-001"), List.of(), NOW);
+        product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("ABC-001"), List.of(), NOW);
         product.pullEvents();
         return product;
     }

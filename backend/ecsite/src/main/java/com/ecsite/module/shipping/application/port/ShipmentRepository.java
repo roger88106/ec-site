@@ -1,13 +1,13 @@
 package com.ecsite.module.shipping.application.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.Shipment;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 出荷のリポジトリ
@@ -28,7 +28,7 @@ public interface ShipmentRepository {
      * @param orderIds 注文 ID
      * @return 出荷。出荷のない注文は含めない
      */
-    List<Shipment> findAllByOrderIds(Collection<UUID> orderIds);
+    List<Shipment> findAllByOrderIds(Collection<OrderId> orderIds);
 
     /**
      * 配送業者と送り状番号で出荷を取得し、トランザクションの終わりまで行をロックする。
@@ -53,5 +53,5 @@ public interface ShipmentRepository {
      *
      * @return 注文 ID
      */
-    List<UUID> findReturnedOrderIds();
+    List<OrderId> findReturnedOrderIds();
 }

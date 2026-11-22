@@ -1,6 +1,8 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.domain.TaxErrorCode;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,7 +64,17 @@ class TaxCategoryTest {
     /**
      * 復元する税区分の ID
      */
-    private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final TaxCategoryId CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+
+    /**
+     * 登録する税区分の ID
+     */
+    private static final TaxCategoryId NEW_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-0000000000d1"));
+
+    /**
+     * 新しい税率に使う ID
+     */
+    private static final TaxRateId NEW_RATE_ID = new TaxRateId(UUID.fromString("00000000-0000-0000-0000-0000000000d2"));
 
     /**
      * 税区分の名称
@@ -99,10 +111,10 @@ class TaxCategoryTest {
         @DisplayName("AC-1 名称で登録できる")
         void createsWithName() {
             // 操作：名称で登録する
-            var category = factory.create(NAME);
+            var category = factory.create(NEW_ID, NAME);
 
-            // 確認：ID が振られ、名称を持つ
-            assertThat(category.id()).isNotNull();
+            // 確認：渡した ID と名称を持つ
+            assertThat(category.id()).isEqualTo(NEW_ID);
             assertThat(category.name()).isEqualTo(NAME);
         }
 
@@ -110,7 +122,7 @@ class TaxCategoryTest {
         @DisplayName("AC-1 登録したばかりの税区分は、税率を持たない")
         void hasNoRatesWhenCreated() {
             // 操作：名称で登録する
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 確認：税率がない
             assertThat(category.rates()).isEmpty();
@@ -120,7 +132,7 @@ class TaxCategoryTest {
         @DisplayName("登録したばかりの税区分のバージョンは 0")
         void startsAtVersionZero() {
             // 操作：名称で登録する
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 確認：バージョンが 0
             assertThat(category.version()).isZero();
@@ -130,28 +142,28 @@ class TaxCategoryTest {
         @DisplayName("名称は 1 文字でも登録できる")
         void acceptsOneCharacterName() {
             // 操作と確認：1 文字の名称は拒否されない
-            assertThatCode(() -> factory.create("あ")).doesNotThrowAnyException();
+            assertThatCode(() -> factory.create(new TaxCategoryId(UUID.randomUUID()), "あ")).doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("名称は 50 文字まで登録できる")
         void acceptsNameUpToMaxLength() {
             // 操作と確認：50 文字の名称は拒否されない
-            assertThatCode(() -> factory.create("あ".repeat(NAME_MAX_LENGTH))).doesNotThrowAnyException();
+            assertThatCode(() -> factory.create(new TaxCategoryId(UUID.randomUUID()), "あ".repeat(NAME_MAX_LENGTH))).doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("51 文字以上の名称は拒否される")
         void rejectsNameOverMaxLength() {
             // 操作と確認：業務のエラー INVALID_TAX_CATEGORY_NAME で拒否される
-            assertBusinessError(() -> factory.create("あ".repeat(NAME_MAX_LENGTH + 1)), TaxErrorCode.INVALID_TAX_CATEGORY_NAME);
+            assertBusinessError(() -> factory.create(new TaxCategoryId(UUID.randomUUID()), "あ".repeat(NAME_MAX_LENGTH + 1)), TaxErrorCode.INVALID_TAX_CATEGORY_NAME);
         }
 
         @Test
         @DisplayName("名称が空白なら拒否される")
         void rejectsBlankName() {
             // 操作と確認：業務のエラー INVALID_TAX_CATEGORY_NAME で拒否される
-            assertBusinessError(() -> factory.create(" "), TaxErrorCode.INVALID_TAX_CATEGORY_NAME);
+            assertBusinessError(() -> factory.create(new TaxCategoryId(UUID.randomUUID()), " "), TaxErrorCode.INVALID_TAX_CATEGORY_NAME);
         }
     }
 
@@ -163,7 +175,7 @@ class TaxCategoryTest {
         @DisplayName("AC-3 期間が連続し、最後が無期限の一覧は受け付けられる")
         void acceptsContinuousList() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：期間が連続し、最後が無期限の一覧は拒否されない
             assertThatCode(() -> category.replaceRates(List.of(
@@ -173,10 +185,23 @@ class TaxCategoryTest {
         }
 
         @Test
+        @DisplayName("AC-3 ID のない税率は、案が持つ新しい ID で加わる")
+        void usesNewIdOfDraft() {
+            // 準備：税率のない税区分
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
+
+            // 操作：新しい ID を決めた、ID のない税率で置き換える
+            category.replaceRates(List.of(newDraft(NEW_RATE_ID, "10", null, null)), NOW);
+
+            // 確認：税率の ID が案の新しい ID
+            assertThat(category.rates()).extracting(TaxRate::id).containsExactly(NEW_RATE_ID);
+        }
+
+        @Test
         @DisplayName("AC-3 受け付けた一覧は、開始の古い順に並ぶ")
         void sortsByStart() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作：開始の新しい順に並べた一覧で置き換える
             category.replaceRates(List.of(
@@ -193,7 +218,7 @@ class TaxCategoryTest {
         @DisplayName("AC-3 期間が重複する一覧は拒否される")
         void rejectsOverlap() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -205,7 +230,7 @@ class TaxCategoryTest {
         @DisplayName("AC-3 開始が空白の税率が 2 つある一覧は、重複として拒否される")
         void rejectsTwoUnboundedStarts() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -217,7 +242,7 @@ class TaxCategoryTest {
         @DisplayName("AC-3 終了が空白の税率の後に税率がある一覧は、重複として拒否される")
         void rejectsRateAfterUnboundedEnd() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：無期限の税率と、2027-04-01 からの税率は、業務のエラー TAX_RATE_PERIODS_OVERLAP で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -229,7 +254,7 @@ class TaxCategoryTest {
         @DisplayName("AC-3 期間の間に途切れがある一覧は拒否される")
         void rejectsGap() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：1 分の途切れがあれば、業務のエラー TAX_RATE_PERIODS_GAP で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -241,7 +266,7 @@ class TaxCategoryTest {
         @DisplayName("AC-3 最後の税率の終了が空白でない一覧は拒否される")
         void rejectsBoundedLast() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -253,7 +278,7 @@ class TaxCategoryTest {
         @DisplayName("AC-3 空の一覧は拒否される")
         void rejectsEmpty() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：業務のエラー TAX_RATES_REQUIRED で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(), NOW), TaxErrorCode.TAX_RATES_REQUIRED);
@@ -312,7 +337,7 @@ class TaxCategoryTest {
         @DisplayName("AC-4 その時点を含む税率がなければ、税率はない")
         void noRateWhenNotCovered() {
             // 準備：2027-04-01 から始まる税率だけを持つ税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
             category.replaceRates(List.of(newDraft("10", APR_2027, null)), NOW);
 
             // 確認（前提）：開始の時点には税率がある
@@ -326,7 +351,7 @@ class TaxCategoryTest {
         @DisplayName("AC-4 税率がない税区分は、どの時点でも税率がない")
         void noRateWithoutRates() {
             // 操作と確認：登録したばかりの税区分には、現在の税率がない
-            assertThat(factory.create(NAME).rateAt(NOW)).isEmpty();
+            assertThat(factory.create(new TaxCategoryId(UUID.randomUUID()), NAME).rateAt(NOW)).isEmpty();
         }
     }
 
@@ -338,7 +363,7 @@ class TaxCategoryTest {
         @DisplayName("AC-5 現在より前の日時を、新しい税率の開始として設定できない")
         void rejectsPastStartForNewRate() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PAST_DATETIME で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -349,7 +374,7 @@ class TaxCategoryTest {
         @DisplayName("AC-5 現在より前の日時を、新しい税率の終了として設定できない")
         void rejectsPastEndForNewRate() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：一覧の形の誤り（最後が無期限でない）より先に、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -360,7 +385,7 @@ class TaxCategoryTest {
         @DisplayName("AC-5 現在ちょうどの日時を、新しい税率の開始として設定できない")
         void rejectsNowStartForNewRate() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：業務のエラー TAX_RATE_PAST_DATETIME で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -371,7 +396,7 @@ class TaxCategoryTest {
         @DisplayName("AC-5 現在ちょうどの日時を、新しい税率の終了として設定できない")
         void rejectsNowEndForNewRate() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：一覧の形の誤り（最後が無期限でない）より先に、業務のエラー TAX_RATE_PAST_DATETIME で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
@@ -382,7 +407,7 @@ class TaxCategoryTest {
         @DisplayName("AC-5 新しい税率の開始・終了は空白にできる")
         void acceptsBlankForNewRate() {
             // 準備：税率のない税区分
-            var category = factory.create(NAME);
+            var category = factory.create(new TaxCategoryId(UUID.randomUUID()), NAME);
 
             // 操作と確認：開始・終了とも空白の税率は拒否されない
             assertThatCode(() -> category.replaceRates(List.of(newDraft("10", null, null)), NOW))
@@ -604,7 +629,7 @@ class TaxCategoryTest {
 
             // 操作と確認：業務のエラー INVALID_TAX_RATE_ID で拒否される
             assertBusinessError(() -> category.replaceRates(List.of(
-                    draft(UUID.randomUUID(), "10", null, null)), NOW), TaxErrorCode.INVALID_TAX_RATE_ID);
+                    draft(new TaxRateId(UUID.randomUUID()), "10", null, null)), NOW), TaxErrorCode.INVALID_TAX_RATE_ID);
         }
 
         @Test
@@ -674,7 +699,7 @@ class TaxCategoryTest {
      * @param category 基本の税率だけを持つ税区分
      * @param baseId   基本の税率の ID
      */
-    private static void switchToLimitedTimeRate(TaxCategory category, UUID baseId) {
+    private static void switchToLimitedTimeRate(TaxCategory category, TaxRateId baseId) {
         category.replaceRates(List.of(
                 draft(baseId, BASE_RATE, null, APR_2027),
                 newDraft(LIMITED_RATE, APR_2027, APR_2028),

@@ -1,5 +1,8 @@
 package com.ecsite.module.order.domain.checkout;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -10,7 +13,6 @@ import org.jmolecules.ddd.annotation.Identity;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 注文手続き
@@ -28,17 +30,17 @@ public final class Checkout {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final CheckoutId id;
 
     /**
      * 会員 ID（始めた会員。その会員だけが参照・注文できる）
      */
-    private final UUID memberId;
+    private final MemberId memberId;
 
     /**
      * カート ID
      */
-    private final UUID cartId;
+    private final CartId cartId;
 
     /**
      * 始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
@@ -58,7 +60,7 @@ public final class Checkout {
     /**
      * 確認した注文の ID の集合（始めるときに会員が確認した支払待ちの注文。確認していなければ空）
      */
-    private final Set<UUID> acknowledgedOrderIds;
+    private final Set<OrderId> acknowledgedOrderIds;
 
     /**
      * コンストラクタ
@@ -73,8 +75,8 @@ public final class Checkout {
      * @param createdAt            作成日時
      * @param acknowledgedOrderIds 確認した注文の ID の集合
      */
-    public Checkout(UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt,
-                    Set<UUID> acknowledgedOrderIds) {
+    public Checkout(CheckoutId id, MemberId memberId, CartId cartId, long cartVersion, Instant expiresAt, Instant createdAt,
+                    Set<OrderId> acknowledgedOrderIds) {
         // メッセージに日時を書かない（DB から戻した値が入るため）
         if (!expiresAt.isAfter(createdAt)) {
             throw new IllegalArgumentException("引当の期限が作成日時より後でない");
@@ -100,8 +102,8 @@ public final class Checkout {
      * @param acknowledgedOrderIds 確認した注文の ID の集合
      * @return 注文手続き
      */
-    public static Checkout start(@NonNull UUID id, @NonNull UUID memberId, @NonNull UUID cartId, long cartVersion, @NonNull Instant now,
-                                 @NonNull Duration reservationTtl, @NonNull Set<UUID> acknowledgedOrderIds) {
+    public static Checkout start(@NonNull CheckoutId id, @NonNull MemberId memberId, @NonNull CartId cartId, long cartVersion, @NonNull Instant now,
+                                 @NonNull Duration reservationTtl, @NonNull Set<OrderId> acknowledgedOrderIds) {
         return new Checkout(id, memberId, cartId, cartVersion, now.plus(reservationTtl), now, acknowledgedOrderIds);
     }
 
@@ -111,7 +113,7 @@ public final class Checkout {
      * @param pendingOrderIds 今の支払待ちの注文の ID
      * @return 全て含まれていれば true（支払待ちがなければ常に true）
      */
-    public boolean acknowledges(@NonNull Set<UUID> pendingOrderIds) {
+    public boolean acknowledges(@NonNull Set<OrderId> pendingOrderIds) {
         return acknowledgedOrderIds.containsAll(pendingOrderIds);
     }
 
@@ -131,7 +133,7 @@ public final class Checkout {
      * @param requester リクエストした会員の ID
      * @return 始めた会員なら true
      */
-    public boolean isOwnedBy(UUID requester) {
+    public boolean isOwnedBy(MemberId requester) {
         return memberId.equals(requester);
     }
 }

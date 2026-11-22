@@ -1,9 +1,11 @@
 package com.ecsite.module.cart.api.model;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * カートの中身
@@ -15,7 +17,7 @@ import java.util.UUID;
  * @param version  バージョン（変更のたびに上がる）
  * @param items    品目（入れた順）
  */
-public record CartContents(UUID cartId, @Nullable UUID memberId, long version, List<Item> items) {
+public record CartContents(CartId cartId, @Nullable MemberId memberId, long version, List<Item> items) {
 
     /**
      * 品目
@@ -23,6 +25,6 @@ public record CartContents(UUID cartId, @Nullable UUID memberId, long version, L
      * @param variantId バリアント ID
      * @param quantity  数量
      */
-    public record Item(UUID variantId, int quantity) {
+    public record Item(VariantId variantId, int quantity) {
     }
 }

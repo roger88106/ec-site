@@ -1,5 +1,6 @@
 package com.ecsite.support.data;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.shipment.OrderShipmentCommandService;
 import com.ecsite.module.payment.application.PaymentCommandService;
@@ -92,7 +93,7 @@ public class ShippingTestData {
     public void ship(UUID orderId, Carrier carrier, String trackingNumber) {
         var capture = capture(orderId, PaymentGateway.CaptureResult.CAPTURED);
         applicationContext.getBean(PaymentCommandService.class).markCaptured(capture.id());
-        applicationContext.getBean(OrderShipmentCommandService.class).ship(orderId, com.ecsite.module.order.domain.order.Carrier.valueOf(carrier.name()), trackingNumber);
+        applicationContext.getBean(OrderShipmentCommandService.class).ship(new OrderId(orderId), com.ecsite.module.order.domain.order.Carrier.valueOf(carrier.name()), trackingNumber);
     }
 
     /**
@@ -119,13 +120,13 @@ public class ShippingTestData {
     private PaymentCaptureView capture(UUID orderId, PaymentGateway.CaptureResult expected) {
         Objects.requireNonNull(applicationContext, "出荷を登録するときは ApplicationContext を渡すコンストラクタで作る");
         // 本番の前段の判定（出荷できる注文で、与信済みの支払）。満たさないなら、補助を使える状態ではない
-        assertThat(applicationContext.getBean(OrderQueryService.class).get(orderId).actions().shippable())
+        assertThat(applicationContext.getBean(OrderQueryService.class).get(new OrderId(orderId)).actions().shippable())
                 .as("出荷できる注文で呼ぶ").isTrue();
         // 本番と同じ操作で、支払を読み、売上確定を求めた時刻を記録する
-        var capture = applicationContext.getBean(PaymentCommandService.class).requestCapture(orderId).orElseThrow();
+        var capture = applicationContext.getBean(PaymentCommandService.class).requestCapture(new OrderId(orderId)).orElseThrow();
         assertThat(capture.status()).as("与信済みの支払で呼ぶ").isEqualTo(PaymentStatus.AUTHORIZED);
         var result = applicationContext.getBean(TestPaymentGateway.class).capture(new PaymentGateway.CaptureRequest(
-                orderId, Objects.requireNonNull(capture.authorizationRef()), capture.amount()));
+                new OrderId(orderId), Objects.requireNonNull(capture.authorizationRef()), capture.amount()));
         assertThat(result).isEqualTo(expected);
         return capture;
     }

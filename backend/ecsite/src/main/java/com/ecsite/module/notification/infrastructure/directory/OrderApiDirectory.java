@@ -1,11 +1,10 @@
 package com.ecsite.module.notification.infrastructure.directory;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.api.OrderApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * 注文の腐敗防止層
@@ -31,7 +30,7 @@ class OrderApiDirectory implements OrderDirectory {
      * @throws IllegalStateException 注文が見つからないとき
      */
     @Override
-    public String email(UUID orderId) {
+    public String email(OrderId orderId) {
         return orderApi.findEmail(orderId)
                 .orElseThrow(() -> new IllegalStateException("注文が見つかりません: " + orderId));
     }

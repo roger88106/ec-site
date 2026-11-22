@@ -1,6 +1,6 @@
 package com.ecsite.module.inventory.application.model.view;
 
-import java.util.UUID;
+import com.ecsite.common.model.id.ProductId;
 
 /**
  * 商品ごとの在庫数の合計のビュー
@@ -8,5 +8,5 @@ import java.util.UUID;
  * @param productId     商品 ID
  * @param totalQuantity 在庫数の合計。在庫がまだない商品は 0
  */
-public record StockSummaryView(UUID productId, long totalQuantity) {
+public record StockSummaryView(ProductId productId, long totalQuantity) {
 }

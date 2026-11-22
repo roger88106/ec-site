@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
@@ -64,7 +65,7 @@ class ProductRestoreFailureTest {
         var repository = new JooqProductRepository(dsl, mock(ApplicationEventPublisher.class), mock(ProductFactory.class), Clock.systemUTC());
 
         // 操作と確認：商品を読むと復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @Test
@@ -75,7 +76,7 @@ class ProductRestoreFailureTest {
         var repository = new JooqProductQueryRepository(dsl, mock(MediaDirectory.class));
 
         // 操作と確認：商品の詳細を読むと復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findDetailById(UUID.randomUUID()), value);
+        assertValueIsHidden(() -> repository.findDetailById(new ProductId(UUID.randomUUID())), value);
     }
 
     @Test
@@ -101,7 +102,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", product));
 
         // 操作と確認：商品を読むと復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, BusinessException.class);
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), value, BusinessException.class);
     }
 
     @Test
@@ -112,7 +113,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("product_image", image));
 
         // 操作と確認：復元の失敗になり、例外の出力に表示順の値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER),
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), String.valueOf(NEGATIVE_ORDER),
                 IllegalArgumentException.class);
     }
 
@@ -124,7 +125,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
 
         // 操作と確認：復元の失敗になり、例外の出力に表示順の値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), String.valueOf(NEGATIVE_ORDER),
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), String.valueOf(NEGATIVE_ORDER),
                 IllegalArgumentException.class);
     }
 
@@ -136,7 +137,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @Test
@@ -149,7 +150,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", product).withRows("product_image", images));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @Test
@@ -162,7 +163,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", product).withRows("variant", variants));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     @Test
@@ -172,7 +173,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).failingOn("variant"));
 
         // 操作と確認：DB の失敗のまま出る
-        assertDatabaseFailurePropagates(() -> repository.findById(UUID.randomUUID()));
+        assertDatabaseFailurePropagates(() -> repository.findById(new ProductId(UUID.randomUUID())));
     }
 
     @Test
@@ -182,7 +183,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).failingOn("product_image"));
 
         // 操作と確認：DB の失敗のまま出る
-        assertDatabaseFailurePropagates(() -> repository.findById(UUID.randomUUID()));
+        assertDatabaseFailurePropagates(() -> repository.findById(new ProductId(UUID.randomUUID())));
     }
 
     @Test
@@ -194,7 +195,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", validProduct()).with("variant", variant));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, BusinessException.class);
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), value, BusinessException.class);
     }
 
     @Test
@@ -207,7 +208,7 @@ class ProductRestoreFailureTest {
         var repository = realFactoryRepository(new RestoreFailures().with("product", product));
 
         // 操作と確認：復元の失敗になり、例外の出力に値が出ない
-        assertValueIsHidden(() -> repository.findById(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repository.findById(new ProductId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 
     // ============================== 準備の補助 ==============================
@@ -232,7 +233,6 @@ class ProductRestoreFailureTest {
         product.set(PRODUCT.STATUS, "UNPUBLISHED");
         product.set(PRODUCT.NAME, "商品");
         product.set(PRODUCT.DESCRIPTION, "");
-        product.set(PRODUCT.TAX_CATEGORY_ID, UUID.randomUUID());
         product.set(PRODUCT.VERSION, 0L);
         return product;
     }
@@ -287,6 +287,7 @@ class ProductRestoreFailureTest {
         var product = RECORDS.newRecord(fields);
         product.set(PRODUCT.ID, UUID.randomUUID());
         product.set(PRODUCT.PRODUCT_CODE, "PROD-1");
+        product.set(PRODUCT.TAX_CATEGORY_ID, UUID.randomUUID());
         product.set(PRODUCT.PRICE_EXCL_TAX, 1L);
         product.set(PRODUCT.STATUS, value);
         product.set(axes, new String[0]);

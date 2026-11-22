@@ -1,5 +1,8 @@
 package com.ecsite.module.cart.presentation;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -173,7 +176,7 @@ class CartApiTest {
             add(cartId, variant, 2).andExpect(status().isNoContent());
 
             // 確認：このカートの変更のイベントだけが発行されている
-            assertThat(events.stream(CartChanged.class)).extracting(CartChanged::cartId).containsExactly(cartId);
+            assertThat(events.stream(CartChanged.class)).extracting(CartChanged::cartId).containsExactly(new CartId(cartId));
         }
 
         @Test
@@ -328,7 +331,7 @@ class CartApiTest {
         void rejectsQuantityOverSellable() throws Exception {
             // 準備：在庫 3 のうち 1 を引き当て、残りの 2 をカートに入れる
             var variant = stockedVariant(3);
-            stockReservationApi.reserve(UUID.randomUUID(), Map.of(variant, 1), NOW.plus(Duration.ofMinutes(15)));
+            stockReservationApi.reserve(new ReservationHolderId(UUID.randomUUID()), Map.of(new VariantId(variant), 1), NOW.plus(Duration.ofMinutes(15)));
             add(cartId, variant, 2).andExpect(status().isNoContent());
 
             // 操作：もう 1 個入れる（合算で 3、販売可能数は 2）

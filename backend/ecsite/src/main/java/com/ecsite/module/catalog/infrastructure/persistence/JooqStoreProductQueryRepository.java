@@ -1,5 +1,8 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -58,7 +61,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
      */
     @Override
     public PageResult<StoreProductSummaryView> findVisible(StoreProductListQuery query, PageRequest request, Instant now,
-                                                       Map<UUID, BigDecimal> rates) {
+                                                       Map<TaxCategoryId, BigDecimal> rates) {
         return storeProductPages.find(request, now, rates,
                 priceInclTax -> condition(query, priceInclTax),
                 priceInclTax -> orderBy(query.sort(), priceInclTax));
@@ -73,7 +76,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
      * @return 商品の詳細
      */
     @Override
-    public Optional<StoreProductDetailView> findVisibleDetail(UUID id, Instant now, Map<UUID, BigDecimal> rates) {
+    public Optional<StoreProductDetailView> findVisibleDetail(ProductId id, Instant now, Map<TaxCategoryId, BigDecimal> rates) {
         if (rates.isEmpty()) {
             return Optional.empty();
         }
@@ -81,14 +84,14 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
         var axes = ProductParts.axes(PRODUCT.ID);
         var found = dsl.select(PRODUCT.ID, PRODUCT.NAME, PRODUCT.DESCRIPTION, priceInclTax, PRODUCT.PRICE_EXCL_TAX, axes)
                 .from(PRODUCT)
-                .where(PRODUCT.ID.eq(id))
+                .where(PRODUCT.ID.eq(id.value()))
                 .and(StoreProductPages.visible(now, priceInclTax))
                 .fetchOptional();
         return found.map(row -> {
-            var images = storeImageUrls.ofProduct(id);
-            return new StoreProductDetailView(row.get(PRODUCT.ID), row.get(PRODUCT.NAME), row.get(PRODUCT.DESCRIPTION),
+            var images = storeImageUrls.ofProduct(id.value());
+            return new StoreProductDetailView(id, row.get(PRODUCT.NAME), row.get(PRODUCT.DESCRIPTION),
                     Money.of(row.get(priceInclTax)), Money.of(row.get(PRODUCT.PRICE_EXCL_TAX)),
-                    List.of(row.get(axes)), variants(id, images), List.copyOf(images.values()));
+                    List.of(row.get(axes)), variants(id.value(), images), List.copyOf(images.values()));
         });
     }
 
@@ -141,7 +144,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .fetch(row -> {
                     var imageId = row.get(VARIANT.IMAGE_ID);
                     return new StoreProductDetailView.Variant(
-                            row.get(VARIANT.ID),
+                            new VariantId(row.get(VARIANT.ID)),
                             List.of(row.get(axisValues)),
                             row.get(VARIANT.SALES_SUSPENDED),
                             imageId == null ? null : imageUrls.get(imageId));

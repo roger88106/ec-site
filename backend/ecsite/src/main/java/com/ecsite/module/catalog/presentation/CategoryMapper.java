@@ -7,11 +7,13 @@ import com.ecsite.api.admin.model.CategoryTree;
 import com.ecsite.api.admin.model.CreateCategoryRequest;
 import com.ecsite.api.admin.model.RenameCategoryRequest;
 import com.ecsite.api.admin.model.ReorderCategoriesRequest;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.module.catalog.application.model.command.CreateCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.RenameCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderCategoriesCommand;
 import com.ecsite.module.catalog.application.model.view.CategoryNodeView;
 import com.ecsite.module.catalog.application.model.view.CategoryView;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,7 +34,7 @@ class CategoryMapper {
      * @return カテゴリの登録コマンド
      */
     CreateCategoryCommand toCreateCategoryCommand(CreateCategoryRequest request) {
-        return new CreateCategoryCommand(request.getName(), request.getParentId().orElse(null));
+        return new CreateCategoryCommand(request.getName(), toCategoryId(request.getParentId().orElse(null)));
     }
 
     /**
@@ -43,7 +45,7 @@ class CategoryMapper {
      * @return カテゴリ名の変更コマンド
      */
     RenameCategoryCommand toRenameCategoryCommand(UUID categoryId, RenameCategoryRequest request) {
-        return new RenameCategoryCommand(categoryId, request.getName(), request.getVersion());
+        return new RenameCategoryCommand(new CategoryId(categoryId), request.getName(), request.getVersion());
     }
 
     /**
@@ -54,7 +56,8 @@ class CategoryMapper {
      */
     ReorderCategoriesCommand toReorderCategoriesCommand(ReorderCategoriesRequest request) {
         // categoryIds は LinkedHashSet で受け取るので、送られた順を保つ
-        return new ReorderCategoriesCommand(request.getParentId().orElse(null), List.copyOf(request.getCategoryIds()));
+        return new ReorderCategoriesCommand(toCategoryId(request.getParentId().orElse(null)),
+                request.getCategoryIds().stream().map(CategoryId::new).toList());
     }
 
     /**
@@ -65,8 +68,8 @@ class CategoryMapper {
      */
     Category toCategory(CategoryView view) {
         return new Category()
-                .id(view.id())
-                .parentId(view.parentId())
+                .id(view.id().value())
+                .parentId(view.parentId() == null ? null : view.parentId().value())
                 .name(view.name())
                 .depth(view.depth())
                 .displayOrder(view.displayOrder())
@@ -91,12 +94,22 @@ class CategoryMapper {
      */
     CategoryNode toCategoryNode(CategoryNodeView view) {
         return new CategoryNode()
-                .id(view.id())
+                .id(view.id().value())
                 .name(view.name())
                 .depth(view.depth())
                 .displayOrder(view.displayOrder())
                 .version(view.version())
                 .children(view.children().stream().map(this::toCategoryNode).toList())
                 .actions(new CategoryActions().addChild(view.addChild()));
+    }
+
+    /**
+     * リクエストのカテゴリ ID を、カテゴリの識別子に変換する。
+     *
+     * @param categoryId カテゴリ ID。指定がなければ null
+     * @return カテゴリの識別子。指定がなければ null
+     */
+    private static @Nullable CategoryId toCategoryId(@Nullable UUID categoryId) {
+        return categoryId == null ? null : new CategoryId(categoryId);
     }
 }

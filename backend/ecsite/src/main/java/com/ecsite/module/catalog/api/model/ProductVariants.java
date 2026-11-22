@@ -1,7 +1,9 @@
 package com.ecsite.module.catalog.api.model;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
+
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品とそのバリアントの一覧
@@ -10,7 +12,7 @@ import java.util.UUID;
  * @param name      商品名
  * @param variants  バリアント（商品カタログの並びの順）
  */
-public record ProductVariants(UUID productId, String name, List<Variant> variants) {
+public record ProductVariants(ProductId productId, String name, List<Variant> variants) {
 
     /**
      * バリアント
@@ -19,6 +21,6 @@ public record ProductVariants(UUID productId, String name, List<Variant> variant
      * @param variantCode バリアント品番
      * @param axisValues  軸の名前と値
      */
-    public record Variant(UUID variantId, String variantCode, List<AxisValue> axisValues) {
+    public record Variant(VariantId variantId, String variantCode, List<AxisValue> axisValues) {
     }
 }

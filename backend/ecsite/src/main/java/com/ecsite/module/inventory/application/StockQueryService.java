@@ -2,6 +2,9 @@ package com.ecsite.module.inventory.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
@@ -18,7 +21,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 在庫のクエリサービス
@@ -45,7 +47,7 @@ public class StockQueryService {
      * @return 在庫数
      * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
-    public int getQuantity(@NonNull UUID variantId) {
+    public int getQuantity(@NonNull VariantId variantId) {
         return stockQueryRepository.findQuantity(variantId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
@@ -58,7 +60,7 @@ public class StockQueryService {
      * @return 調整履歴（新しい順）
      * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
-    public PageResult<StockAdjustmentView> listAdjustments(@NonNull UUID variantId, @NonNull PageRequest request) {
+    public PageResult<StockAdjustmentView> listAdjustments(@NonNull VariantId variantId, @NonNull PageRequest request) {
         return stockQueryRepository.findAdjustments(variantId, request)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
@@ -69,7 +71,7 @@ public class StockQueryService {
      * @param productIds 商品 ID
      * @return 指定した順の合計。在庫がまだない商品は 0
      */
-    public List<StockSummaryView> listStockSummaries(@NonNull List<UUID> productIds) {
+    public List<StockSummaryView> listStockSummaries(@NonNull List<ProductId> productIds) {
         var totals = stockQueryRepository.sumQuantitiesByProduct(productIds);
         return productIds.stream()
                 .map(productId -> new StockSummaryView(productId, totals.getOrDefault(productId, 0L)))
@@ -85,12 +87,13 @@ public class StockQueryService {
      * @param excludedHolderId 数えない引当の持ち主（注文手続き中の自分の引当）。なければ null
      * @return バリアント ID → 販売可能数（指定したすべてのバリアントを含む）
      */
-    public Map<UUID, Integer> sellableQuantities(@NonNull Collection<UUID> variantIds, @Nullable UUID excludedHolderId) {
+    public Map<VariantId, Integer> sellableQuantities(@NonNull Collection<VariantId> variantIds,
+                                                     @Nullable ReservationHolderId excludedHolderId) {
         if (variantIds.isEmpty()) {
             return Map.of();
         }
         var found = stockQueryRepository.findSellableQuantities(variantIds, excludedHolderId, clock.instant());
-        var sellable = new LinkedHashMap<UUID, Integer>();
+        var sellable = new LinkedHashMap<VariantId, Integer>();
         variantIds.forEach(variantId -> sellable.put(variantId, found.getOrDefault(variantId, 0)));
         return sellable;
     }

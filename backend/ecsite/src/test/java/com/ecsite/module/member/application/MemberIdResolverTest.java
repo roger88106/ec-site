@@ -1,5 +1,6 @@
 package com.ecsite.module.member.application;
 
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
 import org.junit.jupiter.api.DisplayName;
@@ -34,7 +35,7 @@ class MemberIdResolverTest {
     /**
      * 会員の記録（IdP の subject → 会員 ID）を持つだけのリポジトリの中身
      */
-    private final Map<String, UUID> members = new HashMap<>();
+    private final Map<String, MemberId> members = new HashMap<>();
 
     /**
      * 会員 ID を探す呼び出しの回数
@@ -56,13 +57,13 @@ class MemberIdResolverTest {
      */
     private final MemberRepository repository = new MemberRepository() {
         @Override
-        public Optional<UUID> findIdByIdpSubject(String idpSubject) {
+        public Optional<MemberId> findIdByIdpSubject(String idpSubject) {
             lookups++;
             return Optional.ofNullable(members.get(idpSubject));
         }
 
         @Override
-        public UUID createOrGetId(Member member) {
+        public MemberId createOrGetId(Member member) {
             inserts++;
             return members.computeIfAbsent(member.idpSubject(), key -> member.id());
         }
@@ -72,7 +73,7 @@ class MemberIdResolverTest {
      * テストの対象
      */
     private final MemberIdResolver resolver = new MemberIdResolver(new MemberQueryService(repository),
-            new MemberCommandService(repository, Clock.systemUTC()), cache);
+            new MemberCommandService(repository, Clock.systemUTC(), UUID::randomUUID), cache);
 
     // ============================== テスト ==============================
 
@@ -101,7 +102,7 @@ class MemberIdResolverTest {
         @DisplayName("DC-557-1 既にいた会員の 2 回目は、会員のリポジトリを呼ばない")
         void secondCallForExistingMemberSkipsRepository() {
             // 準備：会員がいて、一度求めた
-            var existing = UUID.randomUUID();
+            var existing = new MemberId(UUID.randomUUID());
             members.put(SUBJECT, existing);
             assertThat(resolver.resolve(SUBJECT)).isEqualTo(existing);
             var lookupsAfterFirst = lookups;

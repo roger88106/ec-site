@@ -1,7 +1,12 @@
 package com.ecsite.module.catalog.domain.product;
 
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
@@ -87,14 +92,14 @@ class ProductInvariantsTest {
         @ValueSource(ints = {0, 1, 100})
         @DisplayName("表示順が 0 以上なら作れる")
         void acceptsNonNegativeDisplayOrder(int displayOrder) {
-            assertThatCode(() -> new ProductImage(UUID.randomUUID(), UUID.randomUUID(), displayOrder))
+            assertThatCode(() -> new ProductImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID()), displayOrder))
                     .doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("表示順が負なら、値を含まないメッセージで拒む")
         void rejectsNegativeDisplayOrder() {
-            assertThatThrownBy(() -> new ProductImage(UUID.randomUUID(), UUID.randomUUID(), NEGATIVE_ORDER))
+            assertThatThrownBy(() -> new ProductImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID()), NEGATIVE_ORDER))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageNotContaining(String.valueOf(NEGATIVE_ORDER));
         }
@@ -102,7 +107,7 @@ class ProductInvariantsTest {
         @Test
         @DisplayName("表示順が -1 なら拒む")
         void rejectsMinusOne() {
-            assertThatThrownBy(() -> new ProductImage(UUID.randomUUID(), UUID.randomUUID(), -1))
+            assertThatThrownBy(() -> new ProductImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID()), -1))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -246,7 +251,7 @@ class ProductInvariantsTest {
      * @return バリアント
      */
     private static Variant variant(String code, List<String> axisValues, int displayOrder) {
-        return new Variant(UUID.randomUUID(), VariantCode.of(code), axisValues, displayOrder, false, null);
+        return new Variant(new VariantId(UUID.randomUUID()), VariantCode.of(code), axisValues, displayOrder, false, null);
     }
 
     /**
@@ -257,7 +262,7 @@ class ProductInvariantsTest {
      */
     private static List<ProductImage> images(int count) {
         return IntStream.rangeClosed(1, count)
-                .mapToObj(order -> new ProductImage(UUID.randomUUID(), UUID.randomUUID(), order))
+                .mapToObj(order -> new ProductImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID()), order))
                 .toList();
     }
 
@@ -275,8 +280,8 @@ class ProductInvariantsTest {
     private static Product.Snapshot snapshot(List<ProductImage> images, List<String> axes, List<Variant> variants,
                                              PublicationStatus status, Instant firstShownAt,
                                              PublicationPeriod publicationPeriod) {
-        return new Product.Snapshot(UUID.randomUUID(), ProductCode.of("ABC-001"), "T シャツ", "",
-                UUID.fromString("00000000-0000-0000-0000-000000000001"), PriceExclTax.of(1000), Set.of(), axes, status,
+        return new Product.Snapshot(new ProductId(UUID.randomUUID()), ProductCode.of("ABC-001"), "T シャツ", "",
+                new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001")), PriceExclTax.of(1000), Set.of(), axes, status,
                 firstShownAt, publicationPeriod, images, variants, 0);
     }
 }

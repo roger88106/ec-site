@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway;
@@ -61,6 +62,11 @@ public class MockPaymentGateway implements PaymentGateway {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 支払画面 ID → 画面
      */
     private final Map<String, Page> pages = new ConcurrentHashMap<>();
@@ -79,8 +85,8 @@ public class MockPaymentGateway implements PaymentGateway {
      */
     @Override
     public PaymentPage openPage(PageRequest request) {
-        var id = PAGE_ID_PREFIX + UUID.randomUUID();
-        pages.put(id, new Page(request.orderId(), request.amount(), request.returnUrl(), PageStatus.OPEN, null));
+        var id = PAGE_ID_PREFIX + idGenerator.generate();
+        pages.put(id, new Page(request.orderId().value(), request.amount(), request.returnUrl(), PageStatus.OPEN, null));
         return new PaymentPage(id, properties.baseUrl() + "/mock-payment/" + id);
     }
 

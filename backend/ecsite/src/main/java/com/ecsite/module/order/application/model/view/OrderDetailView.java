@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.model.view;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
@@ -11,7 +12,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 注文の詳細の表示
@@ -32,7 +32,7 @@ import java.util.UUID;
  * @param authorizationExpiring 与信期限が近い印を付ける（受付の注文で、支払の与信期限が近い）
  * @param actions             画面の操作の可否
  */
-public record OrderDetailView(UUID id, OrderNumber orderNumber, Instant orderedAt, OrderStatus status,
+public record OrderDetailView(OrderId id, OrderNumber orderNumber, Instant orderedAt, OrderStatus status,
                               List<OrderLine> lines, Amounts amounts, String email, ShippingAddress shippingAddress,
                               @Nullable CancellationRequest cancellationRequest, @Nullable Cancellation cancellation,
                               @Nullable OrderPayment payment, @Nullable OrderShipment shipment,

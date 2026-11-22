@@ -1,6 +1,7 @@
 package com.ecsite.module.order.application.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.domain.order.Carrier;
 
@@ -8,7 +9,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 出荷の腐敗防止層の port
@@ -28,7 +28,7 @@ public interface ShippingDirectory {
      * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
      * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
-    OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt);
+    OrderShipment create(OrderId orderId, Carrier carrier, String trackingNumber, Instant shippedAt);
 
     /**
      * 注文の出荷をまとめて返す。
@@ -36,12 +36,12 @@ public interface ShippingDirectory {
      * @param orderIds 注文 ID
      * @return 注文 ID → 出荷。出荷のない注文は含まない
      */
-    Map<UUID, OrderShipment> find(Collection<UUID> orderIds);
+    Map<OrderId, OrderShipment> find(Collection<OrderId> orderIds);
 
     /**
      * 配送状態が返送の注文 ID を返す。
      *
      * @return 注文 ID
      */
-    List<UUID> returnedOrderIds();
+    List<OrderId> returnedOrderIds();
 }

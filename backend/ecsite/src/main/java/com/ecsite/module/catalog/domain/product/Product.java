@@ -2,12 +2,18 @@ package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductActions;
 import com.ecsite.module.catalog.domain.product.vo.ProductActions.DeleteBlockedReason;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.Publication;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
@@ -32,7 +38,6 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 商品
@@ -77,7 +82,7 @@ public class Product extends AggregateRoot {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final ProductId id;
 
     /**
      * 商品品番
@@ -99,7 +104,7 @@ public class Product extends AggregateRoot {
     /**
      * 税区分 ID（税モジュール）
      */
-    private UUID taxCategoryId;
+    private TaxCategoryId taxCategoryId;
 
     /**
      * 税抜価格
@@ -109,7 +114,7 @@ public class Product extends AggregateRoot {
     /**
      * 所属カテゴリの ID（変更できない集合）
      */
-    private Set<UUID> categoryIds;
+    private Set<CategoryId> categoryIds;
 
     /**
      * バリアント軸の名前
@@ -197,8 +202,8 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
-    static Product create(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
-                          PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {
+    static Product create(ProductId id, ProductCode productCode, String name, String description, TaxCategoryId taxCategoryId,
+                          PriceExclTax priceExclTax, Collection<CategoryId> categoryIds, List<String> axes) {
         return new Product(new Snapshot(id, productCode, name, description, taxCategoryId, priceExclTax,
                 Set.copyOf(categoryIds), List.copyOf(axes), PublicationStatus.UNPUBLISHED, null,
                 PublicationPeriod.UNLIMITED, List.of(), List.of(), 0));
@@ -352,8 +357,8 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 商品名が範囲の外（{@code INVALID_PRODUCT_NAME}）
      * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      */
-    public void update(String name, String description, @NonNull UUID taxCategoryId, @NonNull PriceExclTax priceExclTax,
-                       @NonNull Collection<UUID> categoryIds, @NonNull Instant now) {
+    public void update(String name, String description, @NonNull TaxCategoryId taxCategoryId, @NonNull PriceExclTax priceExclTax,
+                       @NonNull Collection<CategoryId> categoryIds, @NonNull Instant now) {
         verifyName(name);
         verifyDescription(description);
         boolean priceChanged = !this.priceExclTax.equals(priceExclTax);
@@ -374,6 +379,7 @@ public class Product extends AggregateRoot {
      *
      * <p>並びの最後に加える。
      *
+     * @param variantId   バリアント ID
      * @param variantCode バリアント品番
      * @param axisValues  軸の値（商品の軸と同じ並び）
      * @param now         現在時刻
@@ -383,7 +389,8 @@ public class Product extends AggregateRoot {
      * @throws BusinessException バリアント品番が重複している（{@code VARIANT_CODE_ALREADY_EXISTS}）
      * @throws BusinessException 軸の値の組み合わせが重複している（{@code VARIANT_AXIS_VALUES_ALREADY_EXISTS}）
      */
-    public UUID addVariant(@NonNull VariantCode variantCode, @NonNull List<String> axisValues, @NonNull Instant now) {
+    public VariantId addVariant(@NonNull VariantId variantId, @NonNull VariantCode variantCode, @NonNull List<String> axisValues,
+                                @NonNull Instant now) {
         verifyAxisValues(axisValues);
         if (!canAddVariant(axes.size(), variants.size())) {
             throw BusinessException.of(ProductErrorCode.SINGLE_VARIANT_ONLY);
@@ -391,7 +398,7 @@ public class Product extends AggregateRoot {
         if (variants.containsCode(variantCode)) {
             throw BusinessException.of(ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
         }
-        var variant = new Variant(UUID.randomUUID(), variantCode, axisValues, variants.nextDisplayOrder(), false, null);
+        var variant = new Variant(variantId, variantCode, axisValues, variants.nextDisplayOrder(), false, null);
         if (variants.containsAxisKey(variant.axisKey())) {
             throw BusinessException.of(ProductErrorCode.VARIANT_AXIS_VALUES_ALREADY_EXISTS);
         }
@@ -411,7 +418,7 @@ public class Product extends AggregateRoot {
      * @throws BusinessException C 側に表示されたことのある商品（{@code PRODUCT_ALREADY_SHOWN}）
      * @throws BusinessException 公開中の商品の最後のバリアント（{@code PRODUCT_HAS_NO_VARIANTS}）
      */
-    public void deleteVariant(@NonNull UUID variantId, @NonNull Instant now) {
+    public void deleteVariant(@NonNull VariantId variantId, @NonNull Instant now) {
         variants.require(variantId);
         if (hasBeenShown(now)) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_ALREADY_SHOWN);
@@ -434,7 +441,7 @@ public class Product extends AggregateRoot {
      * @param orderedIds 並べたい順のバリアント ID
      * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）。このときは何も変えない
      */
-    public void reorderVariants(@NonNull List<UUID> orderedIds) {
+    public void reorderVariants(@NonNull List<VariantId> orderedIds) {
         this.variants = variants.reorder(orderedIds);
     }
 
@@ -447,7 +454,7 @@ public class Product extends AggregateRoot {
      * @return 変わったら true。既に販売停止なら false
      * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
-    public boolean suspendVariant(@NonNull UUID variantId) {
+    public boolean suspendVariant(@NonNull VariantId variantId) {
         return changeSalesSuspended(variantId, true);
     }
 
@@ -460,7 +467,7 @@ public class Product extends AggregateRoot {
      * @return 変わったら true。販売停止でなければ false
      * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
-    public boolean resumeVariant(@NonNull UUID variantId) {
+    public boolean resumeVariant(@NonNull VariantId variantId) {
         return changeSalesSuspended(variantId, false);
     }
 
@@ -471,7 +478,7 @@ public class Product extends AggregateRoot {
      * @param assetId メディアモジュールのアセット ID
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
-    public void addImage(@NonNull UUID imageId, @NonNull UUID assetId) {
+    public void addImage(@NonNull ProductImageId imageId, @NonNull AssetId assetId) {
         verifyCanAddImage();
         this.images = images.add(new ProductImage(imageId, assetId, images.nextDisplayOrder()));
     }
@@ -484,7 +491,7 @@ public class Product extends AggregateRoot {
      * @param orderedIds 並べたい順の画像 ID
      * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）。このときは何も変えない
      */
-    public void reorderImages(@NonNull List<UUID> orderedIds) {
+    public void reorderImages(@NonNull List<ProductImageId> orderedIds) {
         this.images = images.reorder(orderedIds);
     }
 
@@ -497,7 +504,7 @@ public class Product extends AggregateRoot {
      * @return 削除した画像のアセット ID
      * @throws BusinessException 商品にない画像（{@code NOT_FOUND}）
      */
-    public UUID deleteImage(@NonNull UUID imageId) {
+    public AssetId deleteImage(@NonNull ProductImageId imageId) {
         var image = images.require(imageId);
 
         this.images = images.remove(imageId);
@@ -515,7 +522,7 @@ public class Product extends AggregateRoot {
      * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      * @throws BusinessException 商品にない画像（{@code INVALID_VARIANT_IMAGE}）
      */
-    public void setVariantImage(@NonNull UUID variantId, @Nullable UUID imageId) {
+    public void setVariantImage(@NonNull VariantId variantId, @Nullable ProductImageId imageId) {
         variants.require(variantId);
         if (imageId != null && !images.contains(imageId)) {
             throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_IMAGE);
@@ -642,7 +649,7 @@ public class Product extends AggregateRoot {
      * @return 変わったら true。既にその状態なら false
      * @throws BusinessException 商品にないバリアント（{@code NOT_FOUND}）
      */
-    private boolean changeSalesSuspended(UUID variantId, boolean salesSuspended) {
+    private boolean changeSalesSuspended(VariantId variantId, boolean salesSuspended) {
         var variant = variants.require(variantId);
         if (variant.salesSuspended() == salesSuspended) {
             return false;
@@ -729,8 +736,8 @@ public class Product extends AggregateRoot {
      * @param variants          バリアント
      * @param version           バージョン
      */
-    public record Snapshot(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
-                           PriceExclTax priceExclTax, Set<UUID> categoryIds, List<String> axes,
+    public record Snapshot(ProductId id, ProductCode productCode, String name, String description, TaxCategoryId taxCategoryId,
+                           PriceExclTax priceExclTax, Set<CategoryId> categoryIds, List<String> axes,
                            PublicationStatus status, @Nullable Instant firstShownAt, PublicationPeriod publicationPeriod,
                            List<ProductImage> images, List<Variant> variants, long version) {
     }

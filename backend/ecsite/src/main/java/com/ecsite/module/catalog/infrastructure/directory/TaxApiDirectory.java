@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.directory;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.tax.api.TaxRateApi;
@@ -11,7 +12,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税の腐敗防止層
@@ -49,7 +49,7 @@ class TaxApiDirectory implements TaxDirectory {
      * @return 有効な税率を持てば true
      */
     @Override
-    public boolean hasRateAt(UUID taxCategoryId, Instant instant) {
+    public boolean hasRateAt(TaxCategoryId taxCategoryId, Instant instant) {
         return taxRateApi.rateAt(taxCategoryId, instant).isPresent();
     }
 
@@ -62,7 +62,7 @@ class TaxApiDirectory implements TaxDirectory {
      * @return 税込価格。その時点で有効な税率がなければ空
      */
     @Override
-    public Optional<Money> priceInclTaxAt(UUID taxCategoryId, Money priceExclTax, Instant instant) {
+    public Optional<Money> priceInclTaxAt(TaxCategoryId taxCategoryId, Money priceExclTax, Instant instant) {
         return taxRateApi.rateAt(taxCategoryId, instant)
                 .map(ratePercent -> taxRateApi.priceInclTax(priceExclTax, ratePercent));
     }
@@ -74,8 +74,8 @@ class TaxApiDirectory implements TaxDirectory {
      * @return 税区分 ID → 率（%）
      */
     @Override
-    public Map<UUID, BigDecimal> ratesAt(Instant instant) {
-        var rates = new HashMap<UUID, BigDecimal>();
+    public Map<TaxCategoryId, BigDecimal> ratesAt(Instant instant) {
+        var rates = new HashMap<TaxCategoryId, BigDecimal>();
         for (var schedule : taxRateScheduleCache.schedules()) {
             schedule.rateAt(instant).ifPresent(rate -> rates.put(schedule.taxCategoryId(), rate));
         }

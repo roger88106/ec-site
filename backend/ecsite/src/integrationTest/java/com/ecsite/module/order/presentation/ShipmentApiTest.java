@@ -279,7 +279,7 @@ class ShipmentApiTest {
             ship(carrier, tracking).andExpect(status().isCreated());
 
             // 確認：この注文の出荷のイベントが 1 件で、業者が登録した業者
-            assertThat(events.stream(OrderShipped.class).filter(event -> event.orderId().equals(orderId)))
+            assertThat(events.stream(OrderShipped.class).filter(event -> event.orderId().value().equals(orderId)))
                     .singleElement()
                     .extracting(event -> event.carrier().name())
                     .isEqualTo(carrier);

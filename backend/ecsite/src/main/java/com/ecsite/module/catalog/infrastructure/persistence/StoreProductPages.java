@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
@@ -15,7 +16,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
@@ -52,7 +52,7 @@ class StoreProductPages {
      * @param orderBy 税込価格の式から、並び順を作る関数（同じ値は ID の順にする）
      * @return 商品の 1 ページ分
      */
-    PageResult<StoreProductSummaryView> find(PageRequest request, Instant now, Map<UUID, BigDecimal> rates,
+    PageResult<StoreProductSummaryView> find(PageRequest request, Instant now, Map<TaxCategoryId, BigDecimal> rates,
                                              Function<Field<Long>, Condition> filter,
                                              Function<Field<Long>, Collection<? extends OrderField<?>>> orderBy) {
         // 有効な税率がひとつもなければ、どの商品も税込価格を出せない（表示できない）

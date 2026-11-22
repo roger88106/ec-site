@@ -1,6 +1,8 @@
 package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.shipment.OrderShipmentCommandService;
@@ -9,8 +11,6 @@ import com.ecsite.module.order.domain.order.Carrier;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 /**
  * 注文の決済ゲートウェイサービス
@@ -50,7 +50,7 @@ public class OrderPaymentGatewayService {
      * @throws BusinessException 支払待ちでない（{@code ORDER_NOT_PAYABLE}）
      * @throws BusinessException 支払の期限の後（{@code ORDER_NOT_PAYABLE}）
      */
-    public String pageUrl(@NonNull UUID orderId, @NonNull UUID memberId) {
+    public String pageUrl(@NonNull OrderId orderId, @NonNull MemberId memberId) {
         var order = orderQueryService.getForMember(orderId, memberId);
         if (!order.awaitingPayment()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_PAYABLE);
@@ -74,7 +74,7 @@ public class OrderPaymentGatewayService {
      * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
      * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
-    public OrderShipment ship(@NonNull UUID orderId, @NonNull Carrier carrier, @NonNull String trackingNumber) {
+    public OrderShipment ship(@NonNull OrderId orderId, @NonNull Carrier carrier, @NonNull String trackingNumber) {
         // 出荷できるかの確認 ※出荷できなければ、売上を確定しない
         if (!orderQueryService.get(orderId).actions().shippable()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);

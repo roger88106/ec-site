@@ -1,5 +1,8 @@
 package com.ecsite.module.inventory.application.port;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
@@ -9,7 +12,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 在庫のクエリリポジトリ
@@ -22,7 +24,7 @@ public interface StockQueryRepository {
      * @param variantId バリアント ID
      * @return 在庫数。在庫が作られていなければ空
      */
-    Optional<Integer> findQuantity(UUID variantId);
+    Optional<Integer> findQuantity(VariantId variantId);
 
     /**
      * バリアントの調整履歴を取得する。
@@ -33,7 +35,7 @@ public interface StockQueryRepository {
      * @param request   ページの指定
      * @return 調整履歴。在庫が作られていなければ空
      */
-    Optional<PageResult<StockAdjustmentView>> findAdjustments(UUID variantId, PageRequest request);
+    Optional<PageResult<StockAdjustmentView>> findAdjustments(VariantId variantId, PageRequest request);
 
     /**
      * 商品ごとに在庫数を合計する。
@@ -41,7 +43,7 @@ public interface StockQueryRepository {
      * @param productIds 商品 ID
      * @return 商品 ID → 在庫数の合計。在庫がまだない商品は含まない
      */
-    Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds);
+    Map<ProductId, Long> sumQuantitiesByProduct(Collection<ProductId> productIds);
 
     /**
      * 販売可能数（在庫数 − 有効な引当の合計）を返す。
@@ -51,5 +53,5 @@ public interface StockQueryRepository {
      * @param now              現在時刻
      * @return バリアント ID → 販売可能数。在庫のないバリアントは含まない
      */
-    Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId, Instant now);
+    Map<VariantId, Integer> findSellableQuantities(Collection<VariantId> variantIds, @Nullable ReservationHolderId excludedHolderId, Instant now);
 }

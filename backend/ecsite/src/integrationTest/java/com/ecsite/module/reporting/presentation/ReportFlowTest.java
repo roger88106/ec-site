@@ -282,8 +282,8 @@ class ReportFlowTest {
      */
     private void awaitCollected(Set<UUID> orderIds) {
         asyncEvents.awaitPublishedThenHandled(event ->
-                (event instanceof OrderStatusChanged order && orderIds.contains(order.orderId()))
-                        || (event instanceof DeliveryStatusChanged delivery && orderIds.contains(delivery.orderId())));
+                (event instanceof OrderStatusChanged order && orderIds.contains(order.orderId().value()))
+                        || (event instanceof DeliveryStatusChanged delivery && orderIds.contains(delivery.orderId().value())));
     }
 
     // ============================== 確認の補助 ==============================

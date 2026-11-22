@@ -182,7 +182,7 @@ order/
 │   └── job/            # 期限切れの注文手続きを削除するジョブと設定
 ├── domain/             # エラーの定義
 │   ├── quote/          # 見積もり、金額の内訳
-│   ├── checkout/       # 注文手続き
+│   ├── checkout/       # 注文手続きとその識別子
 │   └── order/          # 注文（集約）と値
 └── infrastructure/
     ├── persistence/    # リポジトリ、一覧の検索

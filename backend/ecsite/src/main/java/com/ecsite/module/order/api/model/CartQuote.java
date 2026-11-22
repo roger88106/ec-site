@@ -1,10 +1,12 @@
 package com.ecsite.module.order.api.model;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * カートの見積もり
@@ -14,7 +16,7 @@ import java.util.UUID;
  * @param amounts   金額の内訳
  * @param orderable 注文できるか（品目が 1 つ以上あり、すべて購入できる）
  */
-public record CartQuote(UUID cartId, List<Item> items, Amounts amounts, boolean orderable) {
+public record CartQuote(CartId cartId, List<Item> items, Amounts amounts, boolean orderable) {
 
     /**
      * 品目
@@ -30,7 +32,7 @@ public record CartQuote(UUID cartId, List<Item> items, Amounts amounts, boolean 
      * @param subtotal            小計
      * @param unpurchasableReason 購入できない理由。購入できれば null
      */
-    public record Item(UUID variantId, UUID productId, String productName, List<AxisValue> axisValues,
+    public record Item(VariantId variantId, ProductId productId, String productName, List<AxisValue> axisValues,
                        @Nullable String imageUrl, Money unitPriceExclTax, Money unitPriceInclTax, int quantity,
                        Money subtotal, @Nullable UnpurchasableReason unpurchasableReason) {
     }

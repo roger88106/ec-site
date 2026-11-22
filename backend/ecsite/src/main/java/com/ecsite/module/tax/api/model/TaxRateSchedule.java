@@ -1,5 +1,6 @@
 package com.ecsite.module.tax.api.model;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import org.jspecify.annotations.Nullable;
 
@@ -7,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税区分ごとの税率の一覧
@@ -17,7 +17,7 @@ import java.util.UUID;
  * @param taxCategoryId 税区分 ID
  * @param rates         税率の一覧
  */
-public record TaxRateSchedule(UUID taxCategoryId, List<Rate> rates) {
+public record TaxRateSchedule(TaxCategoryId taxCategoryId, List<Rate> rates) {
 
     /**
      * 指定した時点の率を返す。

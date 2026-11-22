@@ -1,7 +1,8 @@
 package com.ecsite.module.shipping.api.model;
 
+import com.ecsite.common.model.id.OrderId;
+
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 出荷の要約
@@ -12,7 +13,7 @@ import java.util.UUID;
  * @param status         配送状態
  * @param shippedAt      出荷日時
  */
-public record ShipmentSummary(UUID orderId, Carrier carrier, String trackingNumber, Status status, Instant shippedAt) {
+public record ShipmentSummary(OrderId orderId, Carrier carrier, String trackingNumber, Status status, Instant shippedAt) {
 
     /**
      * 配送業者

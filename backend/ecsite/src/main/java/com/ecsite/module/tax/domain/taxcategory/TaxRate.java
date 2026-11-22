@@ -3,6 +3,7 @@ package com.ecsite.module.tax.domain.taxcategory;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -10,8 +11,6 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
-
-import java.util.UUID;
 
 /**
  * 税率
@@ -31,7 +30,7 @@ public final class TaxRate {
     @Identity
     @EqualsAndHashCode.Include
     @NonNull
-    private final UUID id;
+    private final TaxRateId id;
 
     /**
      * 率

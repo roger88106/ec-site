@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.model.Authorization;
@@ -13,6 +14,7 @@ import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.VoidResult;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentAmountRange;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.Request;
 import org.hibernate.validator.constraints.time.DurationMax;
@@ -54,7 +56,7 @@ class StripePaymentGatewayTest {
     /**
      * 注文の ID
      */
-    private static final UUID ORDER_ID = UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0001");
+    private static final OrderId ORDER_ID = new OrderId(UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0001"));
 
     /**
      * Stripe の PaymentIntent の ID
@@ -64,7 +66,7 @@ class StripePaymentGatewayTest {
     /**
      * 支払の ID
      */
-    private static final UUID PAYMENT_ID = UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0002");
+    private static final PaymentId PAYMENT_ID = new PaymentId(UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0002"));
 
     /**
      * Stripe の支払画面（Checkout Session）の ID

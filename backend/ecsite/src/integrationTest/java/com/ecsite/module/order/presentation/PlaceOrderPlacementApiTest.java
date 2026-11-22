@@ -1,5 +1,7 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.support.config.IntegrationTest;
@@ -122,7 +124,7 @@ class PlaceOrderPlacementApiTest {
             var orderId = fixture.placeOrder();
 
             // 確認：状態の変更のイベントは、この注文の 1 件だけ
-            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(orderId);
+            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(new OrderId(orderId));
         }
 
         @Test
@@ -187,7 +189,7 @@ class PlaceOrderPlacementApiTest {
             // 確認：注文は 1 件で、販売可能数は 1 回分（2 枚）だけ減っている
             var variant = fixture.shirtVariant();
             assertThat(fixture.orderCount(checkoutId)).isEqualTo(1);
-            assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, SHIRT_STOCK - SHIRT_QUANTITY);
+            assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), SHIRT_STOCK - SHIRT_QUANTITY);
         }
     }
 

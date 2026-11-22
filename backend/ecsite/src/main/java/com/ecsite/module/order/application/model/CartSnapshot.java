@@ -1,9 +1,11 @@
 package com.ecsite.module.order.application.model;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * カートの中身
@@ -13,7 +15,7 @@ import java.util.UUID;
  * @param version  バージョン
  * @param lines    品目（入れた順）
  */
-public record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, List<Line> lines) {
+public record CartSnapshot(CartId cartId, @Nullable MemberId memberId, long version, List<Line> lines) {
 
     /**
      * リクエストした会員がカートを使えるか。
@@ -23,7 +25,7 @@ public record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, L
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 使えれば true
      */
-    public boolean isAccessibleBy(@Nullable UUID requester) {
+    public boolean isAccessibleBy(@Nullable MemberId requester) {
         return memberId == null || memberId.equals(requester);
     }
 
@@ -33,7 +35,7 @@ public record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, L
      * @param memberId 会員 ID
      * @return 会員のカートで、その会員が持ち主なら true
      */
-    public boolean isOwnedBy(UUID memberId) {
+    public boolean isOwnedBy(MemberId memberId) {
         return this.memberId != null && this.memberId.equals(memberId);
     }
 
@@ -43,6 +45,6 @@ public record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, L
      * @param variantId バリアント ID
      * @param quantity  数量
      */
-    public record Line(UUID variantId, int quantity) {
+    public record Line(VariantId variantId, int quantity) {
     }
 }

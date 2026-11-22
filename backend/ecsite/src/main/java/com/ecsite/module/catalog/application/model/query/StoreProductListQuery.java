@@ -1,10 +1,9 @@
 package com.ecsite.module.catalog.application.model.query;
 
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.common.model.value.Money;
 import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * C 側の商品一覧の条件
@@ -16,7 +15,7 @@ import java.util.UUID;
  * @param maxPrice   税込価格の上限（円、この値を含む）
  * @param sort       並び順
  */
-public record StoreProductListQuery(@Nullable UUID categoryId, @Nullable Money minPrice, @Nullable Money maxPrice,
+public record StoreProductListQuery(@Nullable CategoryId categoryId, @Nullable Money minPrice, @Nullable Money maxPrice,
                                     @NonNull Sort sort) {
 
     /**

@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
 import com.ecsite.common.message.MessageResolver;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.presentation.MockPageResponses;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -83,7 +84,7 @@ class MockCarrierController {
     @PostMapping("/mock-carrier/orders/{orderId}/notify")
     ResponseEntity<String> notifyStatus(@PathVariable UUID orderId, @RequestParam DeliveryStatus status,
                                         HttpServletRequest request) {
-        var shipment = shipmentRepository.findAllByOrderIds(List.of(orderId)).stream().findFirst();
+        var shipment = shipmentRepository.findAllByOrderIds(List.of(new OrderId(orderId))).stream().findFirst();
         if (shipment.isEmpty() || !MockCarrierPageHtml.NOTIFIABLE.contains(status)) {
             return MockPageResponses.html(HttpStatus.NOT_FOUND, MockCarrierPageHtml.notFound());
         }

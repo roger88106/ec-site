@@ -3,6 +3,8 @@ package com.ecsite.module.order.application.checkout;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.model.command.PlaceOrderCommand;
 import com.ecsite.module.order.application.model.view.PlacementResult;
 import com.ecsite.module.order.application.port.CartDirectory;
@@ -22,10 +24,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.UUID;
 import java.util.random.RandomGenerator;
 
 /**
@@ -44,11 +44,6 @@ public class OrderPlacementCommandService {
      * <p>ランダムな 6 桁が 1 日に重なる確率は小さいので、通常は 1 回で済む。
      */
     private static final int ORDER_NUMBER_ATTEMPTS = 10;
-
-    /**
-     * 注文番号の乱数
-     */
-    private final RandomGenerator random = new SecureRandom();
 
     /**
      * 注文手続きリポジトリ
@@ -94,6 +89,16 @@ public class OrderPlacementCommandService {
      * 時計
      */
     private final Clock clock;
+
+    /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
+     * 注文番号の乱数
+     */
+    private final RandomGenerator random;
 
     /**
      * 注文する。
@@ -160,7 +165,7 @@ public class OrderPlacementCommandService {
         // 注文作成 ※メールアドレスは、会員の token のもの（確認済み）を写す
         var address = ShippingAddress.of(command.name(), command.postalCode(),
                 addressArea(command.prefectureCode(), command.municipalityCode()), command.address(), command.phone());
-        var order = Order.place(UUID.randomUUID(), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
+        var order = Order.place(new OrderId(idGenerator.generate()), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
                 command.email(),
                 address,
                 BuyerProfile.of(command.birthdate(), command.gender(), now));

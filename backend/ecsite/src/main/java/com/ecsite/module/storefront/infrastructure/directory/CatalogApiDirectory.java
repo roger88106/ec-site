@@ -1,6 +1,7 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.CatalogApi;
@@ -19,7 +20,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 商品カタログの腐敗防止層
@@ -40,8 +40,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public PageResult<CatalogProduct> listProducts(ProductCondition condition, PageRequest request) {
-        var query = new ShownProductQuery(condition.categoryId(), condition.minPrice(), condition.maxPrice(),
-                toSort(condition.sort()));
+        var query = new ShownProductQuery(condition.categoryId(), condition.minPrice(), condition.maxPrice(), toSort(condition.sort()));
         return catalogApi.listShownProducts(query, request).map(CatalogApiDirectory::toProduct);
     }
 
@@ -57,7 +56,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      * {@inheritDoc}
      */
     @Override
-    public Optional<CatalogProductDetail> findProduct(UUID productId) {
+    public Optional<CatalogProductDetail> findProduct(ProductId productId) {
         return catalogApi.findShownProduct(productId).map(CatalogApiDirectory::toDetail);
     }
 
@@ -103,6 +102,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      * 商品カタログのカテゴリを、子孫まで含めて店舗の型に変換する（再帰）。
      */
     private static CatalogCategory toCategory(CategoryNode node) {
-        return new CatalogCategory(node.id(), node.name(), node.children().stream().map(CatalogApiDirectory::toCategory).toList());
+        return new CatalogCategory(node.id(), node.name(),
+                node.children().stream().map(CatalogApiDirectory::toCategory).toList());
     }
 }

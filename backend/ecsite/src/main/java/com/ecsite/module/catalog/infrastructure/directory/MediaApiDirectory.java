@@ -1,6 +1,9 @@
 package com.ecsite.module.catalog.infrastructure.directory;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
@@ -11,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * メディアの腐敗防止層
@@ -38,7 +40,7 @@ class MediaApiDirectory implements MediaDirectory {
      * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      */
     @Override
-    public ImageUploadView requestImageUpload(UUID productId, String contentType, long contentLength) {
+    public ImageUploadView requestImageUpload(ProductId productId, String contentType, long contentLength) {
         var upload = mediaApi.requestImageUpload(scope(productId), contentType, contentLength);
         return new ImageUploadView(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
     }
@@ -55,7 +57,7 @@ class MediaApiDirectory implements MediaDirectory {
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
     @Override
-    public PreparedImage prepareImage(UUID productId, UUID uploadId) {
+    public PreparedImage prepareImage(ProductId productId, UploadId uploadId) {
         return new PreparedImage(mediaApi.prepareImage(scope(productId), uploadId).assetId());
     }
 
@@ -87,7 +89,7 @@ class MediaApiDirectory implements MediaDirectory {
      * @param assetIds アセット ID
      */
     @Override
-    public void release(Collection<UUID> assetIds) {
+    public void release(Collection<AssetId> assetIds) {
         mediaApi.release(assetIds);
     }
 
@@ -98,7 +100,7 @@ class MediaApiDirectory implements MediaDirectory {
      * @return アセット ID → URL
      */
     @Override
-    public Map<UUID, URI> urls(Collection<UUID> assetIds) {
+    public Map<AssetId, URI> urls(Collection<AssetId> assetIds) {
         return mediaApi.urls(assetIds);
     }
 
@@ -109,7 +111,7 @@ class MediaApiDirectory implements MediaDirectory {
      *
      * <p>商品 ID にする。
      */
-    private static String scope(UUID productId) {
+    private static String scope(ProductId productId) {
         return productId.toString();
     }
 

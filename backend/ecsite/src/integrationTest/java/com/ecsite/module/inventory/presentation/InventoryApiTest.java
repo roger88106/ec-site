@@ -1,5 +1,8 @@
 package com.ecsite.module.inventory.presentation;
 
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
@@ -621,7 +624,7 @@ class InventoryApiTest {
         @DisplayName("注文に由来する調整は、運営者の操作でないので空")
         void leavesOrderAdjustmentEmpty() throws Exception {
             // 準備：注文のキャンセルで在庫を戻す
-            stockReservationApi.restore(Map.of(variantId, 2), UUID.randomUUID(), ORDER_NUMBER);
+            stockReservationApi.restore(Map.of(new VariantId(variantId), 2), new OrderId(UUID.randomUUID()), ORDER_NUMBER);
 
             // 操作：履歴を取得する
             var history = mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"));
@@ -719,9 +722,9 @@ class InventoryApiTest {
      */
     private void stockOverLimitByCancellation() throws Exception {
         adjust(variantId, MANUAL_LIMIT, "ARRIVAL", null).andExpect(status().isCreated());
-        var holderId = UUID.randomUUID();
-        var orderId = UUID.randomUUID();
-        var quantities = Map.of(variantId, 10);
+        var holderId = new ReservationHolderId(UUID.randomUUID());
+        var orderId = new OrderId(UUID.randomUUID());
+        var quantities = Map.of(new VariantId(variantId), 10);
         stockReservationApi.reserve(holderId, quantities, clock.instant().plusSeconds(600));
         stockReservationApi.commit(holderId, quantities, orderId, ORDER_NUMBER);
         adjust(variantId, 10, "ARRIVAL", null).andExpect(status().isCreated());

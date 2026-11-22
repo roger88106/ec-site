@@ -1,12 +1,12 @@
 package com.ecsite.module.catalog.application.port;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税の腐敗防止層の port
@@ -24,7 +24,7 @@ public interface TaxDirectory {
      * @param instant       時点
      * @return 有効な税率を持てば true
      */
-    boolean hasRateAt(UUID taxCategoryId, Instant instant);
+    boolean hasRateAt(TaxCategoryId taxCategoryId, Instant instant);
 
     /**
      * 指定した時点の税込価格を返す。
@@ -34,7 +34,7 @@ public interface TaxDirectory {
      * @param instant       時点
      * @return 税込価格。その時点で有効な税率がなければ空
      */
-    Optional<Money> priceInclTaxAt(UUID taxCategoryId, Money priceExclTax, Instant instant);
+    Optional<Money> priceInclTaxAt(TaxCategoryId taxCategoryId, Money priceExclTax, Instant instant);
 
     /**
      * 全ての税区分について、指定した時点で有効な率を返す。
@@ -44,5 +44,5 @@ public interface TaxDirectory {
      * @param instant 時点
      * @return 税区分 ID → 率（%）。有効な税率のない税区分は含まない
      */
-    Map<UUID, BigDecimal> ratesAt(Instant instant);
+    Map<TaxCategoryId, BigDecimal> ratesAt(Instant instant);
 }

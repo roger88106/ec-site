@@ -1,10 +1,11 @@
 package com.ecsite.module.storefront.application.port;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.storefront.application.model.CartView;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の腐敗防止層の port
@@ -20,5 +21,5 @@ public interface OrderDirectory {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return カートの表示。カートがない、または会員のカートで持ち主でなければ空
      */
-    Optional<CartView> findCart(UUID cartId, @Nullable UUID requester);
+    Optional<CartView> findCart(CartId cartId, @Nullable MemberId requester);
 }

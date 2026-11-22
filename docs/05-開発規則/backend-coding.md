@@ -93,6 +93,7 @@
 | パッケージ | 分けない理由 |
 |------------|--------------|
 | `catalog.infrastructure.persistence` | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
+| `common.model.id` | モジュールをまたぐ識別子の型。1 種類に 1 つの record で、分けても役割のまとまりができない |
 | `config.security` | 認証と認可の設定。組み立てられるクラスは package-private で、分けるとクラスを公開しなければならない |
 
 `PackageSizeTest` が表を読むので、表の書式を変えない。1 列目は、バッククォートで囲んだパッケージ名（`com.ecsite.` と `module.` を除く）にする。見出しの名前を変えるときは、`PACKAGE_SIZE_TITLE` も修正する。
@@ -105,6 +106,7 @@
 
 - 共通コード（`common/`）には、2 つ以上のモジュールが使うものと、横断の仕組み（エラーの応答・ログ・入力の検証のメッセージ・認証の情報の取り出し）だけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。
 - モジュールに共通の型は `common/model/` に置く（集約の基底は `base/`、値は `value/`）。共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけにする。
+- 例外：2 つ以上のモジュールが使う識別子の型は、規則を持たなくても `common/model/id/` に置く（「識別子の型」）。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけで、設定の値の金額は使う所で `Money` にする。
 - 金額の掛け算・割り算は、`Money` の操作と税の計算（`TaxCalculator`）の中だけで行い、端数の扱い（切り捨てなど）をメソッドで明示する。例外は商品の一覧の税込価格の絞り込みと並べ替えで、`catalog.infrastructure.persistence.PriceInclTaxField` が SQL で計算する ※2。
 
@@ -113,6 +115,36 @@
 理由：同じ規則（金額の端数の扱いなど）を 1 か所に置きつつ、共通の型を増やしすぎてモジュールが互いに依存しないようにするため。
 
 確認方法：金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー
+
+### 識別子の型
+
+- 集約と entity の識別子は、種類ごとの識別子の型（`XxxId`）にする。`XxxId` は UUID を 1 つ持つ record（`XxxId(@NonNull UUID value)`）にし、共通の interface `EntityId`（`common/model/base/`。jMolecules の `Identifier` を継承し、`UUID value()` を持つ）を実装する。
+- `toString()` を上書きし、UUID の文字列を返す（メッセージ、ログ、ファイルのキーなどで文字列に連結したときに、UUID の文字列のままにするため）。
+- 2 つ以上のモジュールが使う型は `common/model/id/` に、1 つのモジュールだけが使う型は、そのモジュールの domain に置く。
+- domain・application・`api/`・`event/`・共通のモデル（`common/model/`）の項目・引数・戻り値には、識別子の型を使い、UUID を使わない。UUID を使うのは、presentation、infrastructure、共通のクラス（`AdvisoryLocks`、`CreatedResponses`）だけにする。共通のクラスは UUID のまま使い、呼ぶ側が `id.value()` を渡す。例外は次の表のとおり。
+
+| 対象 | 扱い |
+|------|------|
+| イベント ID（`eventId`） | UUID のまま |
+| 受け取ったイベントの ID の写しを持つ記録（項目 `eventId` を持つクラス。例：レポートの状態の履歴） | イベント ID の写しを UUID のまま持つ |
+| 設定の型（`@ConfigurationProperties` を付けた record） | UUID のまま持ち、使う側で識別子の型に変換する |
+| ドメインの型を持たない DB の行の ID（在庫の引当の行、送信したメールの行） | 識別子の型を作らず、infrastructure の中で UUID のまま扱う |
+
+- 設定の型で UUID のまま持つのは、設定の値が環境変数の文字列から作られ、presentation と同じく外から入る値の境界であるため。文字列から識別子の型に変換する仕組み（Converter）は加えない（使う所が少なく、加える型と設定が増えるため）。
+- DB：jOOQ が生成するコードは UUID のままにし、リポジトリで変換する（`id.value()`、`new XxxId(uuid)`）。
+- JSON：共通の Jackson のモジュール（`EntityIdModule`）が、識別子の型を UUID の文字列にシリアライズし、そこからデシリアライズする。domain の型に Jackson の注釈を付けない。
+- API：生成した API の型は UUID のままにし、presentation で変換する。
+- 他のモジュールとの間（腐敗防止層、`api/`、`event/`）は、識別子の型のまま渡す。
+- 生成した API の型の null を取りうる ID（`JsonNullable`）は、`orElse(null)` で取り出し、null でないときだけ識別子の型にする（`map` は null を明示した値にも関数を適用し、例外になるため）。
+
+理由：引数の順や種類を取り違えたときにコンパイルで検出でき、API・DB・イベントの記録の JSON の形を変えないため。JSON の変換を共通のモジュールに置くのは、イベントの記録の JSON と、注文の JSON の列を、今と同じ形の JSON にし、既に記録したものをそのまま読めるようにするため。
+
+確認方法：
+
+- UUID を使う場所（例外を含む）：自動（ArchUnit。`IdentifierTypeTest`）
+- `toString()`：自動（`EntityIdStringTest`）
+- JSON の形：自動（`EntityIdModuleTest`）
+- 置き場所、DB と API の変換の場所、null を取りうる ID の変換：レビュー
 
 ## API の実装
 
@@ -306,6 +338,15 @@ DB の競合（PostgreSQL のデッドロック、ロック取得の失敗）は
 理由：テストで時刻を固定し、時刻で切り替わるデータを確認するため。
 
 確認方法：自動（ArchUnit）
+
+### 識別子と乱数は注入する
+
+- 識別子の値（UUID）は、注入した `IdGenerator`（`common.id`）で作り、識別子の型で包んで渡す（`new XxxId(idGenerator.generate())`。「識別子の型」）。`UUID.randomUUID()` を直接呼ばない。domain には識別子を引数で渡す（時刻の `Instant` と同じ）。`UUID.randomUUID()` を呼んでよいのは、`IdGenerator` の実装（`RandomIdGenerator`）と、イベント ID を作る `DomainEvent` の static メソッドだけ。
+- 乱数は、注入した `RandomGenerator` の Bean（`RandomConfig` が `SecureRandom` で作る）を使い、`new SecureRandom()`・`new Random()` を直接書かない。
+
+理由：テストで識別子と乱数を固定し、乱数に左右される処理（注文番号の衝突など）を、固定した値で確認するため。
+
+確認方法：自動（ArchUnit。`IdGenerationTest`）
 
 ### ローカルキャッシュには期限を付ける
 

@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.domain.sales.Basis;
@@ -284,6 +285,6 @@ class SalesTrendQueryTest {
      * @return 問い合わせ
      */
     private static SalesTrendQuery query(Basis basis, UUID productId, boolean excludeTax, boolean excludeShipping) {
-        return new SalesTrendQuery(PERIOD, Granularity.MONTH, basis, new SalesScope(productId, excludeTax, excludeShipping));
+        return new SalesTrendQuery(PERIOD, Granularity.MONTH, basis, new SalesScope(productId == null ? null : new ProductId(productId), excludeTax, excludeShipping));
     }
 }

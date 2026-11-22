@@ -1,9 +1,13 @@
 package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -11,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品画像のコマンドサービス
@@ -39,6 +42,11 @@ public class ProductImageCommandService {
     private final ProductLoader productLoader;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 用意した画像をアセットとして登録し、商品の画像の最後に加える。
      *
      * @param productId 商品 ID
@@ -49,7 +57,7 @@ public class ProductImageCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}。アセットの記録も取り消される）
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
-    public UUID saveAddedImage(@NonNull UUID productId, long version, @NonNull PreparedImage prepared) {
+    public ProductImageId saveAddedImage(@NonNull ProductId productId, long version, @NonNull PreparedImage prepared) {
         // 商品取得と枚数の確認
         var product = productLoader.get(productId, version);
         product.verifyCanAddImage();
@@ -58,7 +66,7 @@ public class ProductImageCommandService {
         mediaDirectory.registerImage(prepared);
 
         // 画像の追加と商品保存
-        var imageId = UUID.randomUUID();
+        var imageId = new ProductImageId(idGenerator.generate());
         product.addImage(imageId, prepared.assetId());
         productRepository.save(product);
         return imageId;
@@ -74,7 +82,7 @@ public class ProductImageCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）
      */
-    public void reorderImages(@NonNull UUID productId, @NonNull List<UUID> imageIds, long version) {
+    public void reorderImages(@NonNull ProductId productId, @NonNull List<ProductImageId> imageIds, long version) {
         // 商品取得
         var product = productLoader.get(productId, version);
 
@@ -96,7 +104,7 @@ public class ProductImageCommandService {
      * @throws BusinessException 商品か画像がない（{@code NOT_FOUND}）
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    public void deleteImage(@NonNull UUID productId, @NonNull UUID imageId, long version) {
+    public void deleteImage(@NonNull ProductId productId, @NonNull ProductImageId imageId, long version) {
         // 商品取得
         var product = productLoader.get(productId, version);
 
@@ -119,7 +127,7 @@ public class ProductImageCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException 商品にない画像（{@code INVALID_VARIANT_IMAGE}）
      */
-    public void setVariantImage(@NonNull UUID productId, @NonNull UUID variantId, @Nullable UUID imageId, long version) {
+    public void setVariantImage(@NonNull ProductId productId, @NonNull VariantId variantId, @Nullable ProductImageId imageId, long version) {
         // 商品取得
         var product = productLoader.get(productId, version);
 

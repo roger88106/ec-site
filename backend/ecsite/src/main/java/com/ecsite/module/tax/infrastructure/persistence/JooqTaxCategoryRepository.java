@@ -3,6 +3,7 @@ package com.ecsite.module.tax.infrastructure.persistence;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.tax.Keys;
 import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
@@ -14,6 +15,7 @@ import com.ecsite.module.tax.domain.taxcategory.TaxRate;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Name;
@@ -23,7 +25,6 @@ import org.springframework.stereotype.Repository;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
@@ -71,9 +72,9 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      * @return 税区分
      */
     @Override
-    public Optional<TaxCategory> findById(UUID id) {
+    public Optional<TaxCategory> findById(TaxCategoryId id) {
         return dsl.selectFrom(TAX_CATEGORY)
-                .where(TAX_CATEGORY.ID.eq(id))
+                .where(TAX_CATEGORY.ID.eq(id.value()))
                 .fetchOptional()
                 .map(this::toTaxCategory);
     }
@@ -89,7 +90,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
         CONSTRAINTS.run(() -> {
             // 税区分の登録
             dsl.insertInto(TAX_CATEGORY)
-                    .set(TAX_CATEGORY.ID, snapshot.id())
+                    .set(TAX_CATEGORY.ID, snapshot.id().value())
                     .set(TAX_CATEGORY.NAME, snapshot.name())
                     .set(TAX_CATEGORY.VERSION, snapshot.version())
                     .set(TAX_CATEGORY.CREATED_AT, now)
@@ -117,7 +118,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
                     .set(TAX_CATEGORY.NAME, snapshot.name())
                     .set(TAX_CATEGORY.VERSION, snapshot.version() + 1)
                     .set(TAX_CATEGORY.UPDATED_AT, clock.instant())
-                    .where(TAX_CATEGORY.ID.eq(snapshot.id()))
+                    .where(TAX_CATEGORY.ID.eq(snapshot.id().value()))
                     .and(TAX_CATEGORY.VERSION.eq(snapshot.version()))
                     .execute();
             if (affected == 0) {
@@ -126,8 +127,8 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
 
             // なくなった税率の削除
             dsl.deleteFrom(TAX_RATE)
-                    .where(TAX_RATE.TAX_CATEGORY_ID.eq(snapshot.id()))
-                    .and(TAX_RATE.ID.notIn(snapshot.rates().stream().map(TaxRate::id).toList()))
+                    .where(TAX_RATE.TAX_CATEGORY_ID.eq(snapshot.id().value()))
+                    .and(TAX_RATE.ID.notIn(snapshot.rates().stream().map(rate -> rate.id().value()).toList()))
                     .execute();
 
             // 税率の追加・更新
@@ -149,7 +150,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
         // 税率を含む復元の全体を、失敗の扱いの中で行う
         return RestoreGuard.restore("tax category", () -> {
             var rates = rateRecords.map(JooqTaxCategoryRepository::toTaxRate);
-            var snapshot = new TaxCategory.Snapshot(category.getId(), category.getName(), rates, category.getVersion());
+            var snapshot = new TaxCategory.Snapshot(new TaxCategoryId(category.getId()), category.getName(), rates, category.getVersion());
             return factory.restore(snapshot);
         });
     }
@@ -178,7 +179,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
                 TAX_RATE.EFFECTIVE_FROM, TAX_RATE.EFFECTIVE_TO);
         for (var rate : snapshot.rates()) {
             var period = rate.period();
-            insert = insert.values(rate.id(), snapshot.id(), rate.ratePercent().value(), period.effectiveFrom(),
+            insert = insert.values(rate.id().value(), snapshot.id().value(), rate.ratePercent().value(), period.effectiveFrom(),
                     period.effectiveTo());
         }
         insert.onConflict(TAX_RATE.ID)
@@ -207,7 +208,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      */
     private static TaxRate toTaxRate(TaxRateRecord record) {
         return new TaxRate(
-                record.getId(),
+                new TaxRateId(record.getId()),
                 RatePercent.of(record.getRatePercent()),
                 EffectivePeriod.of(record.getEffectiveFrom(), record.getEffectiveTo()));
     }

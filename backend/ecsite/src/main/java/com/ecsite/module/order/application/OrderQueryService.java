@@ -2,6 +2,8 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -32,7 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 注文の照会のサービス
@@ -71,7 +72,7 @@ public class OrderQueryService {
      * @return 注文の詳細
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      */
-    public OrderDetailView get(@NonNull UUID orderId) {
+    public OrderDetailView get(@NonNull OrderId orderId) {
         return toDetail(orderRepository.findById(orderId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
     }
@@ -85,7 +86,7 @@ public class OrderQueryService {
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      * @throws BusinessException 注文した会員でない（{@code NOT_FOUND}）
      */
-    public OrderDetailView getForMember(@NonNull UUID orderId, @NonNull UUID memberId) {
+    public OrderDetailView getForMember(@NonNull OrderId orderId, @NonNull MemberId memberId) {
         // 注文した会員でなければ、ないときと同じにする
         return toDetail(orderRepository.findById(orderId)
                 .filter(order -> order.memberId().equals(memberId))
@@ -99,7 +100,7 @@ public class OrderQueryService {
      * @param request  ページの指定
      * @return 注文の一覧
      */
-    public PageResult<OrderListItemView> listForMember(@NonNull UUID memberId, @NonNull PageRequest request) {
+    public PageResult<OrderListItemView> listForMember(@NonNull MemberId memberId, @NonNull PageRequest request) {
         return withPaymentsAndShipments(
                 orderQueryRepository.findOrders(OrderQueryRepository.Filter.ofMember(memberId), request));
     }
@@ -112,7 +113,7 @@ public class OrderQueryService {
      * @param memberId 会員 ID
      * @return 注文の詳細
      */
-    public List<OrderDetailView> listPendingForMember(@NonNull UUID memberId) {
+    public List<OrderDetailView> listPendingForMember(@NonNull MemberId memberId) {
         // 支払待ちの注文 ID と、その支払・出荷の取得
         var orderIds = orderRepository.findPendingIdsByMemberId(memberId);
         var payments = findPayments(orderIds);
@@ -148,7 +149,7 @@ public class OrderQueryService {
                                               boolean authorizationExpiring, boolean returned,
                                               @NonNull PageRequest request) {
         // 与信期限が近い・返送の絞り込み ※決済・出荷の API から注文 ID を受け取り、ID の条件にする（他のモジュールのテーブルは結合しない）
-        Set<UUID> orderIds = null;
+        Set<OrderId> orderIds = null;
         if (authorizationExpiring) {
             // 与信期限が近いのは「受付」の注文だけ（キャンセル済みの注文は、与信期限切れの支払が残っても除く）※印の判定 isAuthorizationExpiring と同じ規則
             orderIds = status == null || status == OrderStatus.ACCEPTED
@@ -179,9 +180,9 @@ public class OrderQueryService {
      * @param orderIds 注文 ID
      * @return 注文 ID → 支払。支払のない注文（決済を入れる前の注文）は含まない
      */
-    private Map<UUID, OrderPayment> findPayments(@NonNull Collection<UUID> orderIds) {
+    private Map<OrderId, OrderPayment> findPayments(@NonNull Collection<OrderId> orderIds) {
         var authorizations = paymentDirectory.findAuthorizations(orderIds);
-        var payments = new HashMap<UUID, OrderPayment>();
+        var payments = new HashMap<OrderId, OrderPayment>();
         paymentDirectory.find(orderIds).forEach((orderId, payment) -> {
             var authorization = authorizations.get(orderId);
             payments.put(orderId, new OrderPayment(payment.status(), payment.deadline(), payment.payable(),
@@ -197,7 +198,7 @@ public class OrderQueryService {
      * @param orderIds 注文 ID
      * @return 注文 ID → 出荷。出荷のない注文は含まない
      */
-    private Map<UUID, OrderShipment> findShipments(@NonNull Collection<UUID> orderIds) {
+    private Map<OrderId, OrderShipment> findShipments(@NonNull Collection<OrderId> orderIds) {
         return shippingDirectory.find(orderIds);
     }
 

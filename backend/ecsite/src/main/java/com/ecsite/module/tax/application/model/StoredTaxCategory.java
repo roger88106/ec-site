@@ -1,9 +1,9 @@
 package com.ecsite.module.tax.application.model;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 保存されている税区分
@@ -16,5 +16,5 @@ import java.util.UUID;
  * @param rates   税率の一覧（適用開始日時の古い順）
  * @param version バージョン
  */
-public record StoredTaxCategory(UUID id, String name, List<TaxCategoryView.TaxRateView> rates, long version) {
+public record StoredTaxCategory(TaxCategoryId id, String name, List<TaxCategoryView.TaxRateView> rates, long version) {
 }

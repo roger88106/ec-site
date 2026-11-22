@@ -2,6 +2,7 @@ package com.ecsite.module.order.application.shipment;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.UUID;
 
 /**
  * 出荷の登録の更新のサービス
@@ -52,7 +52,7 @@ public class OrderShipmentCommandService {
      * @throws BusinessException 送り状番号が形に合わない（{@code TRACKING_NUMBER_INVALID}）
      * @throws BusinessException 同じ注文にすでに出荷がある（{@code SHIPMENT_ALREADY_EXISTS}）
      */
-    public OrderShipment ship(@NonNull UUID orderId, @NonNull Carrier carrier, @NonNull String trackingNumber) {
+    public OrderShipment ship(@NonNull OrderId orderId, @NonNull Carrier carrier, @NonNull String trackingNumber) {
         // 注文取得
         var order = orderRepository.lockById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         if (!order.isShippable()) {

@@ -1,6 +1,8 @@
 package com.ecsite.module.order.api;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.AxisValue;
 import com.ecsite.module.order.api.model.CartQuote;
@@ -15,7 +17,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * カートの見積もりの API
@@ -38,7 +39,7 @@ public class OrderQuoteApi {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
-    public Optional<CartQuote> quoteCart(@NonNull UUID cartId, @Nullable UUID requester) {
+    public Optional<CartQuote> quoteCart(@NonNull CartId cartId, @Nullable MemberId requester) {
         return checkoutQueryService.quoteCart(cartId, requester).map(OrderQuoteApi::toCartQuote);
     }
 

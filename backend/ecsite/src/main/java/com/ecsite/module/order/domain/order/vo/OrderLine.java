@@ -1,12 +1,12 @@
 package com.ecsite.module.order.domain.order.vo;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 注文明細
@@ -26,7 +26,7 @@ import java.util.UUID;
  * @param subtotal         小計（税込単価 × 数量）
  */
 @ValueObject
-public record OrderLine(int lineNo, UUID variantId, String productCode, String variantCode, String productName,
+public record OrderLine(int lineNo, VariantId variantId, String productCode, String variantCode, String productName,
                         List<AxisValue> axisValues, Money unitPriceExclTax, BigDecimal ratePercent,
                         Money unitPriceInclTax, int quantity, Money subtotal) {
 

@@ -1,10 +1,11 @@
 package com.ecsite.module.media.domain;
 
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.UploadId;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -31,11 +32,11 @@ public final class AssetKeys {
      * @param uploadId 受付 ID
      * @return {範囲}/{uploadId}
      */
-    public static String upload(@NonNull String scope, @NonNull UUID uploadId) {
+    public static String upload(@NonNull String scope, @NonNull UploadId uploadId) {
         if (!SCOPE.matcher(scope).matches()) {
             throw new IllegalArgumentException("範囲は英数字とハイフンで 1〜64 文字にする：" + scope);
         }
-        return scope + "/" + uploadId;
+        return scope + "/" + uploadId.value();
     }
 
     /**
@@ -47,7 +48,7 @@ public final class AssetKeys {
      * @param format  形式
      * @return assets/{assetId}.{拡張子}
      */
-    public static String published(@NonNull UUID assetId, @NonNull ImageFormat format) {
-        return "assets/" + assetId + "." + format.extension();
+    public static String published(@NonNull AssetId assetId, @NonNull ImageFormat format) {
+        return "assets/" + assetId.value() + "." + format.extension();
     }
 }

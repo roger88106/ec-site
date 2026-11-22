@@ -1,6 +1,8 @@
 package com.ecsite.module.reporting.application;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.model.query.VariantSalesQuery;
 import com.ecsite.module.reporting.application.model.view.VariantSales;
@@ -106,9 +108,9 @@ class VariantSalesQueryTest {
             assertThat(report.variants())
                     .extracting(VariantSales::variantId, VariantSales::quantity, VariantSales::amount)
                     .containsExactlyInAnyOrder(
-                            tuple(blackM(), 5L, Money.of(lineInclTax(5))),
-                            tuple(whiteM(), 3L, Money.of(lineInclTax(3))),
-                            tuple(whiteL(), 0L, Money.ZERO));
+                            tuple(new VariantId(blackM()), 5L, Money.of(lineInclTax(5))),
+                            tuple(new VariantId(whiteM()), 3L, Money.of(lineInclTax(3))),
+                            tuple(new VariantId(whiteL()), 0L, Money.ZERO));
         }
 
         @Test
@@ -118,7 +120,7 @@ class VariantSalesQueryTest {
             var report = service.variants(query(Basis.ORDER, false));
 
             // 確認：黒・M、白・M、白・L の順
-            assertThat(report.variants()).extracting(VariantSales::variantId).containsExactly(blackM(), whiteM(), whiteL());
+            assertThat(report.variants()).extracting(VariantSales::variantId).containsExactly(new VariantId(blackM()), new VariantId(whiteM()), new VariantId(whiteL()));
         }
 
         @Test
@@ -127,10 +129,10 @@ class VariantSalesQueryTest {
             // 操作：どれも売れていない 6 月を集計する
             var report = service.variants(new VariantSalesQuery(
                     new ReportPeriod(LocalDate.parse("2031-06-01"), LocalDate.parse("2031-06-30")), Basis.ORDER,
-                    SalesScope.ofProduct(shirt.id, false)));
+                    SalesScope.ofProduct(new ProductId(shirt.id), false)));
 
             // 確認：商品カタログの並び（白・M、白・L、黒・M）
-            assertThat(report.variants()).extracting(VariantSales::variantId).containsExactlyElementsOf(shirt.variantIds);
+            assertThat(report.variants()).extracting(VariantSales::variantId).containsExactlyElementsOf(shirt.variantIds.stream().map(VariantId::new).toList());
         }
 
         @Test
@@ -171,9 +173,9 @@ class VariantSalesQueryTest {
             // 確認：出荷済みの注文の、黒・M 5 枚と白・M 1 枚だけ
             assertThat(report.variants()).extracting(VariantSales::variantId, VariantSales::quantity)
                     .containsExactly(
-                            tuple(blackM(), 5L),
-                            tuple(whiteM(), 1L),
-                            tuple(whiteL(), 0L));
+                            tuple(new VariantId(blackM()), 5L),
+                            tuple(new VariantId(whiteM()), 1L),
+                            tuple(new VariantId(whiteL()), 0L));
         }
 
         @Test
@@ -205,7 +207,7 @@ class VariantSalesQueryTest {
         @DisplayName("商品カタログにない商品は、見つからない誤り")
         void unknownProduct() {
             // 操作と確認：業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> service.variants(new VariantSalesQuery(PERIOD, Basis.ORDER, SalesScope.ofProduct(UUID.randomUUID(), false))),
+            assertBusinessError(() -> service.variants(new VariantSalesQuery(PERIOD, Basis.ORDER, SalesScope.ofProduct(new ProductId(UUID.randomUUID()), false))),
                     CommonErrorCode.NOT_FOUND);
         }
     }
@@ -220,7 +222,7 @@ class VariantSalesQueryTest {
      * @return 問い合わせ
      */
     private VariantSalesQuery query(Basis basis, boolean excludeTax) {
-        return new VariantSalesQuery(PERIOD, basis, SalesScope.ofProduct(shirt.id, excludeTax));
+        return new VariantSalesQuery(PERIOD, basis, SalesScope.ofProduct(new ProductId(shirt.id), excludeTax));
     }
 
     /**

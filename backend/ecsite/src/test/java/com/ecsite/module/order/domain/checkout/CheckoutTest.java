@@ -1,5 +1,8 @@
 package com.ecsite.module.order.domain.checkout;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,12 +43,12 @@ class CheckoutTest {
     /**
      * 支払待ちの注文 A の ID
      */
-    private static final UUID ORDER_A = UUID.randomUUID();
+    private static final OrderId ORDER_A = new OrderId(UUID.randomUUID());
 
     /**
      * 支払待ちの注文 B の ID
      */
-    private static final UUID ORDER_B = UUID.randomUUID();
+    private static final OrderId ORDER_B = new OrderId(UUID.randomUUID());
 
     // ============================== テスト ==============================
 
@@ -192,7 +195,7 @@ class CheckoutTest {
          * @return 注文手続き
          */
         private Checkout checkoutExpiringAt(Instant expiresAt) {
-            return new Checkout(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, expiresAt, NOW, Set.of());
+            return new Checkout(new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), new CartId(UUID.randomUUID()), 1, expiresAt, NOW, Set.of());
         }
     }
 
@@ -229,8 +232,8 @@ class CheckoutTest {
         @DisplayName("AC-406-17 始めた会員は、注文手続きの持ち主")
         void starterIsOwner() {
             // 準備：会員が始めた注文手続き
-            var memberId = UUID.randomUUID();
-            var checkout = Checkout.start(UUID.randomUUID(), memberId, UUID.randomUUID(), 1, NOW, TTL, Set.of());
+            var memberId = new MemberId(UUID.randomUUID());
+            var checkout = Checkout.start(new CheckoutId(UUID.randomUUID()), memberId, new CartId(UUID.randomUUID()), 1, NOW, TTL, Set.of());
 
             // 操作と確認：始めた会員は持ち主
             assertThat(checkout.isOwnedBy(memberId)).isTrue();
@@ -243,7 +246,7 @@ class CheckoutTest {
             var checkout = start(Set.of());
 
             // 操作と確認：他の会員は持ち主でない
-            assertThat(checkout.isOwnedBy(UUID.randomUUID())).isFalse();
+            assertThat(checkout.isOwnedBy(new MemberId(UUID.randomUUID()))).isFalse();
         }
     }
 
@@ -255,8 +258,8 @@ class CheckoutTest {
      * @param acknowledgedOrderIds 確認した支払待ちの注文の ID
      * @return 始めた注文手続き
      */
-    private static Checkout start(Set<UUID> acknowledgedOrderIds) {
-        return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, NOW, TTL, acknowledgedOrderIds);
+    private static Checkout start(Set<OrderId> acknowledgedOrderIds) {
+        return Checkout.start(new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), new CartId(UUID.randomUUID()), 1, NOW, TTL, acknowledgedOrderIds);
     }
 
     /**
@@ -266,6 +269,6 @@ class CheckoutTest {
      * @return 始めた注文手続き
      */
     private static Checkout startWithCartVersion(long cartVersion) {
-        return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), cartVersion, NOW, TTL, Set.of());
+        return Checkout.start(new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), new CartId(UUID.randomUUID()), cartVersion, NOW, TTL, Set.of());
     }
 }

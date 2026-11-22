@@ -261,7 +261,7 @@ class OrderPaymentCartRemovalApiTest {
 
         // 確認：受付に戻った変化のリスナーが終わっても、入れ直した行は残る
         asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
-                && changed.orderId().equals(orderId)
+                && changed.orderId().value().equals(orderId)
                 && changed.from() == OrderStatusChanged.Status.CANCELLATION_REQUESTED
                 && changed.to() == OrderStatusChanged.Status.ACCEPTED);
         assertThat(orders.cartVariantIds()).containsExactly(variantId.toString());
@@ -320,7 +320,7 @@ class OrderPaymentCartRemovalApiTest {
      * @return イベントの条件
      */
     private static Predicate<Object> accepted(UUID orderId) {
-        return event -> event instanceof OrderStatusChanged changed && changed.orderId().equals(orderId)
+        return event -> event instanceof OrderStatusChanged changed && changed.orderId().value().equals(orderId)
                 && changed.to() == OrderStatusChanged.Status.ACCEPTED;
     }
 

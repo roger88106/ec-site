@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jooq.CaseWhenStep;
@@ -30,7 +31,7 @@ final class PriceInclTaxField {
      * @param rates 税区分 ID → 率（%）
      * @return 税込価格（円）の式
      */
-    static Field<Long> of(Map<UUID, BigDecimal> rates) {
+    static Field<Long> of(Map<TaxCategoryId, BigDecimal> rates) {
         Field<BigDecimal> rate = rateField(rates);
         return DSL.floor(PRODUCT.PRICE_EXCL_TAX.cast(SQLDataType.NUMERIC)
                         .mul(rate.add(DSL.inline(BigDecimal.valueOf(100))))
@@ -44,11 +45,11 @@ final class PriceInclTaxField {
      * @param rates 税区分 ID → 率（%）
      * @return 率（%）の式
      */
-    private static Field<BigDecimal> rateField(Map<UUID, BigDecimal> rates) {
+    private static Field<BigDecimal> rateField(Map<TaxCategoryId, BigDecimal> rates) {
         // 税区分 ID ごとに WHEN を連ねる。どれにも当たらない（有効な税率のない）税区分は null になる
         CaseWhenStep<UUID, BigDecimal> step = null;
         for (var entry : rates.entrySet()) {
-            var key = DSL.inline(entry.getKey());
+            var key = DSL.inline(entry.getKey().value());
             var value = DSL.inline(entry.getValue(), SQLDataType.NUMERIC);
             step = step == null
                     ? DSL.choose(PRODUCT.TAX_CATEGORY_ID).when(key, value)

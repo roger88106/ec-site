@@ -4,12 +4,12 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.domain.DisplayOrders;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 画像の一覧
@@ -46,7 +46,7 @@ record ProductImages(List<ProductImage> list) {
      * @return 画像
      * @throws BusinessException 一覧にない画像（{@code NOT_FOUND}）
      */
-    ProductImage require(UUID imageId) {
+    ProductImage require(ProductImageId imageId) {
         return list.stream().filter(image -> image.id().equals(imageId)).findFirst()
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
@@ -57,7 +57,7 @@ record ProductImages(List<ProductImage> list) {
      * @param imageId 画像 ID
      * @return 含むなら true
      */
-    boolean contains(UUID imageId) {
+    boolean contains(ProductImageId imageId) {
         return list.stream().anyMatch(image -> image.id().equals(imageId));
     }
 
@@ -99,7 +99,7 @@ record ProductImages(List<ProductImage> list) {
      * @return 除いた一覧
      * @throws BusinessException 一覧にない画像（{@code NOT_FOUND}）
      */
-    ProductImages remove(UUID imageId) {
+    ProductImages remove(ProductImageId imageId) {
         require(imageId);
         return new ProductImages(list.stream().filter(image -> !image.id().equals(imageId)).toList());
     }
@@ -113,7 +113,7 @@ record ProductImages(List<ProductImage> list) {
      * @return 並べ替えた一覧
      * @throws BusinessException 全ての画像と過不足なく一致しない（{@code INVALID_IMAGE_ORDER}）
      */
-    ProductImages reorder(List<UUID> orderedIds) {
+    ProductImages reorder(List<ProductImageId> orderedIds) {
         return new ProductImages(DisplayOrders.reorder(list, ProductImage::id, ProductImage::withDisplayOrder, orderedIds,
                 ProductErrorCode.INVALID_IMAGE_ORDER));
     }

@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.presentation;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
@@ -113,7 +114,7 @@ class CartOwnReservationApiTest {
         orders.add(cartId, variant, 3);
         asyncEvents.awaitCartChanged(cartId);
         orders.startCheckout(cartId);
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 2);
+        assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), 2);
 
         // 操作：4 個に増やす（自分の引当を除けば、販売可能数は 5 で足りる）
         var result = change(variant, 4);

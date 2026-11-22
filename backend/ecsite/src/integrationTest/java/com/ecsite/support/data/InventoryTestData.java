@@ -1,8 +1,11 @@
 package com.ecsite.support.data;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.inventory.domain.stock.vo.StockAdjustmentId;
 import com.ecsite.support.security.TestTokens;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -62,7 +65,7 @@ public class InventoryTestData {
      * @param productId 商品 ID
      */
     public void create(UUID variantId, UUID productId) {
-        stockItemRepository.createIfAbsent(variantId, productId);
+        stockItemRepository.createIfAbsent(new VariantId(variantId), new ProductId(productId));
     }
 
     /**
@@ -75,10 +78,10 @@ public class InventoryTestData {
      * @param quantity  入荷の数量
      */
     public void stock(UUID variantId, UUID productId, int quantity) {
-        stockItemRepository.createIfAbsent(variantId, productId);
+        stockItemRepository.createIfAbsent(new VariantId(variantId), new ProductId(productId));
         if (quantity != 0) {
-            stockItemRepository.adjust(variantId,
-                    StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+            stockItemRepository.adjust(new VariantId(variantId),
+                    StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
         }
     }
 
@@ -91,7 +94,7 @@ public class InventoryTestData {
      */
     public void adjust(UUID variantId, int delta) {
         var reason = delta > 0 ? StockAdjustmentReason.ARRIVAL : StockAdjustmentReason.DAMAGE_OR_LOSS;
-        stockItemRepository.adjust(variantId, StockAdjustment.create(delta, reason, null, TestTokens.OPERATOR, clock.instant()));
+        stockItemRepository.adjust(new VariantId(variantId), StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), delta, reason, null, TestTokens.OPERATOR, clock.instant()));
     }
 
     /**

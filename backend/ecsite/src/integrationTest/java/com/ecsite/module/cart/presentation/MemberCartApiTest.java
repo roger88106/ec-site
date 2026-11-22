@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.presentation;
 
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
@@ -390,7 +391,7 @@ class MemberCartApiTest {
 
             // 確認：両方のカートの変更のイベントがある
             assertThat(events.stream(CartChanged.class)).extracting(CartChanged::cartId)
-                    .contains(carts.memberCartId(), carts.guestCartId());
+                    .contains(new CartId(carts.memberCartId()), new CartId(carts.guestCartId()));
         }
 
         @Test

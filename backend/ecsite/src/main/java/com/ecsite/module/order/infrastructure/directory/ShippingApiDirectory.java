@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.model.view.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
@@ -13,7 +14,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -34,7 +34,7 @@ class ShippingApiDirectory implements ShippingDirectory {
      * {@inheritDoc}
      */
     @Override
-    public OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
+    public OrderShipment create(OrderId orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
         return toShipment(shippingApi.create(orderId, toShippingCarrier(carrier), trackingNumber, shippedAt));
     }
 
@@ -42,7 +42,7 @@ class ShippingApiDirectory implements ShippingDirectory {
      * {@inheritDoc}
      */
     @Override
-    public Map<UUID, OrderShipment> find(Collection<UUID> orderIds) {
+    public Map<OrderId, OrderShipment> find(Collection<OrderId> orderIds) {
         return shippingApi.find(orderIds).stream()
                 .collect(Collectors.toMap(ShipmentSummary::orderId, ShippingApiDirectory::toShipment));
     }
@@ -51,7 +51,7 @@ class ShippingApiDirectory implements ShippingDirectory {
      * {@inheritDoc}
      */
     @Override
-    public List<UUID> returnedOrderIds() {
+    public List<OrderId> returnedOrderIds() {
         return shippingApi.returnedOrderIds();
     }
 

@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application.category;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.module.catalog.application.model.view.CategoryNodeView;
 import com.ecsite.module.catalog.application.model.view.CategoryView;
 import com.ecsite.module.catalog.application.port.CategoryQueryRepository;
@@ -16,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * カテゴリのクエリサービス
@@ -38,7 +38,7 @@ public class CategoryQueryService {
      */
     public List<CategoryNodeView> getCategoryTree() {
         // 親カテゴリ ID → 子カテゴリ（並び順を保つ）。最上位は null をキーにする
-        Map<UUID, List<CategoryView>> childrenByParent = new HashMap<>();
+        Map<CategoryId, List<CategoryView>> childrenByParent = new HashMap<>();
         for (var category : categoryQueryRepository.findAll()) {
             childrenByParent.computeIfAbsent(category.parentId(), key -> new ArrayList<>()).add(category);
         }
@@ -52,7 +52,7 @@ public class CategoryQueryService {
      * @return カテゴリ（子カテゴリを含まない）
      * @throws BusinessException カテゴリがない（{@code NOT_FOUND}）
      */
-    public CategoryView getCategory(@NonNull UUID id) {
+    public CategoryView getCategory(@NonNull CategoryId id) {
         return categoryQueryRepository.findById(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
@@ -65,7 +65,7 @@ public class CategoryQueryService {
      * @param childrenByParent 親カテゴリ ID → 子カテゴリ
      * @return 木の節の一覧
      */
-    private static List<CategoryNodeView> toNodes(@Nullable UUID parentId, Map<UUID, List<CategoryView>> childrenByParent) {
+    private static List<CategoryNodeView> toNodes(@Nullable CategoryId parentId, Map<CategoryId, List<CategoryView>> childrenByParent) {
         return childrenByParent.getOrDefault(parentId, List.of()).stream()
                 .map(category -> new CategoryNodeView(
                         category.id(),

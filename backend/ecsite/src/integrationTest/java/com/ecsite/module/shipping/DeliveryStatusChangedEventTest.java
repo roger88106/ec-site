@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -85,7 +86,7 @@ class DeliveryStatusChangedEventTest {
         @DisplayName("出荷を作ると、前の配送状態がなく、後が出荷済みのイベントが出る")
         void emitsShippedOnCreate() {
             // 操作：出荷を作る
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
 
             // 確認：出荷済みのイベントだけ
@@ -99,7 +100,7 @@ class DeliveryStatusChangedEventTest {
         @DisplayName("通知で配送状態が進むたびに、前と後の配送状態と、通知の発生日時のイベントが出る")
         void emitsOnEachAdvance() throws Exception {
             // 準備：出荷を作る
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
 
             // 操作：1 分後に配達中、3 分後に配達完了を通知する
@@ -122,7 +123,7 @@ class DeliveryStatusChangedEventTest {
         @DisplayName("DC-548-5 通知で配送状態が進んだときのイベントの発生日時は、処理した時刻でなく、通知の発生日時になる")
         void usesOccurredAtOfNotification() throws Exception {
             // 準備：出荷を作り、時計を 10 分後にする
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
             at(10);
 
@@ -139,7 +140,7 @@ class DeliveryStatusChangedEventTest {
         @DisplayName("返送の通知で、出荷済みから返送へのイベントが出る")
         void emitsOnReturn() throws Exception {
             // 準備：出荷を作る
-            shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
+            shippingApi.create(new OrderId(UUID.randomUUID()), ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
 
             // 操作：返品を通知する
             notifyStatus("返品");
@@ -159,7 +160,7 @@ class DeliveryStatusChangedEventTest {
         @DisplayName("同じ配送状態の通知が重ねて届いても、2 回目ではイベントが出ない")
         void doesNotEmitOnDuplicate() throws Exception {
             // 準備：出荷を作り、1 分後に配達中を通知する
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
             at(1);
             notifyStatus("配達中");
@@ -181,7 +182,7 @@ class DeliveryStatusChangedEventTest {
         @DisplayName("配達完了の後に、配達中と返送の通知が届いても、イベントが出ない")
         void doesNotEmitOnGoingBack() throws Exception {
             // 準備：出荷を作り、3 分後に配達完了を通知する
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, TRACKING_NUMBER, NOW);
             at(3);
             notifyStatus("配達完了");

@@ -1,11 +1,13 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +19,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 
@@ -37,14 +38,14 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
      * {@inheritDoc}
      */
     @Override
-    public List<PaymentSummaryView> findSummaries(Collection<UUID> orderIds) {
+    public List<PaymentSummaryView> findSummaries(Collection<OrderId> orderIds) {
         if (orderIds.isEmpty()) {
             return List.of();
         }
         return dsl.select(PAYMENT_.ORDER_ID, PAYMENT_.STATUS, PAYMENT_.DEADLINE)
                 .from(PAYMENT_)
-                .where(PAYMENT_.ORDER_ID.in(orderIds))
-                .fetch(r -> new PaymentSummaryView(r.get(PAYMENT_.ORDER_ID),
+                .where(PAYMENT_.ORDER_ID.in(orderIds.stream().map(OrderId::value).toList()))
+                .fetch(r -> new PaymentSummaryView(new OrderId(r.get(PAYMENT_.ORDER_ID)),
                         RestoreGuard.restore("payment", () -> PaymentStatus.valueOf(r.get(PAYMENT_.STATUS))),
                         r.get(PAYMENT_.DEADLINE)));
     }
@@ -53,7 +54,7 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
      * {@inheritDoc}
      */
     @Override
-    public List<UUID> findOrderIdsAuthorizedUntil(Instant latestAuthorizedAt) {
+    public List<OrderId> findOrderIdsAuthorizedUntil(Instant latestAuthorizedAt) {
         // 与信期限を気にする状態の名前（部分インデックスの条件と同じ）
         var watched = Arrays.stream(PaymentStatus.values())
                 .filter(PaymentStatus::watchesAuthorizationDeadline)
@@ -64,7 +65,7 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .where(PAYMENT_.STATUS.in(watched))
                 .and(PAYMENT_.AUTHORIZED_AT.le(latestAuthorizedAt))
                 .orderBy(PAYMENT_.AUTHORIZED_AT)
-                .fetch(PAYMENT_.ORDER_ID);
+                .fetch(r -> new OrderId(r.get(PAYMENT_.ORDER_ID)));
     }
 
     /**
@@ -88,7 +89,7 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .and(PAYMENT_.CAPTURE_REQUESTED_AT.le(latestRequestedAt))
                 .orderBy(PAYMENT_.CAPTURE_REQUESTED_AT, PAYMENT_.ID)
                 .limit(limit)
-                .fetch(r -> new CaptureReconcileView(r.get(PAYMENT_.ID),
+                .fetch(r -> new CaptureReconcileView(new PaymentId(r.get(PAYMENT_.ID)),
                         // 与信済みの行には与信の参照がある（DB の値の破損は復元の失敗にする）
                         RestoreGuard.restore("payment", () -> Objects.requireNonNull(r.get(PAYMENT_.AUTHORIZATION_REF))),
                         r.get(PAYMENT_.CAPTURE_REQUESTED_AT)));
@@ -107,7 +108,7 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNull())
                 .orderBy(PAYMENT_.DEADLINE, PAYMENT_.ID)
                 .limit(limit)
-                .fetch(r -> new PastDeadlinePaymentView(r.get(PAYMENT_.ID),
+                .fetch(r -> new PastDeadlinePaymentView(new PaymentId(r.get(PAYMENT_.ID)),
                         // 支払画面の ID と URL は、DB の制約で両方あるか両方ないか。
                         // 制約が破られた 1 行で検索の全体が失敗しないように、両方あるときだけ作る
                         r.get(PAYMENT_.PAGE_ID) == null || r.get(PAYMENT_.PAGE_URL) == null
@@ -126,6 +127,6 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNotNull())
                 .orderBy(PAYMENT_.AWAITING_AUTHORIZATION_SINCE, PAYMENT_.ID)
                 .limit(limit)
-                .fetch(r -> new AwaitingAuthorizationPaymentView(r.get(PAYMENT_.ID), r.get(PAYMENT_.PAGE_ID)));
+                .fetch(r -> new AwaitingAuthorizationPaymentView(new PaymentId(r.get(PAYMENT_.ID)), r.get(PAYMENT_.PAGE_ID)));
     }
 }

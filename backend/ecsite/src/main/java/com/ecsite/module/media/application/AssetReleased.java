@@ -1,6 +1,7 @@
 package com.ecsite.module.media.application;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.PendingAsset;
 
@@ -19,7 +20,7 @@ import java.util.UUID;
  * @param assetId    アセット ID
  * @param storageKey 配信のバケットのキー
  */
-record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String storageKey) implements DomainEvent {
+record AssetReleased(UUID eventId, Instant occurredAt, AssetId assetId, String storageKey) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -29,7 +30,7 @@ record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String stor
      * @return イベント
      */
     public static AssetReleased of(Instant occurredAt, Asset asset) {
-        return new AssetReleased(UUID.randomUUID(), occurredAt, asset.id(), asset.storageKey());
+        return new AssetReleased(DomainEvent.newEventId(), occurredAt, asset.id(), asset.storageKey());
     }
 
     /**
@@ -40,6 +41,6 @@ record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String stor
      * @return イベント
      */
     public static AssetReleased of(Instant occurredAt, PendingAsset pending) {
-        return new AssetReleased(UUID.randomUUID(), occurredAt, pending.id(), pending.storageKey());
+        return new AssetReleased(DomainEvent.newEventId(), occurredAt, pending.id(), pending.storageKey());
     }
 }

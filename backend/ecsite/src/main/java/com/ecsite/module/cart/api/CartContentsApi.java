@@ -1,6 +1,9 @@
 package com.ecsite.module.cart.api;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.api.model.CartContents;
 import com.ecsite.module.cart.application.CartService;
 import com.ecsite.module.cart.application.model.CartContentsView;
@@ -11,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * カートの API
@@ -33,7 +35,7 @@ public class CartContentsApi {
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空
      */
-    public Optional<CartContents> find(@NonNull UUID cartId) {
+    public Optional<CartContents> find(@NonNull CartId cartId) {
         return cartService.findContents(cartId).map(CartContentsApi::toContents);
     }
 
@@ -43,7 +45,7 @@ public class CartContentsApi {
      * @param memberId 会員 ID
      * @return カート ID。会員のカートがなければ空
      */
-    public Optional<UUID> findMemberCartId(UUID memberId) {
+    public Optional<CartId> findMemberCartId(MemberId memberId) {
         return cartService.findMemberCartId(memberId);
     }
 
@@ -66,7 +68,7 @@ public class CartContentsApi {
      * @param addedUntil 除く品目を入れた日時の上限
      * @throws BusinessException 読み込んだ後に他で変更された（{@code CONCURRENT_MODIFICATION}）
      */
-    public void removeItems(@NonNull UUID cartId, @NonNull Collection<UUID> variantIds, Instant addedUntil) {
+    public void removeItems(@NonNull CartId cartId, @NonNull Collection<VariantId> variantIds, Instant addedUntil) {
         cartService.removeItems(cartId, variantIds, addedUntil);
     }
 }

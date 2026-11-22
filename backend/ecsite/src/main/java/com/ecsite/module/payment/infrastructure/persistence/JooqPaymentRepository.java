@@ -4,9 +4,11 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.DomainEvents;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.payment.tables.records.PaymentRecord;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -20,7 +22,6 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 
@@ -60,8 +61,8 @@ class JooqPaymentRepository implements PaymentRepository {
         var now = clock.instant();
         var record = dsl.newRecord(PAYMENT_);
         writeState(record, snapshot);
-        record.setId(snapshot.id());
-        record.setOrderId(snapshot.orderId());
+        record.setId(snapshot.id().value());
+        record.setOrderId(snapshot.orderId().value());
         record.setAmount(snapshot.amount().yen());
         record.setDeadline(snapshot.deadline());
         record.setVersion(snapshot.version());
@@ -95,7 +96,7 @@ class JooqPaymentRepository implements PaymentRepository {
         record.setVersion(snapshot.version() + 1);
         record.setUpdatedAt(clock.instant());
         int updated = dsl.update(PAYMENT_).set(record)
-                .where(PAYMENT_.ID.eq(snapshot.id()))
+                .where(PAYMENT_.ID.eq(snapshot.id().value()))
                 .and(PAYMENT_.VERSION.eq(snapshot.version()))
                 .execute();
         if (updated == 0) {
@@ -108,16 +109,16 @@ class JooqPaymentRepository implements PaymentRepository {
      * {@inheritDoc}
      */
     @Override
-    public Optional<Payment> lockById(UUID id) {
-        return lock(PAYMENT_.ID.eq(id));
+    public Optional<Payment> lockById(PaymentId id) {
+        return lock(PAYMENT_.ID.eq(id.value()));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Optional<Payment> lockByOrderId(UUID orderId) {
-        return lock(PAYMENT_.ORDER_ID.eq(orderId));
+    public Optional<Payment> lockByOrderId(OrderId orderId) {
+        return lock(PAYMENT_.ORDER_ID.eq(orderId.value()));
     }
 
     /**
@@ -132,9 +133,9 @@ class JooqPaymentRepository implements PaymentRepository {
      * {@inheritDoc}
      */
     @Override
-    public Optional<Payment> findById(UUID id) {
+    public Optional<Payment> findById(PaymentId id) {
         return dsl.selectFrom(PAYMENT_)
-                .where(PAYMENT_.ID.eq(id))
+                .where(PAYMENT_.ID.eq(id.value()))
                 .fetchOptional()
                 .map(JooqPaymentRepository::restore);
     }
@@ -143,9 +144,9 @@ class JooqPaymentRepository implements PaymentRepository {
      * {@inheritDoc}
      */
     @Override
-    public Optional<Payment> findByOrderId(UUID orderId) {
+    public Optional<Payment> findByOrderId(OrderId orderId) {
         return dsl.selectFrom(PAYMENT_)
-                .where(PAYMENT_.ORDER_ID.eq(orderId))
+                .where(PAYMENT_.ORDER_ID.eq(orderId.value()))
                 .fetchOptional()
                 .map(JooqPaymentRepository::restore);
     }
@@ -154,12 +155,12 @@ class JooqPaymentRepository implements PaymentRepository {
      * {@inheritDoc}
      */
     @Override
-    public List<Payment> findByOrderIds(Collection<UUID> orderIds) {
+    public List<Payment> findByOrderIds(Collection<OrderId> orderIds) {
         if (orderIds.isEmpty()) {
             return List.of();
         }
         return dsl.selectFrom(PAYMENT_)
-                .where(PAYMENT_.ORDER_ID.in(orderIds))
+                .where(PAYMENT_.ORDER_ID.in(orderIds.stream().map(OrderId::value).toList()))
                 .fetch(JooqPaymentRepository::restore);
     }
 
@@ -199,8 +200,8 @@ class JooqPaymentRepository implements PaymentRepository {
         return RestoreGuard.restore("payment", () -> {
             var page = record.getPageId() == null ? null : new PaymentPage(record.getPageId(), record.getPageUrl());
             return Payment.restore(new Payment.Snapshot(
-                    record.getId(),
-                    record.getOrderId(),
+                    new PaymentId(record.getId()),
+                    new OrderId(record.getOrderId()),
                     Money.of(record.getAmount()),
                     record.getDeadline(),
                     PaymentStatus.valueOf(record.getStatus()),

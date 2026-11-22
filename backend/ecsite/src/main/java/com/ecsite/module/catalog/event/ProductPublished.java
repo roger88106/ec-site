@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.ProductId;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -14,7 +15,7 @@ import java.util.UUID;
  * @param occurredAt 発生時刻
  * @param productId  商品 ID
  */
-public record ProductPublished(UUID eventId, Instant occurredAt, UUID productId) implements DomainEvent {
+public record ProductPublished(UUID eventId, Instant occurredAt, ProductId productId) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -23,7 +24,7 @@ public record ProductPublished(UUID eventId, Instant occurredAt, UUID productId)
      * @param productId  商品 ID
      * @return イベント
      */
-    public static ProductPublished of(Instant occurredAt, UUID productId) {
-        return new ProductPublished(UUID.randomUUID(), occurredAt, productId);
+    public static ProductPublished of(Instant occurredAt, ProductId productId) {
+        return new ProductPublished(DomainEvent.newEventId(), occurredAt, productId);
     }
 }

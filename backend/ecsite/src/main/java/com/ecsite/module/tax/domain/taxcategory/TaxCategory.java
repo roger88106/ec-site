@@ -2,9 +2,11 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -19,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ public class TaxCategory extends AggregateRoot {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final TaxCategoryId id;
 
     /**
      * 名称
@@ -76,7 +77,7 @@ public class TaxCategory extends AggregateRoot {
      * @param rates   税率の一覧
      * @param version バージョン
      */
-    private TaxCategory(@NonNull UUID id, String name, @NonNull List<TaxRate> rates, long version) {
+    private TaxCategory(@NonNull TaxCategoryId id, String name, @NonNull List<TaxRate> rates, long version) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(TaxErrorCode.INVALID_TAX_CATEGORY_NAME, List.of(NAME_MAX_LENGTH));
         }
@@ -94,7 +95,7 @@ public class TaxCategory extends AggregateRoot {
      * @return 税区分
      * @throws BusinessException 名称が 1 文字以上 {@value #NAME_MAX_LENGTH} 文字以内でない（{@code INVALID_TAX_CATEGORY_NAME}）
      */
-    static TaxCategory create(UUID id, String name) {
+    static TaxCategory create(TaxCategoryId id, String name) {
         return new TaxCategory(id, name, List.of(), 0);
     }
 
@@ -126,8 +127,8 @@ public class TaxCategory extends AggregateRoot {
      *
      * <p>検証に合わないときは、一覧を変えない。
      *
-     * @param drafts 置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する
-     * @param now    現在時刻
+     * @param drafts    置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する。新しい税率は {@code newId} を付ける
+     * @param now       現在時刻
      * @throws BusinessException 置き換え後の一覧が空（{@code TAX_RATES_REQUIRED}）
      * @throws BusinessException 税区分にない税率、または重複した税率を指定した（{@code INVALID_TAX_RATE_ID}）
      * @throws BusinessException 終了済みの税率を変更、または削除しようとした（{@code TAX_RATE_ENDED_UNCHANGEABLE}）
@@ -148,9 +149,9 @@ public class TaxCategory extends AggregateRoot {
         rates.list().forEach(current -> verifyChangeable(current, draftsById.get(current.id()), now));
         drafts.forEach(draft -> verifyNoPastDateTime(draft, currentById.get(draft.id()), now));
 
-        // ID のない新しい税率には ID を振り、一覧の形（期間の連続）を検証する
+        // ID のない新しい税率には案が持つ新しい ID を使い、一覧の形（期間の連続）を検証する
         var replaced = drafts.stream()
-                .map(draft -> new TaxRate(Objects.requireNonNullElseGet(draft.id(), UUID::randomUUID),
+                .map(draft -> new TaxRate(Objects.requireNonNullElse(draft.id(), draft.newId()),
                         draft.ratePercent(), draft.period()))
                 .toList();
         this.rates = new TaxRates(replaced);
@@ -165,8 +166,8 @@ public class TaxCategory extends AggregateRoot {
      * @param currentById 既存の税率
      * @return 既存の税率を指定した要素（ID → 要素）
      */
-    private static Map<UUID, TaxRateDraft> verifyReferences(List<TaxRateDraft> drafts, Map<UUID, TaxRate> currentById) {
-        var seen = new HashSet<UUID>();
+    private static Map<TaxRateId, TaxRateDraft> verifyReferences(List<TaxRateDraft> drafts, Map<TaxRateId, TaxRate> currentById) {
+        var seen = new HashSet<TaxRateId>();
         for (var draft : drafts) {
             // ID のある税率（今の税率の変更）は、税区分にあって重複しないこと。新しい税率は ID を持たない
             if (draft.id() != null && (!currentById.containsKey(draft.id()) || !seen.add(draft.id()))) {
@@ -248,7 +249,7 @@ public class TaxCategory extends AggregateRoot {
      * @param rates   税率の一覧
      * @param version バージョン
      */
-    public record Snapshot(UUID id, String name, List<TaxRate> rates, long version) {
+    public record Snapshot(TaxCategoryId id, String name, List<TaxRate> rates, long version) {
     }
 
     /**

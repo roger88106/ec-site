@@ -1,6 +1,9 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.config.TestcontainersConfig;
@@ -765,13 +768,13 @@ class ProductImageApiTest {
      */
     private long withNineteenImages(UUID productId) {
         transaction.executeWithoutResult(status -> {
-            var product = productRepository.findById(productId).orElseThrow();
+            var product = productRepository.findById(new ProductId(productId)).orElseThrow();
             for (int i = 1; i <= 19; i++) {
-                product.addImage(UUID.randomUUID(), UUID.randomUUID());
+                product.addImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID()));
             }
             productRepository.save(product);
         });
-        return productRepository.findById(productId).orElseThrow().version();
+        return productRepository.findById(new ProductId(productId)).orElseThrow().version();
     }
 
     /**

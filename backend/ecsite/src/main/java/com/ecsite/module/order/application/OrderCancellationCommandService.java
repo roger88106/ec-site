@@ -2,6 +2,9 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.ShippingDirectory;
@@ -19,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
@@ -68,7 +70,7 @@ public class OrderCancellationCommandService {
      * @throws BusinessException 申請できない注文（{@code CANCELLATION_NOT_REQUESTABLE}）
      * @throws BusinessException 理由が上限の文字数を超える（{@code INVALID_CANCELLATION_REASON}）
      */
-    public void request(@NonNull UUID orderId, @NonNull UUID memberId, @Nullable String reason) {
+    public void request(@NonNull OrderId orderId, @NonNull MemberId memberId, @Nullable String reason) {
         // 注文取得 ※注文した会員でなければ、ないときと同じにする
         var order = lock(orderId);
         if (!order.memberId().equals(memberId)) {
@@ -91,7 +93,7 @@ public class OrderCancellationCommandService {
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
-    public void approve(@NonNull UUID orderId, @NonNull Operator operator) {
+    public void approve(@NonNull OrderId orderId, @NonNull Operator operator) {
         changeAndRestore(orderId, order -> order.approveCancellation(operator, clock.instant()));
     }
 
@@ -103,7 +105,7 @@ public class OrderCancellationCommandService {
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      * @throws BusinessException キャンセル申請中でない（{@code CANCELLATION_NOT_PENDING}）
      */
-    public void reject(@NonNull UUID orderId, @NonNull Operator operator) {
+    public void reject(@NonNull OrderId orderId, @NonNull Operator operator) {
         // 注文取得
         var order = lock(orderId);
 
@@ -128,7 +130,7 @@ public class OrderCancellationCommandService {
      * @throws BusinessException 出荷済みで配送状態が返送でない（{@code SHIPPED_ORDER_NOT_RETURNED}）
      * @throws BusinessException 出荷済みで在庫に戻すかの指定がない（{@code RESTOCK_CHOICE_REQUIRED}）
      */
-    public void cancel(@NonNull UUID orderId, @NonNull String reason, @Nullable Boolean restock, @NonNull Operator operator) {
+    public void cancel(@NonNull OrderId orderId, @NonNull String reason, @Nullable Boolean restock, @NonNull Operator operator) {
         changeAndRestore(orderId,
                 order -> order.cancelByOperator(reason, restock, isReturned(order), operator, clock.instant()));
     }
@@ -141,7 +143,7 @@ public class OrderCancellationCommandService {
      * @param orderId 注文 ID
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      */
-    public void expirePayment(@NonNull UUID orderId) {
+    public void expirePayment(@NonNull OrderId orderId) {
         changeAndRestore(orderId, order -> order.expirePayment(clock.instant()));
     }
 
@@ -152,7 +154,7 @@ public class OrderCancellationCommandService {
      *
      * @throws BusinessException 注文がない（{@code NOT_FOUND}）
      */
-    private Order lock(UUID orderId) {
+    private Order lock(OrderId orderId) {
         return orderRepository.lockById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
@@ -178,7 +180,7 @@ public class OrderCancellationCommandService {
      * @param orderId 注文 ID
      * @param cancel  キャンセルにする操作。キャンセルにしたら true
      */
-    private void changeAndRestore(UUID orderId, Predicate<Order> cancel) {
+    private void changeAndRestore(OrderId orderId, Predicate<Order> cancel) {
         // 注文取得とキャンセル
         var order = lock(orderId);
         if (!cancel.test(order)) {
@@ -196,8 +198,8 @@ public class OrderCancellationCommandService {
     /**
      * 明細を、バリアント ID → 数量にする。
      */
-    private static Map<UUID, Integer> quantities(Order order) {
-        var quantities = new LinkedHashMap<UUID, Integer>();
+    private static Map<VariantId, Integer> quantities(Order order) {
+        var quantities = new LinkedHashMap<VariantId, Integer>();
         order.lines().forEach(line -> quantities.merge(line.variantId(), line.quantity(), Integer::sum));
         return quantities;
     }

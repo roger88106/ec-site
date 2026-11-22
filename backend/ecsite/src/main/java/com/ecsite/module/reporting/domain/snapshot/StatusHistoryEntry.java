@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
+import com.ecsite.common.model.id.OrderId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -19,7 +20,7 @@ import java.util.UUID;
  * @param cancellationKind キャンセルの種類。キャンセルでなければ null
  * @param restocked        キャンセルで在庫に戻したか。キャンセルでなければ null
  */
-public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @Nullable HistoryStatus from, HistoryStatus to,
+public record StatusHistoryEntry(UUID eventId, OrderId orderId, HistoryKind kind, @Nullable HistoryStatus from, HistoryStatus to,
                                  Instant occurredAt, @Nullable ReportCancellationKind cancellationKind, @Nullable Boolean restocked) {
 
     /**

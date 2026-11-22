@@ -1,10 +1,11 @@
 package com.ecsite.module.inventory.domain.stock.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 在庫のリポジトリ
@@ -21,7 +22,7 @@ public interface StockItemRepository {
      * @param variantId バリアント ID
      * @param productId 商品 ID
      */
-    void createIfAbsent(UUID variantId, UUID productId);
+    void createIfAbsent(VariantId variantId, ProductId productId);
 
     /**
      * バリアントの在庫と調整履歴を消す。
@@ -30,7 +31,7 @@ public interface StockItemRepository {
      *
      * @param variantId バリアント ID
      */
-    void deleteByVariantId(UUID variantId);
+    void deleteByVariantId(VariantId variantId);
 
     /**
      * 商品のすべての在庫と調整履歴を消す。
@@ -39,7 +40,7 @@ public interface StockItemRepository {
      *
      * @param productId 商品 ID
      */
-    void deleteByProductId(UUID productId);
+    void deleteByProductId(ProductId productId);
 
     /**
      * 在庫数に増減量を加え、調整履歴を記録する。
@@ -53,7 +54,7 @@ public interface StockItemRepository {
      * @throws BusinessException 運営者の調整で在庫数が上限を超える（{@code STOCK_QUANTITY_EXCEEDED}）
      * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
-    int adjust(UUID variantId, StockAdjustment adjustment);
+    int adjust(VariantId variantId, StockAdjustment adjustment);
 
     /**
      * 複数のバリアントの在庫数に増減量を加え、調整履歴を記録する。
@@ -66,5 +67,5 @@ public interface StockItemRepository {
      * @throws BusinessException 運営者の調整で在庫数が上限を超える（{@code STOCK_QUANTITY_EXCEEDED}）
      * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
-    Map<UUID, Integer> adjustAll(Map<UUID, StockAdjustment> adjustments);
+    Map<VariantId, Integer> adjustAll(Map<VariantId, StockAdjustment> adjustments);
 }

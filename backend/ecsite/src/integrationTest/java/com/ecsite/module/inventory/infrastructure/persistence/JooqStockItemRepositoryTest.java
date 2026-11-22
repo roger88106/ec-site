@@ -2,6 +2,8 @@ package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
@@ -10,6 +12,7 @@ import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.inventory.domain.stock.vo.StockAdjustmentId;
 import com.ecsite.support.async.Concurrently;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.security.TestTokens;
@@ -64,12 +67,12 @@ class JooqStockItemRepositoryTest {
     /**
      * 調整するバリアントの ID
      */
-    private UUID variantId;
+    private VariantId variantId;
 
     @BeforeEach
     void createStock() {
-        variantId = UUID.randomUUID();
-        repository.createIfAbsent(variantId, UUID.randomUUID());
+        variantId = new VariantId(UUID.randomUUID());
+        repository.createIfAbsent(variantId, new ProductId(UUID.randomUUID()));
     }
 
     // ============================== テスト ==============================
@@ -113,11 +116,11 @@ class JooqStockItemRepositoryTest {
         @DisplayName("在庫が作られていないバリアントへの調整は見つからない")
         void rejectsUnknownVariant() {
             // 準備：運営者の調整
-            var adjustment = StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW);
+            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), 1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW);
 
             // 操作と確認：在庫のないバリアントへの調整は NOT_FOUND
             assertBusinessError(() -> transactionTemplate.executeWithoutResult(
-                    status -> repository.adjust(UUID.randomUUID(), adjustment)), CommonErrorCode.NOT_FOUND);
+                    status -> repository.adjust(new VariantId(UUID.randomUUID()), adjustment)), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -295,7 +298,7 @@ class JooqStockItemRepositoryTest {
         @DisplayName("在庫が作られていないバリアントの履歴は見つからない")
         void returnsEmptyHistoryForUnknownVariant() {
             // 操作と確認：空
-            assertThat(queryRepository.findAdjustments(UUID.randomUUID(), PageRequest.of(1, 20))).isEmpty();
+            assertThat(queryRepository.findAdjustments(new VariantId(UUID.randomUUID()), PageRequest.of(1, 20))).isEmpty();
         }
     }
 
@@ -312,7 +315,7 @@ class JooqStockItemRepositoryTest {
      */
     private int adjust(int delta, StockAdjustmentReason reason) {
         var memo = reason == StockAdjustmentReason.OTHER ? MEMO : null;
-        var adjustment = StockAdjustment.create(delta, reason, memo, TestTokens.OPERATOR, NOW);
+        var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), delta, reason, memo, TestTokens.OPERATOR, NOW);
         return transactionTemplate.execute(status -> repository.adjust(variantId, adjustment));
     }
 
@@ -323,7 +326,7 @@ class JooqStockItemRepositoryTest {
      * @param adjustedAt 調整日時
      */
     private void adjustAt(int delta, Instant adjustedAt) {
-        var adjustment = StockAdjustment.create(delta, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, adjustedAt);
+        var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), delta, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, adjustedAt);
         transactionTemplate.execute(status -> repository.adjust(variantId, adjustment));
     }
 

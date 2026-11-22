@@ -1,6 +1,8 @@
 package com.ecsite.module.cart.application.job;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.application.CartService;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
@@ -251,10 +253,10 @@ class CartCleanupJobTest {
         void savingDeletedCartIsConcurrentModification() {
             // 準備：読み込んだ後に片付けで消し、読み込んだ方に品目を入れる
             var cartId = cartWithItem(NOW);
-            var loaded = cartRepository.findById(cartId).orElseThrow();
+            var loaded = cartRepository.findById(new CartId(cartId)).orElseThrow();
             clock.setInstant(AFTER_EXPIRY);
             job.cleanUp();
-            loaded.add(UUID.randomUUID(), 1, AFTER_EXPIRY);
+            loaded.add(new VariantId(UUID.randomUUID()), 1, AFTER_EXPIRY);
 
             // 操作と確認：同時の変更のエラー
             assertBusinessError(() -> cartRepository.save(loaded), CommonErrorCode.CONCURRENT_MODIFICATION);
@@ -368,11 +370,11 @@ class CartCleanupJobTest {
      * @return カート ID
      */
     private UUID cartWithItem(Instant changedAt) {
-        var cart = Cart.create(UUID.randomUUID(), changedAt);
+        var cart = Cart.create(new CartId(UUID.randomUUID()), changedAt);
         cartRepository.create(cart);
-        cart.add(UUID.randomUUID(), 1, changedAt);
+        cart.add(new VariantId(UUID.randomUUID()), 1, changedAt);
         cartRepository.save(cart);
-        return cart.id();
+        return cart.id().value();
     }
 
     /**

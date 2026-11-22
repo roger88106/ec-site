@@ -1,5 +1,6 @@
 package com.ecsite.support.data;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
@@ -90,7 +91,7 @@ public class PaymentTestData {
      */
     public UUID created(Instant orderedAt) {
         var orderId = UUID.randomUUID();
-        transactionTemplate.executeWithoutResult(status -> paymentApi.create(orderId, AMOUNT, orderedAt));
+        transactionTemplate.executeWithoutResult(status -> paymentApi.create(new OrderId(orderId), AMOUNT, orderedAt));
         return orderId;
     }
 
@@ -101,7 +102,7 @@ public class PaymentTestData {
      * @return 支払画面 ID
      */
     public String openPage(UUID orderId) {
-        var url = paymentApi.pageUrl(orderId).orElseThrow();
+        var url = paymentApi.pageUrl(new OrderId(orderId)).orElseThrow();
         return url.substring(url.lastIndexOf('/') + 1);
     }
 
@@ -140,7 +141,7 @@ public class PaymentTestData {
      */
     public UUID captured(Instant orderedAt) {
         var orderId = authorized(orderedAt);
-        paymentApi.capture(orderId);
+        paymentApi.capture(new OrderId(orderId));
         return orderId;
     }
 
@@ -161,7 +162,7 @@ public class PaymentTestData {
      * @return 支払の状態
      */
     public PaymentSummary.Status statusOf(UUID orderId) {
-        return paymentApi.find(List.of(orderId)).getFirst().status();
+        return paymentApi.find(List.of(new OrderId(orderId))).getFirst().status();
     }
 
     /**
@@ -175,6 +176,6 @@ public class PaymentTestData {
         if (paymentRepository == null) {
             throw new IllegalStateException("支払のバージョンを読むには、リポジトリを渡して作る");
         }
-        return paymentRepository.findByOrderId(orderId).orElseThrow().version();
+        return paymentRepository.findByOrderId(new OrderId(orderId)).orElseThrow().version();
     }
 }

@@ -1,5 +1,7 @@
 package com.ecsite.module.order.api;
 
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.api.model.AxisValue;
@@ -174,7 +176,7 @@ class OrderApiTest {
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：注文の見出しの項目
             assertHeader(snapshot, orderId);
@@ -187,7 +189,7 @@ class OrderApiTest {
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：郵便番号はハイフンなし、都道府県はコード
             assertThat(snapshot.postalCode()).isEqualTo("1000001");
@@ -201,7 +203,7 @@ class OrderApiTest {
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：年齢も性別も空
             assertThat(snapshot.buyerAge()).isNull();
@@ -215,7 +217,7 @@ class OrderApiTest {
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：金額の項目
             assertAmounts(snapshot);
@@ -228,7 +230,7 @@ class OrderApiTest {
             var orderId = orders.placePendingOrder(shirt.variantIds.getFirst(), QUANTITY);
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：明細が 1 行で、その項目
             assertThat(snapshot.lines()).singleElement()
@@ -248,7 +250,7 @@ class OrderApiTest {
             new ShippingTestData(mockMvc, mockCarrier, applicationContext).ship(orderId, Carrier.YAMATO, "123456789012");
 
             // 操作と確認：状態が出荷済み
-            assertThat(orderApi.find(orderId).orElseThrow().status()).isEqualTo(OrderStatusChanged.Status.SHIPPED);
+            assertThat(orderApi.find(new OrderId(orderId)).orElseThrow().status()).isEqualTo(OrderStatusChanged.Status.SHIPPED);
         }
 
         @Test
@@ -265,7 +267,7 @@ class OrderApiTest {
                     .andExpect(status().isNoContent());
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：キャンセルの項目
             assertThat(snapshot.status()).isEqualTo(OrderStatusChanged.Status.CANCELLED);
@@ -279,7 +281,7 @@ class OrderApiTest {
         @DisplayName("ない注文は空")
         void returnsEmptyForUnknownOrder() {
             // 操作と確認：ない注文 ID には空
-            assertThat(orderApi.find(UUID.randomUUID())).isEmpty();
+            assertThat(orderApi.find(new OrderId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -294,14 +296,14 @@ class OrderApiTest {
             var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
 
             // 操作と確認：会員のメールアドレス
-            assertThat(orderApi.findEmail(orderId)).contains(TestTokens.MEMBER_EMAIL);
+            assertThat(orderApi.findEmail(new OrderId(orderId))).contains(TestTokens.MEMBER_EMAIL);
         }
 
         @Test
         @DisplayName("DC-572-3 ない注文は空")
         void returnsEmptyForUnknownOrder() {
             // 操作と確認：ない注文 ID には空
-            assertThat(orderApi.findEmail(UUID.randomUUID())).isEmpty();
+            assertThat(orderApi.findEmail(new OrderId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -333,7 +335,7 @@ class OrderApiTest {
             doReturn(reduced).when(properties).shippingTaxCategoryId();
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：注文のときの 90 円（8% で求めると 74 円）
             assertThat(snapshot.shippingTax()).isEqualTo(Money.of(90));
@@ -347,7 +349,7 @@ class OrderApiTest {
             correctShippingRate("8");
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：注文のときの 90 円（8% で求めると 74 円）
             assertThat(snapshot.shippingTax()).isEqualTo(Money.of(90));
@@ -364,7 +366,7 @@ class OrderApiTest {
             correctShippingRate("8");
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認：直した税率 8% で求めた、1,000 × 8 / 108 の切り捨ての 74 円
             assertThat(snapshot.shippingTax()).isEqualTo(Money.of(74));
@@ -381,7 +383,7 @@ class OrderApiTest {
                     .execute();
 
             // 操作：注文を読む
-            var snapshot = orderApi.find(orderId).orElseThrow();
+            var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
 
             // 確認（前提）：送料が 0 円
             assertThat(snapshot.amounts().shippingFee()).isEqualTo(Money.ZERO);
@@ -452,7 +454,7 @@ class OrderApiTest {
      * @param orderId  注文 ID（注文のときに作るので、定数にできない）
      */
     private static void assertHeader(OrderSnapshot snapshot, UUID orderId) {
-        assertThat(snapshot.orderId()).isEqualTo(orderId);
+        assertThat(snapshot.orderId()).isEqualTo(new OrderId(orderId));
         assertThat(snapshot.orderNumber()).matches("20261008-\\d{6}");
         assertThat(snapshot.memberId()).isNotNull();
         assertThat(snapshot.orderedAt()).isEqualTo(NOW);
@@ -500,7 +502,7 @@ class OrderApiTest {
      */
     private static void assertLine(OrderSnapshot.Line line, UUID variantId) {
         assertThat(line.lineNo()).isEqualTo(1);
-        assertThat(line.variantId()).isEqualTo(variantId);
+        assertThat(line.variantId()).isEqualTo(new VariantId(variantId));
         assertThat(line.productName()).isEqualTo(PRODUCT_NAME);
         assertThat(line.axisValues()).containsExactly(new AxisValue(AXIS_NAME, AXIS_VALUE));
         assertThat(line.quantity()).isEqualTo(QUANTITY);

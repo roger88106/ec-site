@@ -1,6 +1,8 @@
 package com.ecsite.module.media.api;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.media.api.model.ImageUpload;
 import com.ecsite.module.media.api.model.PreparedImage;
 import com.ecsite.module.media.application.MediaService;
@@ -11,7 +13,6 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * メディアの API
@@ -63,7 +64,7 @@ public class MediaApi {
      * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
-    public PreparedImage prepareImage(@NonNull String scope, @NonNull UUID uploadId) {
+    public PreparedImage prepareImage(@NonNull String scope, @NonNull UploadId uploadId) {
         return new PreparedImage(mediaService.prepareImage(scope, uploadId));
     }
 
@@ -104,7 +105,7 @@ public class MediaApi {
      *
      * @param assetIds アセット ID
      */
-    public void release(@NonNull Collection<UUID> assetIds) {
+    public void release(@NonNull Collection<AssetId> assetIds) {
         mediaService.release(assetIds);
     }
 
@@ -114,7 +115,7 @@ public class MediaApi {
      * @param assetIds アセット ID
      * @return アセット ID → 配信の URL。ないアセットは含まない
      */
-    public Map<UUID, URI> urls(@NonNull Collection<UUID> assetIds) {
+    public Map<AssetId, URI> urls(@NonNull Collection<AssetId> assetIds) {
         return mediaService.urls(assetIds);
     }
 }

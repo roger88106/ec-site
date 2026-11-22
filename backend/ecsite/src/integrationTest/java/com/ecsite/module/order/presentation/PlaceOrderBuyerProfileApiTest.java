@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.api.OrderApi;
 import com.ecsite.module.order.api.model.OrderSnapshot;
 import com.ecsite.support.config.IntegrationTest;
@@ -202,7 +203,7 @@ class PlaceOrderBuyerProfileApiTest {
      * @return 年齢と性別の並び
      */
     private List<Object> reportedBuyer(UUID orderId) {
-        var snapshot = orderApi.find(orderId).orElseThrow();
+        var snapshot = orderApi.find(new OrderId(orderId)).orElseThrow();
         return Arrays.asList(snapshot.buyerAge(), snapshot.buyerGender());
     }
 }

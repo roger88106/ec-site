@@ -1,9 +1,8 @@
 package com.ecsite.common.model.value;
 
+import com.ecsite.common.model.id.OperatorId;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
-
-import java.util.UUID;
 
 /**
  * 操作した運営者（運営者の realm のアカウント）
@@ -14,5 +13,5 @@ import java.util.UUID;
  * @param name 氏名（姓 名）
  */
 @ValueObject
-public record Operator(@NonNull UUID id, @NonNull String name) {
+public record Operator(@NonNull OperatorId id, @NonNull String name) {
 }

@@ -1,11 +1,11 @@
 package com.ecsite.module.tax.domain.taxcategory.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税区分のリポジトリ
@@ -19,7 +19,7 @@ public interface TaxCategoryRepository {
      * @param id 税区分 ID
      * @return 税区分。なければ空
      */
-    Optional<TaxCategory> findById(UUID id);
+    Optional<TaxCategory> findById(TaxCategoryId id);
 
     /**
      * 税区分を登録する。

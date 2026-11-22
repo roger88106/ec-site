@@ -1,7 +1,10 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.data.CatalogTestData;
@@ -18,6 +21,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.support.data.OrderTestData.startCheckoutRequest;
@@ -200,7 +204,8 @@ final class CheckoutStartFixture {
      * @return 確認した注文の ID
      */
     Set<UUID> acknowledgedOrderIds(UUID checkoutId) {
-        return checkoutRepository.findById(checkoutId).orElseThrow().acknowledgedOrderIds();
+        return checkoutRepository.findById(new CheckoutId(checkoutId)).orElseThrow().acknowledgedOrderIds().stream().map(OrderId::value)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -219,7 +224,7 @@ final class CheckoutStartFixture {
      * @return 販売可能数
      */
     int sellable(UUID variant) {
-        return stockReservationApi.sellableQuantities(List.of(variant), null).get(variant);
+        return stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null).get(new VariantId(variant));
     }
 
     // ============================== 確認の補助 ==============================

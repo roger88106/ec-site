@@ -1,5 +1,7 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -108,8 +110,8 @@ class CheckoutStartApiTest {
             fixture.startCheckout(cartId);
 
             // 確認：販売可能数が、カートの数量だけ減っている
-            assertThat(stockReservationApi.sellableQuantities(List.of(shirt, cap), null))
-                    .containsEntry(shirt, 1).containsEntry(cap, 4);
+            assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(shirt), new VariantId(cap)), null))
+                    .containsEntry(new VariantId(shirt), 1).containsEntry(new VariantId(cap), 4);
         }
 
         @Test
@@ -525,6 +527,6 @@ class CheckoutStartApiTest {
         var scarce = fixture.stockedVariant(2);
         orders.add(cartId, plenty, 1);
         orders.add(cartId, scarce, 2);
-        stockReservationApi.reserve(UUID.randomUUID(), Map.of(scarce, 1), clock.instant().plus(RESERVATION_TTL));
+        stockReservationApi.reserve(new ReservationHolderId(UUID.randomUUID()), Map.of(new VariantId(scarce), 1), clock.instant().plus(RESERVATION_TTL));
     }
 }

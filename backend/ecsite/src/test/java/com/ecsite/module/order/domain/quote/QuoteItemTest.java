@@ -1,5 +1,8 @@
 package com.ecsite.module.order.domain.quote;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +56,7 @@ class QuoteItemTest {
      * @return バリアントの情報
      */
     private static VariantInfo variant() {
-        return new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(), Money.of(1000),
-                UUID.randomUUID(), null, true, false);
+        return new VariantInfo(new VariantId(UUID.randomUUID()), new ProductId(UUID.randomUUID()), "P-1", "P-1-1", "商品", List.of(), Money.of(1000),
+                new TaxCategoryId(UUID.randomUUID()), null, true, false);
     }
 }

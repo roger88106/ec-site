@@ -4,6 +4,11 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.DomainEvents;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.catalog.Keys;
 import com.ecsite.jooq.catalog.tables.records.ProductRecord;
@@ -15,21 +20,25 @@ import com.ecsite.module.catalog.domain.product.Variant;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
@@ -85,14 +94,15 @@ class JooqProductRepository implements ProductRepository {
      * @return 商品
      */
     @Override
-    public Optional<Product> findById(UUID id) {
+    public Optional<Product> findById(ProductId id) {
         var axes = ProductParts.axes(PRODUCT.ID);
         var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
         var found = dsl.select(PRODUCT.asterisk(), axes, categoryIds)
                 .from(PRODUCT)
-                .where(PRODUCT.ID.eq(id))
+                .where(PRODUCT.ID.eq(id.value()))
                 .fetchOptional();
-        return found.map(row -> toProduct(row.into(PRODUCT), List.of(row.get(axes)), Set.of(row.get(categoryIds))));
+        return found.map(row -> toProduct(row.into(PRODUCT), List.of(row.get(axes)),
+                Arrays.stream(row.get(categoryIds)).map(CategoryId::new).collect(Collectors.toUnmodifiableSet())));
     }
 
     /**
@@ -112,11 +122,11 @@ class JooqProductRepository implements ProductRepository {
         CONSTRAINTS.run(() -> {
             // 商品の登録
             dsl.insertInto(PRODUCT)
-                    .set(PRODUCT.ID, snapshot.id())
+                    .set(PRODUCT.ID, snapshot.id().value())
                     .set(PRODUCT.PRODUCT_CODE, snapshot.productCode().value())
                     .set(PRODUCT.NAME, snapshot.name())
                     .set(PRODUCT.DESCRIPTION, snapshot.description())
-                    .set(PRODUCT.TAX_CATEGORY_ID, snapshot.taxCategoryId())
+                    .set(PRODUCT.TAX_CATEGORY_ID, snapshot.taxCategoryId().value())
                     .set(PRODUCT.PRICE_EXCL_TAX, snapshot.priceExclTax().yen())
                     .set(PRODUCT.STATUS, snapshot.status().name())
                     .set(PRODUCT.FIRST_SHOWN_AT, snapshot.firstShownAt())
@@ -160,7 +170,7 @@ class JooqProductRepository implements ProductRepository {
             int affected = dsl.update(PRODUCT)
                     .set(PRODUCT.NAME, snapshot.name())
                     .set(PRODUCT.DESCRIPTION, snapshot.description())
-                    .set(PRODUCT.TAX_CATEGORY_ID, snapshot.taxCategoryId())
+                    .set(PRODUCT.TAX_CATEGORY_ID, snapshot.taxCategoryId().value())
                     .set(PRODUCT.PRICE_EXCL_TAX, snapshot.priceExclTax().yen())
                     .set(PRODUCT.STATUS, snapshot.status().name())
                     .set(PRODUCT.FIRST_SHOWN_AT, snapshot.firstShownAt())
@@ -168,7 +178,7 @@ class JooqProductRepository implements ProductRepository {
                     .set(PRODUCT.PUBLISH_END, snapshot.publicationPeriod().publishEnd())
                     .set(PRODUCT.VERSION, snapshot.version() + 1)
                     .set(PRODUCT.UPDATED_AT, clock.instant())
-                    .where(PRODUCT.ID.eq(snapshot.id()))
+                    .where(PRODUCT.ID.eq(snapshot.id().value()))
                     .and(PRODUCT.VERSION.eq(snapshot.version()))
                     .execute();
             if (affected == 0) {
@@ -197,7 +207,7 @@ class JooqProductRepository implements ProductRepository {
         var snapshot = product.toSnapshot();
 
         int affected = dsl.deleteFrom(PRODUCT)
-                .where(PRODUCT.ID.eq(snapshot.id()))
+                .where(PRODUCT.ID.eq(snapshot.id().value()))
                 .and(PRODUCT.VERSION.eq(snapshot.version()))
                 .execute();
         if (affected == 0) {
@@ -222,7 +232,7 @@ class JooqProductRepository implements ProductRepository {
         var insert = dsl.insertInto(PRODUCT_AXIS, PRODUCT_AXIS.PRODUCT_ID, PRODUCT_AXIS.POSITION, PRODUCT_AXIS.NAME);
         short position = 1;
         for (var axis : snapshot.axes()) {
-            insert = insert.values(snapshot.id(), position, axis);
+            insert = insert.values(snapshot.id().value(), position, axis);
             position++;
         }
         insert.execute();
@@ -237,20 +247,20 @@ class JooqProductRepository implements ProductRepository {
      */
     private void deleteRemovedParts(Product.Snapshot snapshot) {
         dsl.deleteFrom(PRODUCT_CATEGORY)
-                .where(PRODUCT_CATEGORY.PRODUCT_ID.eq(snapshot.id()))
-                .and(PRODUCT_CATEGORY.CATEGORY_ID.notIn(snapshot.categoryIds()))
+                .where(PRODUCT_CATEGORY.PRODUCT_ID.eq(snapshot.id().value()))
+                .and(PRODUCT_CATEGORY.CATEGORY_ID.notIn(snapshot.categoryIds().stream().map(CategoryId::value).toList()))
                 .execute();
 
         // 削除した画像を指すバリアントの指定は、外部キーで外れる
         dsl.deleteFrom(PRODUCT_IMAGE)
-                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
-                .and(PRODUCT_IMAGE.ID.notIn(snapshot.images().stream().map(ProductImage::id).toList()))
+                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id().value()))
+                .and(PRODUCT_IMAGE.ID.notIn(snapshot.images().stream().map(image -> image.id().value()).toList()))
                 .execute();
 
         // 軸の値は ON DELETE CASCADE で消える。品番を新しいバリアントで使えるよう、追加より先に行う
         dsl.deleteFrom(VARIANT)
-                .where(VARIANT.PRODUCT_ID.eq(snapshot.id()))
-                .and(VARIANT.ID.notIn(snapshot.variants().stream().map(Variant::id).toList()))
+                .where(VARIANT.PRODUCT_ID.eq(snapshot.id().value()))
+                .and(VARIANT.ID.notIn(snapshot.variants().stream().map(variant -> variant.id().value()).toList()))
                 .execute();
     }
 
@@ -281,7 +291,7 @@ class JooqProductRepository implements ProductRepository {
         }
         var insert = dsl.insertInto(PRODUCT_CATEGORY, PRODUCT_CATEGORY.PRODUCT_ID, PRODUCT_CATEGORY.CATEGORY_ID);
         for (var categoryId : snapshot.categoryIds()) {
-            insert = insert.values(snapshot.id(), categoryId);
+            insert = insert.values(snapshot.id().value(), categoryId.value());
         }
         insert.onConflictDoNothing().execute();
     }
@@ -301,12 +311,12 @@ class JooqProductRepository implements ProductRepository {
         var insert = dsl.insertInto(PRODUCT_IMAGE, PRODUCT_IMAGE.ID, PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.ASSET_ID,
                 PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.CREATED_AT);
         for (var image : snapshot.images()) {
-            insert = insert.values(image.id(), snapshot.id(), image.assetId(), image.displayOrder(), now);
+            insert = insert.values(image.id().value(), snapshot.id().value(), image.assetId().value(), image.displayOrder(), now);
         }
         insert.onConflict(PRODUCT_IMAGE.ID)
                 .doUpdate()
                 .set(PRODUCT_IMAGE.DISPLAY_ORDER, DSL.excluded(PRODUCT_IMAGE.DISPLAY_ORDER))
-                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
+                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id().value()))
                 .execute();
     }
 
@@ -324,15 +334,15 @@ class JooqProductRepository implements ProductRepository {
         var insert = dsl.insertInto(VARIANT, VARIANT.ID, VARIANT.PRODUCT_ID, VARIANT.VARIANT_CODE, VARIANT.AXIS_KEY,
                 VARIANT.DISPLAY_ORDER, VARIANT.SALES_SUSPENDED, VARIANT.IMAGE_ID);
         for (var variant : snapshot.variants()) {
-            insert = insert.values(variant.id(), snapshot.id(), variant.variantCode().value(), variant.axisKey(),
-                    variant.displayOrder(), variant.salesSuspended(), variant.imageId());
+            insert = insert.values(variant.id().value(), snapshot.id().value(), variant.variantCode().value(), variant.axisKey(),
+                    variant.displayOrder(), variant.salesSuspended(), variant.imageId() == null ? null : variant.imageId().value());
         }
         insert.onConflict(VARIANT.ID)
                 .doUpdate()
                 .set(VARIANT.DISPLAY_ORDER, DSL.excluded(VARIANT.DISPLAY_ORDER))
                 .set(VARIANT.SALES_SUSPENDED, DSL.excluded(VARIANT.SALES_SUSPENDED))
                 .set(VARIANT.IMAGE_ID, DSL.excluded(VARIANT.IMAGE_ID))
-                .where(VARIANT.PRODUCT_ID.eq(snapshot.id()))
+                .where(VARIANT.PRODUCT_ID.eq(snapshot.id().value()))
                 .execute();
     }
 
@@ -350,7 +360,7 @@ class JooqProductRepository implements ProductRepository {
         for (var variant : snapshot.variants()) {
             short position = 1;
             for (var value : variant.axisValues()) {
-                insert = insert.values(variant.id(), position, value);
+                insert = insert.values(variant.id().value(), position, value);
                 position++;
                 empty = false;
             }
@@ -370,7 +380,7 @@ class JooqProductRepository implements ProductRepository {
      * @param categoryIds 所属カテゴリ ID
      * @return 商品
      */
-    private Product toProduct(ProductRecord record, List<String> axes, Set<UUID> categoryIds) {
+    private Product toProduct(ProductRecord record, List<String> axes, Set<CategoryId> categoryIds) {
         var id = record.getId();
 
         var axisValues = ProductParts.axisValues(VARIANT.ID);
@@ -387,25 +397,35 @@ class JooqProductRepository implements ProductRepository {
 
         // DB の値から作る値（品番・価格・公開期間・バリアント・画像）も、復元の失敗として扱うため、全体を包む
         return RestoreGuard.restore("product", () -> factory.restore(new Product.Snapshot(
-                id,
+                new ProductId(id),
                 ProductCode.of(record.getProductCode()),
                 record.getName(),
                 record.getDescription(),
-                record.getTaxCategoryId(),
+                new TaxCategoryId(record.getTaxCategoryId()),
                 PriceExclTax.of(record.getPriceExclTax()),
                 categoryIds,
                 axes,
                 PublicationStatus.valueOf(record.getStatus()),
                 record.getFirstShownAt(),
                 PublicationPeriod.of(record.getPublishStart(), record.getPublishEnd()),
-                images.map(image -> new ProductImage(image.getId(), image.getAssetId(), image.getDisplayOrder())),
+                images.map(image -> new ProductImage(new ProductImageId(image.getId()), new AssetId(image.getAssetId()), image.getDisplayOrder())),
                 variants.map(row -> new Variant(
-                        row.get(VARIANT.ID),
+                        new VariantId(row.get(VARIANT.ID)),
                         VariantCode.of(row.get(VARIANT.VARIANT_CODE)),
                         List.of(row.get(axisValues)),
                         row.get(VARIANT.DISPLAY_ORDER),
                         row.get(VARIANT.SALES_SUSPENDED),
-                        row.get(VARIANT.IMAGE_ID))),
+                        toImageId(row.get(VARIANT.IMAGE_ID)))),
                 record.getVersion())));
+    }
+
+    /**
+     * 画像 ID の列の値を、画像の識別子に変換する。
+     *
+     * @param imageId 画像 ID の列の値。指定がなければ null
+     * @return 画像の識別子。指定がなければ null
+     */
+    private static @Nullable ProductImageId toImageId(@Nullable UUID imageId) {
+        return imageId == null ? null : new ProductImageId(imageId);
     }
 }

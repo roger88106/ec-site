@@ -8,6 +8,7 @@ import com.ecsite.api.admin.model.StockAdjustmentPage;
 import com.ecsite.api.admin.model.StockSummary;
 import com.ecsite.api.admin.model.StockSummaryList;
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.command.AdjustStockCommand;
@@ -37,7 +38,7 @@ class InventoryMapper {
      * @return 在庫の調整コマンド
      */
     AdjustStockCommand toAdjustStockCommand(UUID variantId, AdjustStockRequest request, Operator operator) {
-        return new AdjustStockCommand(variantId, request.getDelta(), toDomainReason(request.getReason()),
+        return new AdjustStockCommand(new VariantId(variantId), request.getDelta(), toDomainReason(request.getReason()),
                 request.getMemo().orElse(null), operator);
     }
 
@@ -74,13 +75,13 @@ class InventoryMapper {
      */
     StockAdjustment toStockAdjustment(StockAdjustmentView view) {
         return new StockAdjustment()
-                .id(view.id())
+                .id(view.id().value())
                 .delta(view.delta())
                 .reason(toResponseReason(view.reason()))
                 .quantityAfter(view.quantityAfter())
                 .adjustedAt(view.adjustedAt().atOffset(ZoneOffset.UTC))
                 .memo(view.memo())
-                .orderId(view.orderId())
+                .orderId(view.orderId() == null ? null : view.orderId().value())
                 .orderNumber(view.orderNumber())
                 .operatorName(view.operatorName());
     }
@@ -108,7 +109,7 @@ class InventoryMapper {
      */
     StockSummary toStockSummary(StockSummaryView view) {
         return new StockSummary()
-                .productId(view.productId())
+                .productId(view.productId().value())
                 .totalQuantity(view.totalQuantity());
     }
 

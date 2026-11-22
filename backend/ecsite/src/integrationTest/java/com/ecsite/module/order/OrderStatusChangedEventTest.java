@@ -1,5 +1,6 @@
 package com.ecsite.module.order;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPayments;
 import com.ecsite.module.order.event.OrderShipped;
@@ -172,7 +173,7 @@ class OrderStatusChangedEventTest {
                             {"reason": "返送", "restock": false}""")).andExpect(status().isNoContent());
 
             // 確認：この注文の出荷のイベントが 1 つだけ
-            assertThat(events.stream(OrderShipped.class)).extracting(OrderShipped::orderId).containsExactly(orderId);
+            assertThat(events.stream(OrderShipped.class)).extracting(OrderShipped::orderId).containsExactly(new OrderId(orderId));
         }
     }
 
@@ -279,12 +280,12 @@ class OrderStatusChangedEventTest {
                 .extracting(OrderStatusChanged::orderId, OrderStatusChanged::from, OrderStatusChanged::to,
                         OrderStatusChanged::occurredAt, OrderStatusChanged::cancellationKind, OrderStatusChanged::restocked)
                 .containsExactly(
-                        tuple(orderId, null, Status.PENDING_PAYMENT, NOW, null, null),
-                        tuple(orderId, Status.PENDING_PAYMENT, Status.ACCEPTED, minutes(1), null, null),
-                        tuple(orderId, Status.ACCEPTED, Status.CANCELLATION_REQUESTED, minutes(2), null, null),
-                        tuple(orderId, Status.CANCELLATION_REQUESTED, Status.ACCEPTED, minutes(3), null, null),
-                        tuple(orderId, Status.ACCEPTED, Status.SHIPPED, minutes(4), null, null),
-                        tuple(orderId, Status.SHIPPED, Status.CANCELLED, minutes(5), CancellationKind.OPERATOR, false));
+                        tuple(new OrderId(orderId), null, Status.PENDING_PAYMENT, NOW, null, null),
+                        tuple(new OrderId(orderId), Status.PENDING_PAYMENT, Status.ACCEPTED, minutes(1), null, null),
+                        tuple(new OrderId(orderId), Status.ACCEPTED, Status.CANCELLATION_REQUESTED, minutes(2), null, null),
+                        tuple(new OrderId(orderId), Status.CANCELLATION_REQUESTED, Status.ACCEPTED, minutes(3), null, null),
+                        tuple(new OrderId(orderId), Status.ACCEPTED, Status.SHIPPED, minutes(4), null, null),
+                        tuple(new OrderId(orderId), Status.SHIPPED, Status.CANCELLED, minutes(5), CancellationKind.OPERATOR, false));
         assertThat(events.stream(OrderStatusChanged.class).map(OrderStatusChanged::eventId).distinct()).hasSize(6);
     }
 

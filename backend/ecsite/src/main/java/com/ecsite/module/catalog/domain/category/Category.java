@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.domain.category;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.DisplayOrders;
@@ -15,7 +16,6 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * カテゴリ
@@ -45,7 +45,7 @@ public class Category extends AggregateRoot {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final CategoryId id;
 
     /**
      * 親カテゴリ ID
@@ -53,7 +53,7 @@ public class Category extends AggregateRoot {
      * <p>最上位なら null。
      */
     @Nullable
-    private final UUID parentId;
+    private final CategoryId parentId;
 
     /**
      * 名称
@@ -91,7 +91,7 @@ public class Category extends AggregateRoot {
      * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）
      * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
-    private Category(@NonNull UUID id, @Nullable UUID parentId, String name, int depth, int displayOrder, long version) {
+    private Category(@NonNull CategoryId id, @Nullable CategoryId parentId, String name, int depth, int displayOrder, long version) {
         if (depth < 1 || depth > MAX_DEPTH) {
             throw BusinessException.of(CategoryErrorCode.CATEGORY_DEPTH_EXCEEDED, List.of(MAX_DEPTH));
         }
@@ -118,7 +118,7 @@ public class Category extends AggregateRoot {
      * @throws BusinessException 深さが上限を超える（{@code CATEGORY_DEPTH_EXCEEDED}）
      * @throws BusinessException 名称が範囲の外（{@code INVALID_CATEGORY_NAME}）
      */
-    static Category create(UUID id, @Nullable Category parent, String name, int displayOrder) {
+    static Category create(CategoryId id, @Nullable Category parent, String name, int displayOrder) {
         if (parent == null) {
             return new Category(id, null, name, 1, displayOrder, 0);
         }
@@ -158,7 +158,7 @@ public class Category extends AggregateRoot {
      * @return 表示順が変わったカテゴリ
      * @throws BusinessException 兄弟と過不足なく一致しない（{@code INVALID_CATEGORY_ORDER}）。このときは何も変えない
      */
-    public static List<Category> reorder(@NonNull List<Category> siblings, @NonNull List<UUID> orderedIds) {
+    public static List<Category> reorder(@NonNull List<Category> siblings, @NonNull List<CategoryId> orderedIds) {
         var orders = DisplayOrders.assign(siblings.stream().map(Category::id).toList(), orderedIds,
                 CategoryErrorCode.INVALID_CATEGORY_ORDER);
         var changed = new ArrayList<Category>();
@@ -198,7 +198,7 @@ public class Category extends AggregateRoot {
      * @param displayOrder 表示順
      * @param version      バージョン
      */
-    public record Snapshot(UUID id, @Nullable UUID parentId, String name, int depth, int displayOrder, long version) {
+    public record Snapshot(CategoryId id, @Nullable CategoryId parentId, String name, int depth, int displayOrder, long version) {
     }
 
     /**

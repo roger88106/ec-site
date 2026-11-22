@@ -6,6 +6,7 @@ import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.infrastructure.PaymentGatewayContractTest;
 import com.ecsite.support.MutableClock;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +52,7 @@ class MockPaymentGatewayContractTest extends PaymentGatewayContractTest {
      * 確認する本番の mock
      */
     private final MockPaymentGateway gateway = new MockPaymentGateway(
-            mock(PaymentNotificationReceiver.class), new MockPaymentProperties("http://localhost:8080"), clock);
+            mock(PaymentNotificationReceiver.class), new MockPaymentProperties("http://localhost:8080"), clock, UUID::randomUUID);
 
     // ============================== テスト ==============================
 
@@ -143,6 +144,6 @@ class MockPaymentGatewayContractTest extends PaymentGatewayContractTest {
      * @return 支払画面 ID
      */
     private String openPage() {
-        return gateway.openPage(new PageRequest(UUID.randomUUID(), ORDER_ID, AMOUNT, RETURN_URL)).id();
+        return gateway.openPage(new PageRequest(new PaymentId(UUID.randomUUID()), ORDER_ID, AMOUNT, RETURN_URL)).id();
     }
 }

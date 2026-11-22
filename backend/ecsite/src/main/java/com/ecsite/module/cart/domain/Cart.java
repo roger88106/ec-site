@@ -2,6 +2,9 @@ package com.ecsite.module.cart.domain;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.VariantId;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -18,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
@@ -57,7 +59,7 @@ public class Cart {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final CartId id;
 
     /**
      * 会員 ID
@@ -66,7 +68,7 @@ public class Cart {
      */
     @Getter(AccessLevel.NONE)
     @Nullable
-    private final UUID memberId;
+    private final MemberId memberId;
 
     /**
      * 品目（入れた順）
@@ -95,7 +97,7 @@ public class Cart {
      * @param version   バージョン
      * @param updatedAt 最終更新日時
      */
-    public Cart(@NonNull UUID id, @Nullable UUID memberId, @NonNull List<CartItem> items, long version, @NonNull Instant updatedAt) {
+    public Cart(@NonNull CartId id, @Nullable MemberId memberId, @NonNull List<CartItem> items, long version, @NonNull Instant updatedAt) {
         this.id = id;
         this.memberId = memberId;
         this.items = new ArrayList<>(items);
@@ -110,7 +112,7 @@ public class Cart {
      * @param now 現在時刻
      * @return カート
      */
-    public static Cart create(UUID id, Instant now) {
+    public static Cart create(CartId id, Instant now) {
         return new Cart(id, null, List.of(), 0, now);
     }
 
@@ -122,7 +124,7 @@ public class Cart {
      * @param now      現在時刻
      * @return カート
      */
-    public static Cart createForMember(UUID id, @NonNull UUID memberId, Instant now) {
+    public static Cart createForMember(CartId id, @NonNull MemberId memberId, Instant now) {
         return new Cart(id, memberId, List.of(), 0, now);
     }
 
@@ -143,7 +145,7 @@ public class Cart {
      *
      * @return 会員 ID。ログインせずに作ったカートは空
      */
-    public Optional<UUID> memberId() {
+    public Optional<MemberId> memberId() {
         return Optional.ofNullable(memberId);
     }
 
@@ -155,7 +157,7 @@ public class Cart {
      * @param requesterMemberId リクエストした会員の ID（ログインしていなければ null）
      * @return 使えれば true
      */
-    public boolean isAccessibleBy(@Nullable UUID requesterMemberId) {
+    public boolean isAccessibleBy(@Nullable MemberId requesterMemberId) {
         return memberId == null || memberId.equals(requesterMemberId);
     }
 
@@ -179,7 +181,7 @@ public class Cart {
      * @param now       現在時刻
      * @return 合算した数量
      */
-    public int quantityAfterAdding(UUID variantId, int quantity, Instant now) {
+    public int quantityAfterAdding(VariantId variantId, int quantity, Instant now) {
         return quantityOf(variantId, now).orElse(0) + quantity;
     }
 
@@ -190,7 +192,7 @@ public class Cart {
      * @param now       現在時刻
      * @return 数量。カートになければ（期限が切れていれば）空
      */
-    public OptionalInt quantityOf(UUID variantId, Instant now) {
+    public OptionalInt quantityOf(VariantId variantId, Instant now) {
         return itemsAt(now).stream()
                 .filter(item -> item.variantId().equals(variantId))
                 .mapToInt(CartItem::quantity)
@@ -208,7 +210,7 @@ public class Cart {
      * @throws BusinessException 数量か合算した数量が 1〜{@value #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException 品目の数が上限に達している（{@code TOO_MANY_CART_ITEMS}）
      */
-    public void add(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
+    public void add(@NonNull VariantId variantId, int quantity, @NonNull Instant now) {
         verifyQuantity(quantity);
         dropIfExpired(now);
         var index = indexOf(variantId);
@@ -234,7 +236,7 @@ public class Cart {
      * @throws BusinessException 数量が 1〜{@value #MAX_QUANTITY} でない（{@code INVALID_CART_QUANTITY}）
      * @throws BusinessException カートにない品目（{@code NOT_FOUND}）
      */
-    public void changeQuantity(@NonNull UUID variantId, int quantity, @NonNull Instant now) {
+    public void changeQuantity(@NonNull VariantId variantId, int quantity, @NonNull Instant now) {
         verifyQuantity(quantity);
         dropIfExpired(now);
         var index = indexOf(variantId);
@@ -253,7 +255,7 @@ public class Cart {
      * @param variantId バリアント ID
      * @param now       現在時刻
      */
-    public void remove(@NonNull UUID variantId, @NonNull Instant now) {
+    public void remove(@NonNull VariantId variantId, @NonNull Instant now) {
         var index = isExpiredAt(now) ? -1 : indexOf(variantId);
         if (index >= 0) {
             items.remove(index);
@@ -272,7 +274,7 @@ public class Cart {
      * @param addedUntil 削除する品目を入れた日時の上限（この時刻に入れた品目は削除する）
      * @param now        現在時刻
      */
-    public void removeAll(@NonNull Collection<UUID> variantIds, @NonNull Instant addedUntil, @NonNull Instant now) {
+    public void removeAll(@NonNull Collection<VariantId> variantIds, @NonNull Instant addedUntil, @NonNull Instant now) {
         // 保存の楽観ロックは 1 つ前のバージョンと比べるので、何品目を消してもバージョンは 1 だけ上げる
         if (!isExpiredAt(now)
                 && items.removeIf(item -> variantIds.contains(item.variantId()) && !item.addedAt().isAfter(addedUntil))) {
@@ -363,7 +365,7 @@ public class Cart {
      *
      * <p>なければ -1。
      */
-    private int indexOf(UUID variantId) {
+    private int indexOf(VariantId variantId) {
         return IntStream.range(0, items.size())
                 .filter(i -> items.get(i).variantId().equals(variantId))
                 .findFirst()

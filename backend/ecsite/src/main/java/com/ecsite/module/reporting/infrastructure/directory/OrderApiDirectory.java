@@ -1,6 +1,7 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.api.OrderApi;
 import com.ecsite.module.order.api.model.OrderSnapshot;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の腐敗防止層
@@ -40,7 +40,7 @@ class OrderApiDirectory implements OrderDirectory {
      * @return 写し。注文がなければ空
      */
     @Override
-    public Optional<ReportOrder> find(UUID orderId) {
+    public Optional<ReportOrder> find(OrderId orderId) {
         return orderApi.find(orderId).map(OrderApiDirectory::toReportOrder);
     }
 

@@ -1,10 +1,14 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.jooq.catalog.tables.records.ProductImageRecord;
 import com.ecsite.jooq.catalog.tables.records.ProductRecord;
 import com.ecsite.module.catalog.application.model.StoredProductDetail;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
@@ -12,13 +16,16 @@ import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -52,14 +59,15 @@ class JooqProductQueryRepository implements ProductQueryRepository {
      * @return 商品の詳細
      */
     @Override
-    public Optional<StoredProductDetail> findDetailById(UUID id) {
+    public Optional<StoredProductDetail> findDetailById(ProductId id) {
         var axes = ProductParts.axes(PRODUCT.ID);
         var categoryIds = ProductParts.categoryIds(PRODUCT.ID);
         var found = dsl.select(PRODUCT.asterisk(), axes, categoryIds)
                 .from(PRODUCT)
-                .where(PRODUCT.ID.eq(id))
+                .where(PRODUCT.ID.eq(id.value()))
                 .fetchOptional();
-        return found.map(row -> toDetail(row.into(PRODUCT), List.of(row.get(axes)), List.of(row.get(categoryIds))));
+        return found.map(row -> toDetail(row.into(PRODUCT), List.of(row.get(axes)),
+                Arrays.stream(row.get(categoryIds)).map(CategoryId::new).toList()));
     }
 
     /**
@@ -85,7 +93,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .limit(request.size())
                 .offset(request.offset())
                 .fetch(record -> new ProductSummaryView(
-                        record.get(PRODUCT.ID), record.get(PRODUCT.PRODUCT_CODE), record.get(PRODUCT.NAME),
+                        new ProductId(record.get(PRODUCT.ID)), record.get(PRODUCT.PRODUCT_CODE), record.get(PRODUCT.NAME),
                         RestoreGuard.restore("product", () -> PublicationStatus.valueOf(record.get(PRODUCT.STATUS))),
                         record.get(variantCount)));
 
@@ -138,7 +146,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
      * @param categoryIds 所属カテゴリ ID（ID の順）
      * @return 保存されている商品の詳細
      */
-    private StoredProductDetail toDetail(ProductRecord record, List<String> axes, List<UUID> categoryIds) {
+    private StoredProductDetail toDetail(ProductRecord record, List<String> axes, List<CategoryId> categoryIds) {
         var id = record.getId();
 
         var axisValues = ProductParts.axisValues(VARIANT.ID);
@@ -147,25 +155,26 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .where(VARIANT.PRODUCT_ID.eq(id))
                 .orderBy(VARIANT.DISPLAY_ORDER, VARIANT.ID)
                 .fetch(row -> new ProductDetailView.VariantView(
-                        row.get(VARIANT.ID),
+                        new VariantId(row.get(VARIANT.ID)),
                         row.get(VARIANT.VARIANT_CODE),
                         List.of(row.get(axisValues)),
                         row.get(VARIANT.SALES_SUSPENDED),
-                        row.get(VARIANT.IMAGE_ID)));
+                        toImageId(row.get(VARIANT.IMAGE_ID))));
 
         var imageRecords = dsl.selectFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
                 .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER, PRODUCT_IMAGE.ID)
                 .fetch();
-        var urls = mediaDirectory.urls(imageRecords.map(ProductImageRecord::getAssetId));
-        var images = imageRecords.map(image -> new ProductDetailView.ImageView(image.getId(), urls.get(image.getAssetId())));
+        var urls = mediaDirectory.urls(imageRecords.map(image -> new AssetId(image.getAssetId())));
+        var images = imageRecords.map(image ->
+                new ProductDetailView.ImageView(new ProductImageId(image.getId()), urls.get(new AssetId(image.getAssetId()))));
 
         return new StoredProductDetail(
-                id,
+                new ProductId(id),
                 record.getProductCode(),
                 record.getName(),
                 record.getDescription(),
-                record.getTaxCategoryId(),
+                new TaxCategoryId(record.getTaxCategoryId()),
                 Money.of(record.getPriceExclTax()),
                 categoryIds,
                 axes,
@@ -178,5 +187,15 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 record.getVersion(),
                 record.getCreatedAt(),
                 record.getUpdatedAt());
+    }
+
+    /**
+     * 画像 ID の列の値を、画像の識別子に変換する。
+     *
+     * @param imageId 画像 ID の列の値。指定がなければ null
+     * @return 画像の識別子。指定がなければ null
+     */
+    private static @Nullable ProductImageId toImageId(@Nullable UUID imageId) {
+        return imageId == null ? null : new ProductImageId(imageId);
     }
 }

@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.infrastructure.carrier;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
@@ -118,7 +119,7 @@ class CarrierWebhookFailureTest {
     @DisplayName("BR-22 処理の途中で失敗した通知は 5xx を返し、配送状態もイベントも残さず、同じ通知の再送で反映される")
     void retriesFailedNotification() throws Exception {
         // 準備：出荷済みの出荷と配達中の通知、次の配送状態の保存の失敗
-        var orderId = UUID.randomUUID();
+        var orderId = new OrderId(UUID.randomUUID());
         var trackingNumber = ShippingTestData.trackingNumber();
         shipments.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, NOW);
         var notification = mockCarrier.notification(Carrier.YAMATO, trackingNumber, "配達中");
@@ -148,7 +149,7 @@ class CarrierWebhookFailureTest {
      * @param orderId 注文 ID
      * @return 配送状態
      */
-    private DeliveryStatus statusOf(UUID orderId) {
+    private DeliveryStatus statusOf(OrderId orderId) {
         return repository.findAllByOrderIds(List.of(orderId)).getFirst().status();
     }
 
@@ -158,7 +159,7 @@ class CarrierWebhookFailureTest {
      * @param orderId 注文 ID
      * @return 後の配送状態
      */
-    private List<DeliveryStatusChanged.Status> changesOf(UUID orderId) {
+    private List<DeliveryStatusChanged.Status> changesOf(OrderId orderId) {
         return events.stream(DeliveryStatusChanged.class).filter(event -> event.orderId().equals(orderId))
                 .map(DeliveryStatusChanged::to).toList();
     }

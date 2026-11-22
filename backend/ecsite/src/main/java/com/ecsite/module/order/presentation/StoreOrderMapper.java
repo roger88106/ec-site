@@ -22,6 +22,7 @@ import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
@@ -32,6 +33,7 @@ import com.ecsite.module.order.application.model.view.CheckoutView;
 import com.ecsite.module.order.application.model.view.OrderDetailView;
 import com.ecsite.module.order.application.model.view.OrderListItemView;
 import com.ecsite.module.order.application.model.view.OrderShipment;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.springframework.stereotype.Component;
 
@@ -54,11 +56,11 @@ class StoreOrderMapper {
      */
     Checkout toCheckout(CheckoutView view) {
         return new Checkout()
-                .id(view.id())
+                .id(view.id().value())
                 .items(toQuoteItems(view.quote()))
                 .amounts(toAmounts(view.quote().amounts()))
                 .expiresAt(ApiDateTimes.toOffsetDateTime(view.expiresAt()))
-                .orderId(view.orderId());
+                .orderId(view.orderId() == null ? null : view.orderId().value());
     }
 
     /**
@@ -70,11 +72,11 @@ class StoreOrderMapper {
      * @param member     token の会員（連絡先のメールアドレス、確認済みか、生年月日、性別）
      * @return 注文のコマンド
      */
-    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request, UUID memberId,
+    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request, MemberId memberId,
                                           AuthenticatedMember member) {
         var address = request.getShippingAddress();
         return new PlaceOrderCommand(
-                checkoutId,
+                new CheckoutId(checkoutId),
                 memberId,
                 member.email(),
                 member.emailVerified(),
@@ -112,7 +114,7 @@ class StoreOrderMapper {
         var payment = view.payment();
         var shipment = view.shipment();
         var response = new Order()
-                .id(view.id())
+                .id(view.id().value())
                 .orderNumber(view.orderNumber().value())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .status(toStatus(view.status()))
@@ -236,8 +238,8 @@ class StoreOrderMapper {
     private static QuoteItem toQuoteItem(com.ecsite.module.order.domain.quote.QuoteItem item) {
         var variant = item.variant();
         return new QuoteItem()
-                .variantId(variant.variantId())
-                .productId(variant.productId())
+                .variantId(variant.variantId().value())
+                .productId(variant.productId().value())
                 .productName(variant.productName())
                 .axisValues(variant.axisValues().stream().map(StoreOrderMapper::toAxisValue).toList())
                 .imageUrl(variant.imageUrl())
@@ -318,7 +320,7 @@ class StoreOrderMapper {
         var payment = item.payment();
         var shipment = item.shipment();
         var summary = new OrderSummary()
-                .id(view.id())
+                .id(view.id().value())
                 .orderNumber(view.orderNumber())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .totalAmount(view.total().yen())

@@ -1,9 +1,10 @@
 package com.ecsite.module.media.application.model;
 
+import com.ecsite.common.model.id.UploadId;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 画像のアップロードの受付の表示
@@ -13,5 +14,5 @@ import java.util.UUID;
  * @param headers   PUT に付けるヘッダー
  * @param expiresAt 署名付き URL の期限
  */
-public record ImageUploadView(UUID uploadId, URI uploadUrl, Map<String, String> headers, Instant expiresAt) {
+public record ImageUploadView(UploadId uploadId, URI uploadUrl, Map<String, String> headers, Instant expiresAt) {
 }

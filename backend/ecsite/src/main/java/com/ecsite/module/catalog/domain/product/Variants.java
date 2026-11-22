@@ -2,15 +2,16 @@ package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.domain.DisplayOrders;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.UnaryOperator;
 
 /**
@@ -40,7 +41,7 @@ record Variants(List<Variant> list) {
      * @return バリアント
      * @throws BusinessException 一覧にないバリアント（{@code NOT_FOUND}）
      */
-    Variant require(UUID variantId) {
+    Variant require(VariantId variantId) {
         return list.stream().filter(variant -> variant.id().equals(variantId)).findFirst()
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
@@ -112,7 +113,7 @@ record Variants(List<Variant> list) {
      * @return 置き換えた一覧
      * @throws BusinessException 一覧にないバリアント（{@code NOT_FOUND}）
      */
-    Variants replace(UUID variantId, UnaryOperator<Variant> change) {
+    Variants replace(VariantId variantId, UnaryOperator<Variant> change) {
         require(variantId);
         return new Variants(list.stream().map(variant -> variant.id().equals(variantId) ? change.apply(variant) : variant).toList());
     }
@@ -125,7 +126,7 @@ record Variants(List<Variant> list) {
      * @param imageId 指定を外す画像の ID
      * @return 外した一覧
      */
-    Variants withoutImage(UUID imageId) {
+    Variants withoutImage(ProductImageId imageId) {
         return new Variants(list.stream()
                 .map(variant -> imageId.equals(variant.imageId()) ? variant.withImageId(null) : variant)
                 .toList());
@@ -150,7 +151,7 @@ record Variants(List<Variant> list) {
      * @return 除いた一覧
      * @throws BusinessException 一覧にないバリアント（{@code NOT_FOUND}）
      */
-    Variants remove(UUID variantId) {
+    Variants remove(VariantId variantId) {
         require(variantId);
         return new Variants(list.stream().filter(variant -> !variant.id().equals(variantId)).toList());
     }
@@ -164,7 +165,7 @@ record Variants(List<Variant> list) {
      * @return 並べ替えた一覧
      * @throws BusinessException 全てのバリアントと過不足なく一致しない（{@code INVALID_VARIANT_ORDER}）
      */
-    Variants reorder(List<UUID> orderedIds) {
+    Variants reorder(List<VariantId> orderedIds) {
         return new Variants(DisplayOrders.reorder(list, Variant::id, Variant::withDisplayOrder, orderedIds,
                 ProductErrorCode.INVALID_VARIANT_ORDER));
     }

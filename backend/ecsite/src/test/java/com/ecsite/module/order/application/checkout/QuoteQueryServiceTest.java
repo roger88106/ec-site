@@ -1,5 +1,8 @@
 package com.ecsite.module.order.application.checkout;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
@@ -82,20 +85,20 @@ class QuoteQueryServiceTest {
     /**
      * 残っているバリアントの ID
      */
-    private final UUID remainingId = UUID.randomUUID();
+    private final VariantId remainingId = new VariantId(UUID.randomUUID());
 
     /**
      * 存在しなくなったバリアントの ID
      */
-    private final UUID missingId = UUID.randomUUID();
+    private final VariantId missingId = new VariantId(UUID.randomUUID());
 
     /**
      * 残っているバリアントだけを返す商品カタログと、全て在庫のある在庫と、税率のある税で、サービスを作る。
      */
     @BeforeEach
     void setUp() {
-        var taxCategoryId = UUID.randomUUID();
-        var remaining = new VariantInfo(remainingId, UUID.randomUUID(), "P-1", REMAINING_CODE, "商品", List.of(),
+        var taxCategoryId = new TaxCategoryId(UUID.randomUUID());
+        var remaining = new VariantInfo(remainingId, new ProductId(UUID.randomUUID()), "P-1", REMAINING_CODE, "商品", List.of(),
                 Money.of(1000), taxCategoryId, null, true, false);
         when(catalogDirectory.findVariants(anyCollection())).thenReturn(Map.of(remainingId, remaining));
         when(stockDirectory.sellableQuantities(anyCollection(), any())).thenReturn(Map.of(remainingId, 10, missingId, 10));
@@ -142,11 +145,11 @@ class QuoteQueryServiceTest {
     @DisplayName("税区分が複数あり、同じ税区分の品目が複数あっても、税率は税区分を重複なく集めて 1 回だけ問い合わせる")
     void asksRatesOnceForDistinctTaxCategories() {
         // 準備：税区分 2 つに、同じ税区分の品目が 2 つあるカート
-        var standardId = UUID.randomUUID();
-        var reducedId = UUID.randomUUID();
-        var firstId = UUID.randomUUID();
-        var secondId = UUID.randomUUID();
-        var thirdId = UUID.randomUUID();
+        var standardId = new TaxCategoryId(UUID.randomUUID());
+        var reducedId = new TaxCategoryId(UUID.randomUUID());
+        var firstId = new VariantId(UUID.randomUUID());
+        var secondId = new VariantId(UUID.randomUUID());
+        var thirdId = new VariantId(UUID.randomUUID());
         var first = variant(firstId, standardId);
         var second = variant(secondId, standardId);
         var third = variant(thirdId, reducedId);
@@ -158,7 +161,7 @@ class QuoteQueryServiceTest {
         service.quote(lines, NOW, null);
 
         // 確認：税率は、重複のない税区分で 1 回だけ問い合わせる（送料の税率は 1 件を受け取る操作で取得するので、ここでは数えない）
-        var captor = ArgumentCaptor.<Collection<UUID>>captor();
+        var captor = ArgumentCaptor.<Collection<TaxCategoryId>>captor();
         verify(taxDirectory, times(1)).ratesAt(captor.capture(), eq(NOW));
         assertThat(captor.getValue()).containsExactlyInAnyOrder(standardId, reducedId);
     }
@@ -166,8 +169,8 @@ class QuoteQueryServiceTest {
     /**
      * 指定した税区分のバリアントを作る。
      */
-    private VariantInfo variant(UUID variantId, UUID taxCategoryId) {
-        return new VariantInfo(variantId, UUID.randomUUID(), "P-" + variantId, "C-" + variantId, "商品", List.of(),
+    private VariantInfo variant(VariantId variantId, TaxCategoryId taxCategoryId) {
+        return new VariantInfo(variantId, new ProductId(UUID.randomUUID()), "P-" + variantId, "C-" + variantId, "商品", List.of(),
                 Money.of(1000), taxCategoryId, null, true, false);
     }
 }

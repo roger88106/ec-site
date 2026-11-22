@@ -1,5 +1,6 @@
 package com.ecsite.module.member.application;
 
+import com.ecsite.common.model.id.MemberId;
 import com.github.benmanes.caffeine.cache.Ticker;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,7 +49,7 @@ class MemberIdCacheTest {
         void returnsJustBeforeExpiration() {
             // 準備：入れる
             var cache = newCache(10, EXPIRE);
-            var id = UUID.randomUUID();
+            var id = new MemberId(UUID.randomUUID());
             cache.put("a", id);
 
             // 操作：期限の 1 ナノ秒前まで進める
@@ -63,7 +64,7 @@ class MemberIdCacheTest {
         void emptyAtExpiration() {
             // 準備：入れる
             var cache = newCache(10, EXPIRE);
-            cache.put("a", UUID.randomUUID());
+            cache.put("a", new MemberId(UUID.randomUUID()));
 
             // 操作：期限ちょうどまで進める
             nanos.set(EXPIRE.toNanos());
@@ -84,8 +85,8 @@ class MemberIdCacheTest {
             var cache = newCache(1, EXPIRE);
 
             // 操作：2 件入れる
-            cache.put("a", UUID.randomUUID());
-            cache.put("b", UUID.randomUUID());
+            cache.put("a", new MemberId(UUID.randomUUID()));
+            cache.put("b", new MemberId(UUID.randomUUID()));
 
             // 確認：1 件だけ残る
             var remaining = (cache.find("a").isPresent() ? 1 : 0) + (cache.find("b").isPresent() ? 1 : 0);
@@ -102,8 +103,8 @@ class MemberIdCacheTest {
         void emptyAfterEvict() {
             // 準備：2 件入れる
             var cache = newCache(10, EXPIRE);
-            cache.put("a", UUID.randomUUID());
-            cache.put("b", UUID.randomUUID());
+            cache.put("a", new MemberId(UUID.randomUUID()));
+            cache.put("b", new MemberId(UUID.randomUUID()));
 
             // 操作：捨てる
             cache.evict();

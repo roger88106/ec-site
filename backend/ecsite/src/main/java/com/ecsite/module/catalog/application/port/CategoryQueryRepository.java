@@ -1,10 +1,10 @@
 package com.ecsite.module.catalog.application.port;
 
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.module.catalog.application.model.view.CategoryView;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * カテゴリのクエリリポジトリ
@@ -24,5 +24,5 @@ public interface CategoryQueryRepository {
      * @param id カテゴリ ID
      * @return カテゴリ。なければ空
      */
-    Optional<CategoryView> findById(UUID id);
+    Optional<CategoryView> findById(CategoryId id);
 }

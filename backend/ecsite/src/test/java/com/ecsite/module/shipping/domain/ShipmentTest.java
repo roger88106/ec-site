@@ -1,5 +1,6 @@
 package com.ecsite.module.shipping.domain;
 
+import com.ecsite.common.model.id.OrderId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ class ShipmentTest {
         @DisplayName("BR-19 出荷は「出荷済み」で作られる")
         void createsShipped() {
             // 操作：出荷を作る
-            var shipment = Shipment.create(UUID.randomUUID(), UUID.randomUUID(), Carrier.YAMATO,
+            var shipment = Shipment.create(new ShipmentId(UUID.randomUUID()), new OrderId(UUID.randomUUID()), Carrier.YAMATO,
                     TrackingNumber.of(TRACKING_NUMBER_INPUT), SHIPPED_AT);
 
             // 確認：出荷済み
@@ -70,10 +71,10 @@ class ShipmentTest {
         @DisplayName("出荷は、注文、配送業者、送り状番号、出荷日時を持つ")
         void holdsShipment() {
             // 準備：注文 ID
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
 
             // 操作：ハイフンを含む送り状番号で出荷を作る
-            var shipment = Shipment.create(UUID.randomUUID(), orderId, Carrier.YAMATO,
+            var shipment = Shipment.create(new ShipmentId(UUID.randomUUID()), orderId, Carrier.YAMATO,
                     TrackingNumber.of(TRACKING_NUMBER_INPUT), SHIPPED_AT);
 
             // 確認：渡した出荷の内容
@@ -377,7 +378,7 @@ class ShipmentTest {
      * @param shipment 確認する出荷
      * @param orderId  注文 ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertCreatedShipment(Shipment shipment, UUID orderId) {
+    private static void assertCreatedShipment(Shipment shipment, OrderId orderId) {
         assertThat(shipment.orderId()).isEqualTo(orderId);
         assertThat(shipment.carrier()).isEqualTo(Carrier.YAMATO);
         assertThat(shipment.trackingNumber().value()).isEqualTo(TRACKING_NUMBER);
@@ -392,6 +393,6 @@ class ShipmentTest {
      * @return 出荷
      */
     private static Shipment shipped() {
-        return Shipment.create(UUID.randomUUID(), UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of(TRACKING_NUMBER), SHIPPED_AT);
+        return Shipment.create(new ShipmentId(UUID.randomUUID()), new OrderId(UUID.randomUUID()), Carrier.YAMATO, TrackingNumber.of(TRACKING_NUMBER), SHIPPED_AT);
     }
 }

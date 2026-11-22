@@ -1,7 +1,8 @@
 package com.ecsite.module.storefront.application.model;
 
+import com.ecsite.common.model.id.CategoryId;
+
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品カタログのカテゴリの木の節
@@ -10,5 +11,5 @@ import java.util.UUID;
  * @param name     名称
  * @param children 子カテゴリ（並び順）
  */
-public record CatalogCategory(UUID id, String name, List<CatalogCategory> children) {
+public record CatalogCategory(CategoryId id, String name, List<CatalogCategory> children) {
 }

@@ -25,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -213,6 +214,31 @@ class TaxCategoryApiTest {
 
             // 確認：切り替えの前後の各時点の、現時点の率
             assertCurrentRatesAroundLimitedTime(id);
+        }
+
+        @Test
+        @DisplayName("ID に null を明示した税率は、新しい税率として加えられる")
+        void treatsExplicitNullIdAsNewRate() throws Exception {
+            // 準備：10% を持つ税区分
+            var id = createdCategoryId(NAME);
+            replaceRates(id, 0, """
+                    [{"ratePercent": 10}]""").andExpect(status().isNoContent());
+            var baseRateId = rateIds(id)[0];
+
+            // 操作：基本の税率を残し、ID に null を明示した 8% を後に加える
+            replaceRates(id, 1, """
+                    [
+                      {"id": "%s", "ratePercent": 10, "effectiveTo": "2027-04-01T00:00:00+09:00"},
+                      {"id": null, "ratePercent": 8, "effectiveFrom": "2027-04-01T00:00:00+09:00"}
+                    ]""".formatted(baseRateId)).andExpect(status().isNoContent());
+
+            // 確認：基本の税率と、別の ID の 8% が返る
+            mockMvc.perform(get(BASE + "/" + id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.rates.length()").value(2))
+                    .andExpect(jsonPath("$.rates[0].id").value(baseRateId))
+                    .andExpect(jsonPath("$.rates[1].ratePercent").value(8))
+                    .andExpect(jsonPath("$.rates[1].id").value(not(baseRateId)));
         }
     }
 

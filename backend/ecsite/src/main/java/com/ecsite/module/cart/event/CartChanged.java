@@ -1,6 +1,7 @@
 package com.ecsite.module.cart.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.CartId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -16,7 +17,7 @@ import java.util.UUID;
  * @param cartId      カート ID
  * @param cartVersion 変更の後のカートのバージョン。null は、バージョンを加える前に発行されたイベント（記録に残って再発行されるもの）
  */
-public record CartChanged(UUID eventId, Instant occurredAt, UUID cartId, @Nullable Long cartVersion) implements DomainEvent {
+public record CartChanged(UUID eventId, Instant occurredAt, CartId cartId, @Nullable Long cartVersion) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -26,7 +27,7 @@ public record CartChanged(UUID eventId, Instant occurredAt, UUID cartId, @Nullab
      * @param cartVersion 変更の後のカートのバージョン
      * @return イベント
      */
-    public static CartChanged of(Instant occurredAt, UUID cartId, long cartVersion) {
-        return new CartChanged(UUID.randomUUID(), occurredAt, cartId, cartVersion);
+    public static CartChanged of(Instant occurredAt, CartId cartId, long cartVersion) {
+        return new CartChanged(DomainEvent.newEventId(), occurredAt, cartId, cartVersion);
     }
 }

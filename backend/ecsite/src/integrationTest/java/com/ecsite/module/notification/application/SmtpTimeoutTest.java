@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.event.OrderShipped;
@@ -185,8 +186,8 @@ class SmtpTimeoutTest {
      * @return 発行したイベント
      */
     private OrderShipped publishShipped(UUID orderId) {
-        when(orderDirectory.email(orderId)).thenReturn("timeout-" + orderId + "@example.com");
-        var event = OrderShipped.of(SHIPPED_AT, orderId, "20261008-000001",
+        when(orderDirectory.email(new OrderId(orderId))).thenReturn("timeout-" + orderId + "@example.com");
+        var event = OrderShipped.of(SHIPPED_AT, new OrderId(orderId), "20261008-000001",
                 OrderShipped.Carrier.YAMATO, "123456789012");
         transaction.executeWithoutResult(status -> events.publishEvent(event));
         return event;

@@ -4,6 +4,10 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.DomainEvents;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OperatorId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
@@ -11,6 +15,7 @@ import com.ecsite.common.persistence.AdvisoryLocks;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderTaxRecord;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -101,10 +106,10 @@ class JooqOrderRepository implements OrderRepository {
         var now = clock.instant();
         var record = dsl.newRecord(SALES_ORDER);
         writeState(record, snapshot);
-        record.setId(snapshot.id());
+        record.setId(snapshot.id().value());
         record.setOrderNumber(snapshot.orderNumber().value());
-        record.setCheckoutId(snapshot.checkoutId());
-        record.setMemberId(snapshot.memberId());
+        record.setCheckoutId(snapshot.checkoutId().value());
+        record.setMemberId(snapshot.memberId().value());
         record.setOrderedAt(snapshot.orderedAt());
         record.setItemsTotal(snapshot.amounts().itemsTotal().yen());
         record.setShippingFee(snapshot.amounts().shippingFee().yen());
@@ -162,7 +167,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setVersion(snapshot.version() + 1);
         record.setUpdatedAt(clock.instant());
         int updated = dsl.update(SALES_ORDER).set(record)
-                .where(SALES_ORDER.ID.eq(snapshot.id()))
+                .where(SALES_ORDER.ID.eq(snapshot.id().value()))
                 .and(SALES_ORDER.VERSION.eq(snapshot.version()))
                 .execute();
         if (updated == 0) {
@@ -178,9 +183,9 @@ class JooqOrderRepository implements OrderRepository {
      * @return 注文
      */
     @Override
-    public Optional<Order> lockById(UUID id) {
+    public Optional<Order> lockById(OrderId id) {
         return dsl.selectFrom(SALES_ORDER)
-                .where(SALES_ORDER.ID.eq(id))
+                .where(SALES_ORDER.ID.eq(id.value()))
                 .forUpdate()
                 .fetchOptional()
                 .map(this::restore);
@@ -193,9 +198,9 @@ class JooqOrderRepository implements OrderRepository {
      * @return 注文
      */
     @Override
-    public Optional<Order> findById(UUID id) {
+    public Optional<Order> findById(OrderId id) {
         return dsl.selectFrom(SALES_ORDER)
-                .where(SALES_ORDER.ID.eq(id))
+                .where(SALES_ORDER.ID.eq(id.value()))
                 .fetchOptional()
                 .map(this::restore);
     }
@@ -207,11 +212,12 @@ class JooqOrderRepository implements OrderRepository {
      * @return 注文 ID
      */
     @Override
-    public Optional<UUID> findIdByCheckoutId(UUID checkoutId) {
+    public Optional<OrderId> findIdByCheckoutId(CheckoutId checkoutId) {
         return dsl.select(SALES_ORDER.ID)
                 .from(SALES_ORDER)
-                .where(SALES_ORDER.CHECKOUT_ID.eq(checkoutId))
-                .fetchOptional(SALES_ORDER.ID);
+                .where(SALES_ORDER.CHECKOUT_ID.eq(checkoutId.value()))
+                .fetchOptional(SALES_ORDER.ID)
+                .map(OrderId::new);
     }
 
     /**
@@ -221,12 +227,12 @@ class JooqOrderRepository implements OrderRepository {
      * @return 注文 ID
      */
     @Override
-    public List<UUID> findPendingIdsByMemberId(UUID memberId) {
+    public List<OrderId> findPendingIdsByMemberId(MemberId memberId) {
         return dsl.select(SALES_ORDER.ID)
                 .from(SALES_ORDER)
-                .where(SALES_ORDER.MEMBER_ID.eq(memberId), SALES_ORDER.STATUS.eq(OrderStatus.PENDING_PAYMENT.name()))
+                .where(SALES_ORDER.MEMBER_ID.eq(memberId.value()), SALES_ORDER.STATUS.eq(OrderStatus.PENDING_PAYMENT.name()))
                 .orderBy(SALES_ORDER.ORDERED_AT.desc(), SALES_ORDER.ID)
-                .fetch(SALES_ORDER.ID);
+                .fetch(SALES_ORDER.ID).stream().map(OrderId::new).toList();
     }
 
     /**
@@ -235,9 +241,9 @@ class JooqOrderRepository implements OrderRepository {
      * @param memberId 会員 ID
      */
     @Override
-    public void lockForMember(UUID memberId) {
+    public void lockForMember(MemberId memberId) {
         // 複数の支払待ちの注文を認めるので一意索引では防げない。トランザクションの終わりで解放される、会員 ID の advisory lock を使う
-        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.ORDER, memberId);
+        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.ORDER, memberId.value());
     }
 
     /**
@@ -273,7 +279,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setCancellationRequestResult(request == null ? null : request.result().name());
         record.setCancellationDecidedAt(request == null ? null : request.decidedAt());
         var decidedBy = request == null ? null : request.decidedBy();
-        record.setCancellationDecidedById(decidedBy == null ? null : decidedBy.id());
+        record.setCancellationDecidedById(decidedBy == null ? null : decidedBy.id().value());
         record.setCancellationDecidedByName(decidedBy == null ? null : decidedBy.name());
     }
 
@@ -288,7 +294,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setCancellationReason(cancellation == null ? null : cancellation.reason());
         record.setCancellationRestocked(cancellation == null ? null : cancellation.restocked());
         var cancelledBy = cancellation == null ? null : cancellation.cancelledBy();
-        record.setCancelledById(cancelledBy == null ? null : cancelledBy.id());
+        record.setCancelledById(cancelledBy == null ? null : cancelledBy.id().value());
         record.setCancelledByName(cancelledBy == null ? null : cancelledBy.name());
     }
 
@@ -302,7 +308,7 @@ class JooqOrderRepository implements OrderRepository {
                 SALES_ORDER_LINE.RATE_PERCENT, SALES_ORDER_LINE.UNIT_PRICE_INCL_TAX, SALES_ORDER_LINE.QUANTITY,
                 SALES_ORDER_LINE.SUBTOTAL);
         for (var line : snapshot.lines()) {
-            lines = lines.values(snapshot.id(), (short) line.lineNo(), line.variantId(),
+            lines = lines.values(snapshot.id().value(), (short) line.lineNo(), line.variantId().value(),
                     line.productCode(), line.variantCode(), line.productName(),
                     JSONB.valueOf(jsonMapper.writeValueAsString(line.axisValues())), line.unitPriceExclTax().yen(),
                     line.ratePercent(), line.unitPriceInclTax().yen(), line.quantity(), line.subtotal().yen());
@@ -314,7 +320,7 @@ class JooqOrderRepository implements OrderRepository {
             var insert = dsl.insertInto(SALES_ORDER_TAX, SALES_ORDER_TAX.ORDER_ID, SALES_ORDER_TAX.RATE_PERCENT,
                     SALES_ORDER_TAX.TAXABLE_AMOUNT, SALES_ORDER_TAX.TAX_AMOUNT);
             for (var tax : taxes) {
-                insert = insert.values(snapshot.id(), tax.ratePercent(), tax.taxableAmount().yen(),
+                insert = insert.values(snapshot.id().value(), tax.ratePercent(), tax.taxableAmount().yen(),
                         tax.taxAmount().yen());
             }
             insert.execute();
@@ -341,10 +347,10 @@ class JooqOrderRepository implements OrderRepository {
             var address = new ShippingAddress(record.getRecipientName(), record.getPostalCode(), area, record.getAddress(),
                     record.getPhone());
             return Order.restore(new Order.Snapshot(
-                    record.getId(),
+                    new OrderId(record.getId()),
                     OrderNumber.of(record.getOrderNumber()),
-                    record.getCheckoutId(),
-                    record.getMemberId(),
+                    new CheckoutId(record.getCheckoutId()),
+                    new MemberId(record.getMemberId()),
                     record.getOrderedAt(),
                     OrderStatus.valueOf(record.getStatus()),
                     lineRecords.map(this::restoreLine),
@@ -365,7 +371,7 @@ class JooqOrderRepository implements OrderRepository {
     private OrderLine restoreLine(SalesOrderLineRecord line) {
         return new OrderLine(
                 line.getLineNo(),
-                line.getVariantId(),
+                new VariantId(line.getVariantId()),
                 line.getProductCode(),
                 line.getVariantCode(),
                 line.getProductName(),
@@ -460,6 +466,6 @@ class JooqOrderRepository implements OrderRepository {
      * <p>記録を始める前の行は空なので null。
      */
     private static @Nullable Operator operatorOf(@Nullable UUID id, String name) {
-        return id == null ? null : new Operator(id, name);
+        return id == null ? null : new Operator(new OperatorId(id), name);
     }
 }

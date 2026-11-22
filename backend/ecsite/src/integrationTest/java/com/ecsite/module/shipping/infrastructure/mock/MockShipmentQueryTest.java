@@ -1,8 +1,10 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.Shipment;
+import com.ecsite.module.shipping.domain.ShipmentId;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
@@ -81,7 +83,7 @@ class MockShipmentQueryTest {
      * @return 保存した出荷
      */
     private Shipment insert(String trackingNumber, Instant shippedAt) {
-        var shipment = Shipment.create(UUID.randomUUID(), UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of(trackingNumber),
+        var shipment = Shipment.create(new ShipmentId(UUID.randomUUID()), new OrderId(UUID.randomUUID()), Carrier.YAMATO, TrackingNumber.of(trackingNumber),
                 shippedAt);
         repository.insert(shipment);
         return shipment;

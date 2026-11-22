@@ -10,6 +10,7 @@ import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPay
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.support.LogCapture;
 import com.ecsite.support.TestSettings;
@@ -53,26 +54,26 @@ class PaymentExpiryJobLoggingTest {
     /**
      * 支払画面を開いた、期限を過ぎた支払
      */
-    private static final PastDeadlinePaymentView FIRST = new PastDeadlinePaymentView(UUID.randomUUID(),
+    private static final PastDeadlinePaymentView FIRST = new PastDeadlinePaymentView(new PaymentId(UUID.randomUUID()),
             new PaymentPage("page-first", "https://payment.example.com/page-first"));
 
     /**
      * 支払画面を開いた、期限を過ぎたもう 1 つの支払
      */
-    private static final PastDeadlinePaymentView SECOND = new PastDeadlinePaymentView(UUID.randomUUID(),
+    private static final PastDeadlinePaymentView SECOND = new PastDeadlinePaymentView(new PaymentId(UUID.randomUUID()),
             new PaymentPage("page-second", "https://payment.example.com/page-second"));
 
     /**
      * 与信の反映を待つ支払
      */
     private static final AwaitingAuthorizationPaymentView AWAITING_FIRST =
-            new AwaitingAuthorizationPaymentView(UUID.randomUUID(), "page-awaiting-first");
+            new AwaitingAuthorizationPaymentView(new PaymentId(UUID.randomUUID()), "page-awaiting-first");
 
     /**
      * 与信の反映を待つもう 1 つの支払
      */
     private static final AwaitingAuthorizationPaymentView AWAITING_SECOND =
-            new AwaitingAuthorizationPaymentView(UUID.randomUUID(), "page-awaiting-second");
+            new AwaitingAuthorizationPaymentView(new PaymentId(UUID.randomUUID()), "page-awaiting-second");
 
     /**
      * 決済サービスから取得した与信
@@ -327,7 +328,7 @@ class PaymentExpiryJobLoggingTest {
         @DisplayName("AC-409-6 支払画面のない行があっても、warn のログに支払 ID を出して、残りの支払を処理する")
         void continuesAfterRowWithoutPage() {
             // 準備：1 件目は支払画面のない行
-            var broken = new AwaitingAuthorizationPaymentView(UUID.randomUUID(), null);
+            var broken = new AwaitingAuthorizationPaymentView(new PaymentId(UUID.randomUUID()), null);
             when(queryService.findAwaitingAuthorization(anyInt())).thenReturn(List.of(broken, AWAITING_SECOND));
             when(gateway.fetchAuthorization("page-awaiting-second")).thenReturn(AUTHORIZATION);
 
@@ -470,7 +471,7 @@ class PaymentExpiryJobLoggingTest {
      *
      * @param skippedId 飛ばした 1 件目の支払 ID
      */
-    private void assertFetchSkippedAndContinued(UUID skippedId) {
+    private void assertFetchSkippedAndContinued(PaymentId skippedId) {
         verify(commandService, never()).authorizeFromGateway(eq(skippedId), any());
         verify(commandService).authorizeFromGateway(AWAITING_SECOND.id(), AUTHORIZATION);
         assertThat(warnLinesContaining(skippedId.toString())).hasSize(1);
@@ -498,7 +499,7 @@ class PaymentExpiryJobLoggingTest {
      */
     private static List<AwaitingAuthorizationPaymentView> awaitingPayments(int count) {
         return IntStream.range(0, count)
-                .mapToObj(index -> new AwaitingAuthorizationPaymentView(UUID.randomUUID(), "page-awaiting-" + index))
+                .mapToObj(index -> new AwaitingAuthorizationPaymentView(new PaymentId(UUID.randomUUID()), "page-awaiting-" + index))
                 .toList();
     }
 

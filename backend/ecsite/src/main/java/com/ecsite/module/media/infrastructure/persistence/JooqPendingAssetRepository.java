@@ -1,5 +1,6 @@
 package com.ecsite.module.media.infrastructure.persistence;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.jooq.media.tables.records.PendingAssetRecord;
 import com.ecsite.module.media.application.port.PendingAssetRepository;
 import com.ecsite.module.media.domain.PendingAsset;
@@ -33,7 +34,7 @@ class JooqPendingAssetRepository implements PendingAssetRepository {
     @Override
     public void insert(PendingAsset pendingAsset) {
         dsl.insertInto(PENDING_ASSET)
-                .set(PENDING_ASSET.ID, pendingAsset.id())
+                .set(PENDING_ASSET.ID, pendingAsset.id().value())
                 .set(PENDING_ASSET.STORAGE_KEY, pendingAsset.storageKey())
                 .set(PENDING_ASSET.PREPARED_AT, pendingAsset.preparedAt())
                 .execute();
@@ -43,8 +44,8 @@ class JooqPendingAssetRepository implements PendingAssetRepository {
      * {@inheritDoc}
      */
     @Override
-    public boolean deleteById(UUID id) {
-        return dsl.deleteFrom(PENDING_ASSET).where(PENDING_ASSET.ID.eq(id)).execute() > 0;
+    public boolean deleteById(AssetId id) {
+        return dsl.deleteFrom(PENDING_ASSET).where(PENDING_ASSET.ID.eq(id.value())).execute() > 0;
     }
 
     /**
@@ -75,6 +76,6 @@ class JooqPendingAssetRepository implements PendingAssetRepository {
      * 仮のアセットのレコードを、仮のアセットに変換する。
      */
     private static PendingAsset toPendingAsset(PendingAssetRecord record) {
-        return new PendingAsset(record.getId(), record.getStorageKey(), record.getPreparedAt());
+        return new PendingAsset(new AssetId(record.getId()), record.getStorageKey(), record.getPreparedAt());
     }
 }

@@ -86,7 +86,7 @@ class ReportMapper {
     VariantSalesReport toVariantSalesReport(com.ecsite.module.reporting.application.model.view.VariantSalesReport report) {
         var variants = report.variants().stream()
                 .map(variant -> new VariantSales()
-                        .variantId(variant.variantId())
+                        .variantId(variant.variantId().value())
                         .variantCode(variant.variantCode())
                         .axisValues(variant.axisValues().stream()
                                 .map(axis -> new OrderAxisValue().name(axis.name()).value(axis.value()))
@@ -95,7 +95,7 @@ class ReportMapper {
                         .amount(variant.amount().yen()))
                 .toList();
         return new VariantSalesReport()
-                .productId(report.productId())
+                .productId(report.productId().value())
                 .productName(report.productName())
                 .variants(variants)
                 .shippingExcluded(report.shippingExcluded());

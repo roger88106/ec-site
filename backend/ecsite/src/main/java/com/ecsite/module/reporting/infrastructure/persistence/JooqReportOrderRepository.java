@@ -1,6 +1,8 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
 import com.ecsite.common.persistence.AdvisoryLocks;
@@ -23,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
@@ -58,9 +59,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      * @param orderId 注文 ID
      */
     @Override
-    public void lock(UUID orderId) {
+    public void lock(OrderId orderId) {
         // トランザクションの終わりで外れる、注文 ID のロック（PostgreSQL の advisory lock）
-        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.REPORTING, orderId);
+        AdvisoryLocks.lock(dsl, AdvisoryLockSpace.REPORTING, orderId.value());
     }
 
     /**
@@ -75,7 +76,7 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     public boolean appendHistory(StatusHistoryEntry entry) {
         return dsl.insertInto(STATUS_HISTORY)
                 .set(STATUS_HISTORY.EVENT_ID, entry.eventId())
-                .set(STATUS_HISTORY.ORDER_ID, entry.orderId())
+                .set(STATUS_HISTORY.ORDER_ID, entry.orderId().value())
                 .set(STATUS_HISTORY.KIND, entry.kind().name())
                 .set(STATUS_HISTORY.FROM_STATUS, entry.from() == null ? null : entry.from().name())
                 .set(STATUS_HISTORY.TO_STATUS, entry.to().name())
@@ -97,13 +98,13 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      * @return 履歴
      */
     @Override
-    public List<StatusHistoryEntry> history(UUID orderId) {
+    public List<StatusHistoryEntry> history(OrderId orderId) {
         return dsl.selectFrom(STATUS_HISTORY)
-                .where(STATUS_HISTORY.ORDER_ID.eq(orderId))
+                .where(STATUS_HISTORY.ORDER_ID.eq(orderId.value()))
                 .orderBy(STATUS_HISTORY.OCCURRED_AT, STATUS_HISTORY.EVENT_ID)
                 .fetch(row -> RestoreGuard.restore("status history", () -> {
                     var kind = HistoryKind.valueOf(row.getKind());
-                    return new StatusHistoryEntry(row.getEventId(), row.getOrderId(), kind,
+                    return new StatusHistoryEntry(row.getEventId(), new OrderId(row.getOrderId()), kind,
                             row.getFromStatus() == null ? null : historyStatus(kind, row.getFromStatus()),
                             historyStatus(kind, row.getToStatus()), row.getOccurredAt(),
                             row.getCancellationKind() == null ? null : ReportCancellationKind.valueOf(row.getCancellationKind()),
@@ -118,14 +119,14 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      * @return 行番号 → 商品 ID。写しがない、または商品 ID がない行は含めない
      */
     @Override
-    public Map<Integer, UUID> productIds(UUID orderId) {
+    public Map<Integer, ProductId> productIds(OrderId orderId) {
         return dsl.select(SALES_ORDER_LINE.LINE_NO, SALES_ORDER_LINE.PRODUCT_ID)
                 .from(SALES_ORDER_LINE)
-                .where(SALES_ORDER_LINE.ORDER_ID.eq(orderId), SALES_ORDER_LINE.PRODUCT_ID.isNotNull())
+                .where(SALES_ORDER_LINE.ORDER_ID.eq(orderId.value()), SALES_ORDER_LINE.PRODUCT_ID.isNotNull())
                 .fetch()
                 .stream()
                 .collect(Collectors.toMap(row -> row.get(SALES_ORDER_LINE.LINE_NO).intValue(),
-                        row -> row.get(SALES_ORDER_LINE.PRODUCT_ID)));
+                        row -> new ProductId(row.get(SALES_ORDER_LINE.PRODUCT_ID))));
     }
 
     /**
@@ -149,9 +150,9 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     private void saveOrder(ReportOrder order) {
         var now = clock.instant();
         var record = dsl.newRecord(SALES_ORDER);
-        record.setOrderId(order.orderId());
+        record.setOrderId(order.orderId().value());
         record.setOrderNumber(order.orderNumber());
-        record.setMemberId(order.memberId());
+        record.setMemberId(order.memberId().value());
 
         record.setOrderedAt(order.orderedAt());
         record.setOrderedOn(dateOf(order.orderedAt()));
@@ -187,7 +188,7 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      * 明細を消して入れ直す。
      */
     private void replaceLines(ReportOrder order) {
-        dsl.deleteFrom(SALES_ORDER_LINE).where(SALES_ORDER_LINE.ORDER_ID.eq(order.orderId())).execute();
+        dsl.deleteFrom(SALES_ORDER_LINE).where(SALES_ORDER_LINE.ORDER_ID.eq(order.orderId().value())).execute();
         if (order.lines().isEmpty()) {
             return;
         }
@@ -197,8 +198,8 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 SALES_ORDER_LINE.QUANTITY, SALES_ORDER_LINE.RATE_PERCENT, SALES_ORDER_LINE.SUBTOTAL_INCL_TAX,
                 SALES_ORDER_LINE.SUBTOTAL_EXCL_TAX);
         for (var line : order.lines()) {
-            insert = insert.values(order.orderId(), (short) line.lineNo(), line.productId(),
-                    line.variantId(), line.productCode(), line.variantCode(), line.productName(),
+            insert = insert.values(order.orderId().value(), (short) line.lineNo(), line.productId() == null ? null : line.productId().value(),
+                    line.variantId().value(), line.productCode(), line.variantCode(), line.productName(),
                     JSONB.valueOf(jsonMapper.writeValueAsString(line.axisValues())), line.quantity(), line.ratePercent(),
                     line.subtotalInclTax().yen(), line.subtotalExclTax().yen());
         }

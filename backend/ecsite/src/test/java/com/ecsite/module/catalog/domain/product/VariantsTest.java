@@ -1,7 +1,9 @@
 package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -86,7 +88,7 @@ class VariantsTest {
             var variants = new Variants(List.of(variant(1)));
 
             // 操作と確認：一覧にない ID は拒否される
-            assertBusinessError(() -> variants.require(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> variants.require(new VariantId(UUID.randomUUID())), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -215,7 +217,7 @@ class VariantsTest {
             var variants = new Variants(List.of(variant(1)));
 
             // 操作と確認：一覧にない ID は拒否される
-            assertBusinessError(() -> variants.replace(UUID.randomUUID(), variant -> variant), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> variants.replace(new VariantId(UUID.randomUUID()), variant -> variant), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -227,8 +229,8 @@ class VariantsTest {
         @DisplayName("その画像を指定しているバリアントだけ、指定を外す")
         void clearsOnlyMatchingVariants() {
             // 準備：画像 A を指定した 2 つと、画像 B を指定した 1 つ
-            var imageA = UUID.randomUUID();
-            var imageB = UUID.randomUUID();
+            var imageA = new ProductImageId(UUID.randomUUID());
+            var imageB = new ProductImageId(UUID.randomUUID());
             var variants = new Variants(List.of(variant(1, imageA), variant(2, imageB), variant(3, imageA)));
 
             // 操作：画像 A の指定を外す
@@ -288,7 +290,7 @@ class VariantsTest {
             var variants = new Variants(List.of(variant(1)));
 
             // 操作と確認：一覧にない ID は拒否される
-            assertBusinessError(() -> variants.remove(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> variants.remove(new VariantId(UUID.randomUUID())), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -343,8 +345,8 @@ class VariantsTest {
      * @param imageId      指定した画像の ID。なければ null
      * @return バリアント
      */
-    private static Variant variant(int displayOrder, UUID imageId) {
-        return new Variant(UUID.randomUUID(), VariantCode.of("ABC-001"), List.of(), displayOrder, false, imageId);
+    private static Variant variant(int displayOrder, ProductImageId imageId) {
+        return new Variant(new VariantId(UUID.randomUUID()), VariantCode.of("ABC-001"), List.of(), displayOrder, false, imageId);
     }
 
     /**
@@ -356,6 +358,6 @@ class VariantsTest {
      * @return バリアント
      */
     private static Variant variant(int displayOrder, VariantCode code, List<String> axisValues) {
-        return new Variant(UUID.randomUUID(), code, axisValues, displayOrder, false, null);
+        return new Variant(new VariantId(UUID.randomUUID()), code, axisValues, displayOrder, false, null);
     }
 }

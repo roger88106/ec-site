@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.infrastructure.directory;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.api.OrderApi;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ class OrderApiDirectoryTest {
     /**
      * 注文 ID
      */
-    private static final UUID ORDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000572");
+    private static final OrderId ORDER_ID = new OrderId(UUID.fromString("00000000-0000-0000-0000-000000000572"));
 
     /**
      * 注文のメールアドレス

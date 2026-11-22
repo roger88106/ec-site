@@ -184,7 +184,7 @@ class ReturnedOrderRefundTest {
         // 操作：キャンセルし、キャンセルのイベントのリスナーと返金が終わるのを待つ
         cancel();
         asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
-                && changed.orderId().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
+                && changed.orderId().value().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
         await().atMost(TIMEOUT).until(() -> paymentStatus().equals("REFUNDED"));
 
         // 確認：キャンセルのリスナーが終わった後も、この注文の連絡先へのメールは出荷通知の 1 通のまま

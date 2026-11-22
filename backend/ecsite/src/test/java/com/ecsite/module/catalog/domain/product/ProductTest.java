@@ -1,5 +1,9 @@
 package com.ecsite.module.catalog.domain.product;
 
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
@@ -45,17 +49,22 @@ class ProductTest {
      *
      * <p>税モジュールの ID なので、存在しなくてよい。
      */
-    private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final TaxCategoryId TAX_CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
     /**
      * 所属カテゴリの ID
      */
-    private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000001001");
+    private static final CategoryId CATEGORY_ID = new CategoryId(UUID.fromString("00000000-0000-0000-0000-000000001001"));
 
     /**
      * 2 つ目の所属カテゴリの ID
      */
-    private static final UUID OTHER_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000001002");
+    private static final CategoryId OTHER_CATEGORY_ID = new CategoryId(UUID.fromString("00000000-0000-0000-0000-000000001002"));
+
+    /**
+     * 登録する商品の ID
+     */
+    private static final ProductId PRODUCT_ID = new ProductId(UUID.fromString("00000000-0000-0000-0000-0000000000b1"));
 
     /**
      * 商品品番
@@ -95,12 +104,12 @@ class ProductTest {
     /**
      * 編集後の税区分 ID
      */
-    private static final UUID NEW_TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final TaxCategoryId NEW_TAX_CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
 
     /**
      * 編集後の所属カテゴリの ID
      */
-    private static final UUID NEW_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000001003");
+    private static final CategoryId NEW_CATEGORY_ID = new CategoryId(UUID.fromString("00000000-0000-0000-0000-000000001003"));
 
     /**
      * 編集後の税抜価格（円）
@@ -110,12 +119,12 @@ class ProductTest {
     /**
      * 復元する商品の ID
      */
-    private static final UUID RESTORED_ID = UUID.fromString("00000000-0000-0000-0000-000000002001");
+    private static final ProductId RESTORED_ID = new ProductId(UUID.fromString("00000000-0000-0000-0000-000000002001"));
 
     /**
      * 復元するバリアントの ID
      */
-    private static final UUID RESTORED_VARIANT_ID = UUID.fromString("00000000-0000-0000-0000-000000003001");
+    private static final VariantId RESTORED_VARIANT_ID = new VariantId(UUID.fromString("00000000-0000-0000-0000-000000003001"));
 
     /**
      * 復元するバリアントの品番
@@ -155,6 +164,7 @@ class ProductTest {
             var product = registered();
 
             // 確認：指定した内容を持つ
+            assertThat(product.id()).isEqualTo(PRODUCT_ID);
             assertRegisteredAsSpecified(product);
         }
 
@@ -162,7 +172,7 @@ class ProductTest {
         @DisplayName("AC-13 所属カテゴリが 0 個でも登録できる")
         void acceptsNoCategory() {
             // 操作：所属カテゴリを指定せずに登録する
-            var product = factory.create(ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
+            var product = factory.create(new ProductId(UUID.randomUUID()), ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
                     PriceExclTax.of(PRICE_YEN), Set.of(), AXES);
 
             // 確認：所属カテゴリがない
@@ -173,7 +183,7 @@ class ProductTest {
         @DisplayName("AC-13 所属カテゴリを複数指定して登録できる")
         void acceptsMultipleCategories() {
             // 操作：所属カテゴリを 2 つ指定して登録する
-            var product = factory.create(ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
+            var product = factory.create(new ProductId(UUID.randomUUID()), ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID,
                     PriceExclTax.of(PRICE_YEN), Set.of(CATEGORY_ID, OTHER_CATEGORY_ID), AXES);
 
             // 確認：指定した 2 つのカテゴリに所属する
@@ -498,7 +508,6 @@ class ProductTest {
      *
      * <p>確認すること（期待値は定数）：
      * <ul>
-     *   <li>ID が振られている</li>
      *   <li>商品品番</li>
      *   <li>商品名</li>
      *   <li>説明</li>
@@ -511,7 +520,6 @@ class ProductTest {
      * @param product 確認する商品
      */
     private static void assertRegisteredAsSpecified(Product product) {
-        assertThat(product.id()).isNotNull();
         assertThat(product.productCode()).isEqualTo(ProductCode.of(PRODUCT_CODE));
         assertThat(product.name()).isEqualTo(NAME);
         assertThat(product.description()).isEqualTo(DESCRIPTION);
@@ -618,7 +626,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product registered() {
-        return factory.create(ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
+        return factory.create(PRODUCT_ID, ProductCode.of(PRODUCT_CODE), NAME, DESCRIPTION, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
                 Set.of(CATEGORY_ID), AXES);
     }
 
@@ -658,7 +666,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productWithAxes(String... axes) {
-        return factory.create(ProductCode.of(PRODUCT_CODE), NAME, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
+        return factory.create(new ProductId(UUID.randomUUID()), ProductCode.of(PRODUCT_CODE), NAME, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
                 Set.of(), List.of(axes));
     }
 
@@ -669,7 +677,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productNamed(String name) {
-        return factory.create(ProductCode.of(PRODUCT_CODE), name, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(), List.of());
+        return factory.create(new ProductId(UUID.randomUUID()), ProductCode.of(PRODUCT_CODE), name, "", TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN), Set.of(), List.of());
     }
 
     /**
@@ -679,7 +687,7 @@ class ProductTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productDescribed(String description) {
-        return factory.create(ProductCode.of(PRODUCT_CODE), NAME, description, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
+        return factory.create(new ProductId(UUID.randomUUID()), ProductCode.of(PRODUCT_CODE), NAME, description, TAX_CATEGORY_ID, PriceExclTax.of(PRICE_YEN),
                 Set.of(), List.of());
     }
 
@@ -690,7 +698,7 @@ class ProductTest {
      */
     private Product publishedWithVariant() {
         var product = registered();
-        product.addVariant(VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
+        product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("ABC-001-WH-M"), List.of("白", "M"), NOW);
         product.publish(NOW);
         return product;
     }

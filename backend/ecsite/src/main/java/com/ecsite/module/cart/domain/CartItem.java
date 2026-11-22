@@ -1,7 +1,8 @@
 package com.ecsite.module.cart.domain;
 
+import com.ecsite.common.model.id.VariantId;
+
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * カートの品目
@@ -10,7 +11,7 @@ import java.util.UUID;
  * @param quantity  数量
  * @param addedAt   入れた日時
  */
-public record CartItem(UUID variantId, int quantity, Instant addedAt) {
+public record CartItem(VariantId variantId, int quantity, Instant addedAt) {
 
     /**
      * 数量を変えた品目を返す。

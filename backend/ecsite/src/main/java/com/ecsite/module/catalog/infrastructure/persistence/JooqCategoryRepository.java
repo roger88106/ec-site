@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.catalog.Keys;
 import com.ecsite.jooq.catalog.tables.records.CategoryRecord;
@@ -86,9 +87,9 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return カテゴリ
      */
     @Override
-    public Optional<Category> findById(UUID id) {
+    public Optional<Category> findById(CategoryId id) {
         return dsl.selectFrom(CATEGORY)
-                .where(CATEGORY.ID.eq(id))
+                .where(CATEGORY.ID.eq(id.value()))
                 .fetchOptional()
                 .map(this::toCategory);
     }
@@ -100,7 +101,7 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return 子カテゴリの一覧
      */
     @Override
-    public List<Category> lockChildren(@Nullable UUID parentId) {
+    public List<Category> lockChildren(@Nullable CategoryId parentId) {
         return dsl.selectFrom(CATEGORY)
                 .where(childOf(parentId))
                 // 並び順の同時の変更を直列にする。いつも同じ順にロックして、デッドロックを避ける
@@ -116,7 +117,7 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return 兄弟の最大＋1。兄弟がなければ 1
      */
     @Override
-    public int nextDisplayOrder(@Nullable UUID parentId) {
+    public int nextDisplayOrder(@Nullable CategoryId parentId) {
         var next = DSL.coalesce(DSL.max(CATEGORY.DISPLAY_ORDER), 0).plus(1);
         return dsl.select(next)
                 .from(CATEGORY)
@@ -132,8 +133,8 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return 子カテゴリを持つなら true
      */
     @Override
-    public boolean hasChildren(UUID id) {
-        return dsl.fetchExists(CATEGORY, CATEGORY.PARENT_ID.eq(id));
+    public boolean hasChildren(CategoryId id) {
+        return dsl.fetchExists(CATEGORY, CATEGORY.PARENT_ID.eq(id.value()));
     }
 
     /**
@@ -143,8 +144,8 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return 商品が所属していれば true
      */
     @Override
-    public boolean hasProducts(UUID id) {
-        return dsl.fetchExists(PRODUCT_CATEGORY, PRODUCT_CATEGORY.CATEGORY_ID.eq(id));
+    public boolean hasProducts(CategoryId id) {
+        return dsl.fetchExists(PRODUCT_CATEGORY, PRODUCT_CATEGORY.CATEGORY_ID.eq(id.value()));
     }
 
     /**
@@ -154,10 +155,11 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return 全て存在すれば true
      */
     @Override
-    public boolean existsAll(Collection<UUID> ids) {
+    public boolean existsAll(Collection<CategoryId> ids) {
         // 同じ ID が重複して送られても、件数の比較がずれないようにする
         var distinct = Set.copyOf(ids);
-        return distinct.isEmpty() || dsl.fetchCount(CATEGORY, CATEGORY.ID.in(distinct)) == distinct.size();
+        return distinct.isEmpty()
+                || dsl.fetchCount(CATEGORY, CATEGORY.ID.in(distinct.stream().map(CategoryId::value).toList())) == distinct.size();
     }
 
     /**
@@ -173,8 +175,8 @@ class JooqCategoryRepository implements CategoryRepository {
         var now = clock.instant();
 
         WRITE_CONSTRAINTS.run(() -> dsl.insertInto(CATEGORY)
-                .set(CATEGORY.ID, snapshot.id())
-                .set(CATEGORY.PARENT_ID, snapshot.parentId())
+                .set(CATEGORY.ID, snapshot.id().value())
+                .set(CATEGORY.PARENT_ID, snapshot.parentId() == null ? null : snapshot.parentId().value())
                 .set(CATEGORY.NAME, snapshot.name())
                 .set(CATEGORY.DEPTH, (short) snapshot.depth())
                 .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
@@ -203,7 +205,7 @@ class JooqCategoryRepository implements CategoryRepository {
                 .set(CATEGORY.DISPLAY_ORDER, snapshot.displayOrder())
                 .set(CATEGORY.VERSION, snapshot.version() + 1)
                 .set(CATEGORY.UPDATED_AT, clock.instant())
-                .where(CATEGORY.ID.eq(snapshot.id()))
+                .where(CATEGORY.ID.eq(snapshot.id().value()))
                 .and(CATEGORY.VERSION.eq(snapshot.version()))
                 .execute());
         if (affected == 0) {
@@ -227,7 +229,7 @@ class JooqCategoryRepository implements CategoryRepository {
         }
         var rows = categories.stream()
                 .map(Category::toSnapshot)
-                .map(snapshot -> DSL.row(List.of(snapshot.id(), snapshot.version(), snapshot.name(), snapshot.displayOrder())))
+                .map(snapshot -> DSL.row(List.of(snapshot.id().value(), snapshot.version(), snapshot.name(), snapshot.displayOrder())))
                 .toArray(RowN[]::new);
         var changes = DSL.values(rows).as("changes", "id", "version", "name", "display_order");
         var id = changes.field("id", UUID.class);
@@ -259,7 +261,7 @@ class JooqCategoryRepository implements CategoryRepository {
     @Override
     public void delete(Category category) {
         int affected = DELETE_CONSTRAINTS.call(() -> dsl.deleteFrom(CATEGORY)
-                .where(CATEGORY.ID.eq(category.id()))
+                .where(CATEGORY.ID.eq(category.id().value()))
                 .execute());
         if (affected == 0) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
@@ -274,8 +276,8 @@ class JooqCategoryRepository implements CategoryRepository {
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 条件
      */
-    private static Condition childOf(@Nullable UUID parentId) {
-        return parentId == null ? CATEGORY.PARENT_ID.isNull() : CATEGORY.PARENT_ID.eq(parentId);
+    private static Condition childOf(@Nullable CategoryId parentId) {
+        return parentId == null ? CATEGORY.PARENT_ID.isNull() : CATEGORY.PARENT_ID.eq(parentId.value());
     }
 
     /**
@@ -286,8 +288,8 @@ class JooqCategoryRepository implements CategoryRepository {
      */
     private Category toCategory(CategoryRecord record) {
         return factory.restore(new Category.Snapshot(
-                record.getId(),
-                record.getParentId(),
+                new CategoryId(record.getId()),
+                record.getParentId() == null ? null : new CategoryId(record.getParentId()),
                 record.getName(),
                 record.getDepth(),
                 record.getDisplayOrder(),

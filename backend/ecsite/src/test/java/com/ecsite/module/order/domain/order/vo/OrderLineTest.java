@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order.vo;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -117,7 +118,7 @@ class OrderLineTest {
      * @return 明細
      */
     private static OrderLine line(int lineNo, int quantity, Money subtotal) {
-        return new OrderLine(lineNo, UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(), UNIT_PRICE_EXCL_TAX, RATE_PERCENT,
+        return new OrderLine(lineNo, new VariantId(UUID.randomUUID()), "P-1", "P-1-1", "商品", List.of(), UNIT_PRICE_EXCL_TAX, RATE_PERCENT,
                 UNIT_PRICE_INCL_TAX, quantity, subtotal);
     }
 }

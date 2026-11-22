@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.persistence;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.jooq.shipping.tables.records.ShipmentRecord;
 import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
@@ -63,6 +64,8 @@ class ShipmentRestoreFailureTest {
      */
     private void assertFindHides(Consumer<ShipmentRecord> breaking, Class<? extends Throwable> causeType) {
         var shipment = RECORDS.newRecord(SHIPMENT);
+        shipment.setId(UUID.randomUUID());
+        shipment.setOrderId(UUID.randomUUID());
         shipment.setCarrier("YAMATO");
         shipment.setTrackingNumber("123");
         shipment.setStatus("SHIPPED");
@@ -70,6 +73,6 @@ class ShipmentRestoreFailureTest {
         var dsl = new RestoreFailures().with("shipment", shipment).dsl();
         var repository = new JooqShipmentRepository(dsl, Clock.systemUTC());
 
-        assertValueIsHidden(() -> repository.findAllByOrderIds(List.of(UUID.randomUUID())), value, causeType);
+        assertValueIsHidden(() -> repository.findAllByOrderIds(List.of(new OrderId(UUID.randomUUID()))), value, causeType);
     }
 }

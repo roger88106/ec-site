@@ -62,7 +62,7 @@ class AdminOrderMapper {
     OrderDetail toOrderDetail(OrderDetailView view) {
         var actions = view.actions();
         var detail = new OrderDetail()
-                .id(view.id())
+                .id(view.id().value())
                 .orderNumber(view.orderNumber().value())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .status(toStatus(view.status()))
@@ -187,7 +187,7 @@ class AdminOrderMapper {
         var payment = item.payment();
         var shipment = item.shipment();
         var summary = new OrderSummary()
-                .id(view.id())
+                .id(view.id().value())
                 .orderNumber(view.orderNumber())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .customerName(view.customerName())
@@ -208,7 +208,7 @@ class AdminOrderMapper {
      */
     private static OrderLine toLine(com.ecsite.module.order.domain.order.vo.OrderLine line) {
         return new OrderLine()
-                .variantId(line.variantId())
+                .variantId(line.variantId().value())
                 .productCode(line.productCode())
                 .variantCode(line.variantCode())
                 .productName(line.productName())

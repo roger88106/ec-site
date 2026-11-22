@@ -1,11 +1,17 @@
 package com.ecsite.module.inventory.application;
 
+import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.StockAllocation;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
+import com.ecsite.module.inventory.domain.stock.vo.StockAdjustmentId;
+import com.ecsite.module.inventory.domain.stock.vo.StockItemId;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -50,6 +55,11 @@ public class StockReservationCommandService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 期限が指定した時刻より前の引当を、件数の上限まで消す。
      *
      * @param expiredBefore この時刻より前に期限が切れた引当を消す
@@ -74,7 +84,8 @@ public class StockReservationCommandService {
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {
+    public Set<VariantId> reserve(@NonNull ReservationHolderId holderId, @NonNull Map<VariantId, Integer> quantities,
+                                  @NonNull Instant expiresAt) {
         verifyPositive(quantities);
         var now = clock.instant();
 
@@ -106,7 +117,7 @@ public class StockReservationCommandService {
      * @param holderIds 持ち主 ID
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void release(@NonNull Collection<UUID> holderIds) {
+    public void release(@NonNull Collection<ReservationHolderId> holderIds) {
         reservationRepository.deleteByHolders(holderIds);
     }
 
@@ -125,8 +136,8 @@ public class StockReservationCommandService {
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public Set<UUID> commit(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId,
-                            @NonNull String orderNumber) {
+    public Set<VariantId> commit(@NonNull ReservationHolderId holderId, @NonNull Map<VariantId, Integer> quantities,
+                                 @NonNull OrderId orderId, @NonNull String orderNumber) {
         // 引当の解除より前に検査する ※拒否したときに、持ち主の引当を残す
         verifyPositive(quantities);
         var now = clock.instant();
@@ -145,10 +156,10 @@ public class StockReservationCommandService {
         }
 
         // 在庫数の減算 ※行ロックの中で足りることを確認したので、必ず成功する
-        var adjustments = new HashMap<UUID, StockAdjustment>();
+        var adjustments = new HashMap<VariantId, StockAdjustment>();
         for (var variantId : locked.keySet()) {
             var quantity = Objects.requireNonNull(quantities.get(variantId), "ロックした在庫は数量を指定したバリアントのもの");
-            adjustments.put(variantId, StockAdjustment.forOrder(-quantity, StockAdjustmentReason.ORDER, orderId, orderNumber, now));
+            adjustments.put(variantId, StockAdjustment.forOrder(new StockAdjustmentId(idGenerator.generate()), -quantity, StockAdjustmentReason.ORDER, orderId, orderNumber, now));
         }
         stockItemRepository.adjustAll(adjustments);
         return Set.of();
@@ -166,7 +177,7 @@ public class StockReservationCommandService {
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void restore(@NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId, @NonNull String orderNumber) {
+    public void restore(@NonNull Map<VariantId, Integer> quantities, @NonNull OrderId orderId, @NonNull String orderNumber) {
         verifyPositive(quantities);
         var now = clock.instant();
 
@@ -174,7 +185,7 @@ public class StockReservationCommandService {
         var locked = lockStocks(quantities.keySet());
 
         // 在庫数の戻し
-        var adjustments = new HashMap<UUID, StockAdjustment>();
+        var adjustments = new HashMap<VariantId, StockAdjustment>();
         for (var entry : quantities.entrySet()) {
             var variantId = entry.getKey();
             // 削除済みのバリアントは戻せない（C 側に表示された商品のバリアントは削除できないので、通常は起きない）
@@ -182,7 +193,7 @@ public class StockReservationCommandService {
                 log.warn("在庫がないため、注文のキャンセルの数量を戻せません: orderId={}, variantId={}", orderId, variantId);
                 continue;
             }
-            adjustments.put(variantId, StockAdjustment.forOrder(
+            adjustments.put(variantId, StockAdjustment.forOrder(new StockAdjustmentId(idGenerator.generate()),
                     entry.getValue(), StockAdjustmentReason.ORDER_CANCELLATION, orderId, orderNumber, now));
         }
         stockItemRepository.adjustAll(adjustments);
@@ -196,7 +207,7 @@ public class StockReservationCommandService {
      * @param quantities バリアント ID → 数量
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある（メッセージにはバリアント ID だけを入れる）
      */
-    private static void verifyPositive(Map<UUID, Integer> quantities) {
+    private static void verifyPositive(Map<VariantId, Integer> quantities) {
         quantities.forEach((variantId, quantity) -> {
             if (quantity <= 0) {
                 throw new IllegalArgumentException("数量が 0 以下です: variantId=" + variantId + ", quantity=" + quantity);
@@ -211,7 +222,7 @@ public class StockReservationCommandService {
      *
      * @return バリアント ID → 在庫。在庫のないバリアントは含まない
      */
-    private Map<UUID, LockedStock> lockStocks(Collection<UUID> variantIds) {
+    private Map<VariantId, LockedStock> lockStocks(Collection<VariantId> variantIds) {
         List<LockedStock> stocks = reservationRepository.lockStocks(variantIds);
         return stocks.stream().collect(Collectors.toMap(LockedStock::variantId, Function.identity()));
     }
@@ -223,13 +234,13 @@ public class StockReservationCommandService {
      *
      * @return バリアント ID → 販売可能数
      */
-    private Map<UUID, Integer> sellableOf(Map<UUID, LockedStock> locked, UUID holderId, Instant now) {
+    private Map<VariantId, Integer> sellableOf(Map<VariantId, LockedStock> locked, ReservationHolderId holderId, Instant now) {
         var stockItemIds = locked.values().stream().map(LockedStock::stockItemId).toList();
         // 在庫がなければ、引当を検索しない
         var reserved = stockItemIds.isEmpty()
-                ? Map.<UUID, Integer>of()
+                ? Map.<StockItemId, Integer>of()
                 : reservationRepository.sumActiveReservations(stockItemIds, holderId, now);
-        var sellable = new HashMap<UUID, Integer>();
+        var sellable = new HashMap<VariantId, Integer>();
         locked.values().forEach(stock ->
                 sellable.put(stock.variantId(), stock.quantity() - reserved.getOrDefault(stock.stockItemId(), 0)));
         return sellable;

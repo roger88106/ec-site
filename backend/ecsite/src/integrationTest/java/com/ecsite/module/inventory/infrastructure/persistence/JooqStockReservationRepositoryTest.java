@@ -1,8 +1,11 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
+import com.ecsite.module.inventory.domain.stock.vo.StockItemId;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.InventoryTestData;
 import org.jooq.DSLContext;
@@ -78,10 +81,10 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("在庫のあるバリアントだけを、バリアント ID の順に数量つきで取得する")
         void locksStocksInVariantOrder() {
             // 準備：ID の順と違う順に作った 3 つの在庫と、在庫のないバリアント
-            var first = UUID.fromString("00000000-0000-4000-8000-000000000001");
-            var second = UUID.fromString("00000000-0000-4000-8000-000000000002");
-            var third = UUID.fromString("00000000-0000-4000-8000-000000000003");
-            var noStock = UUID.fromString("00000000-0000-4000-8000-000000000004");
+            var first = new VariantId(UUID.fromString("00000000-0000-4000-8000-000000000001"));
+            var second = new VariantId(UUID.fromString("00000000-0000-4000-8000-000000000002"));
+            var third = new VariantId(UUID.fromString("00000000-0000-4000-8000-000000000003"));
+            var noStock = new VariantId(UUID.fromString("00000000-0000-4000-8000-000000000004"));
             var secondStock = createStock(second, 7);
             var firstStock = createStock(first, 3);
             var thirdStock = createStock(third, 0);
@@ -103,17 +106,17 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("有効な引当だけを、在庫ごとに合計する")
         void sumsOnlyActiveReservations() {
             // 準備：在庫 A・B・C
-            var stockA = createStock(UUID.randomUUID(), 10);
-            var stockB = createStock(UUID.randomUUID(), 10);
-            var stockC = createStock(UUID.randomUUID(), 10);
-            var excluded = UUID.randomUUID();
+            var stockA = createStock(new VariantId(UUID.randomUUID()), 10);
+            var stockB = createStock(new VariantId(UUID.randomUUID()), 10);
+            var stockC = createStock(new VariantId(UUID.randomUUID()), 10);
+            var excluded = new ReservationHolderId(UUID.randomUUID());
             // 準備：数える引当（A に 2 と 3、B に 1）
-            repository.insert(UUID.randomUUID(), Map.of(stockA, 2, stockB, 1), NOW.plusSeconds(60), NOW);
-            repository.insert(UUID.randomUUID(), Map.of(stockA, 3), NOW.plusSeconds(60), NOW);
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stockA, 2, stockB, 1), NOW.plusSeconds(60), NOW);
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stockA, 3), NOW.plusSeconds(60), NOW);
             // 準備：数えない引当（除く持ち主、期限切れ、期限ちょうど）
             repository.insert(excluded, Map.of(stockA, 4), NOW.plusSeconds(60), NOW);
-            repository.insert(UUID.randomUUID(), Map.of(stockA, 5), NOW.minusSeconds(1), NOW.minusSeconds(60));
-            repository.insert(UUID.randomUUID(), Map.of(stockB, 6), NOW, NOW.minusSeconds(60));
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stockA, 5), NOW.minusSeconds(1), NOW.minusSeconds(60));
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stockB, 6), NOW, NOW.minusSeconds(60));
 
             // 操作：除く持ち主を指定して、3 つの在庫の引当を合計する
             var sums = repository.sumActiveReservations(List.of(stockA, stockB, stockC), excluded, NOW);
@@ -131,8 +134,8 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("持ち主の前の引当を消してから加えると、前の引当は消えて新しい内容と数量になり、ほかの持ち主の引当は変わらない")
         void insertsAfterDeletingReservationsOfHolder() {
             // 準備：持ち主の引当（A に 2、B に 1）と、ほかの持ち主の引当（A に 4）
-            var stockA = createStock(UUID.randomUUID(), 10);
-            var stockB = createStock(UUID.randomUUID(), 10);
+            var stockA = createStock(new VariantId(UUID.randomUUID()), 10);
+            var stockB = createStock(new VariantId(UUID.randomUUID()), 10);
             var holder = reserveForHolderAndOther(stockA, stockB);
 
             // 操作：持ち主の引当を消し（呼ぶ側の手順）、B に 5 で加える
@@ -140,7 +143,7 @@ class JooqStockReservationRepositoryTest {
             repository.insert(holder, Map.of(stockB, 5), NOW.plusSeconds(120), NOW);
 
             // 確認：A はほかの持ち主の 4 だけ、B は新しい 5
-            assertThat(repository.sumActiveReservations(List.of(stockA, stockB), UUID.randomUUID(), NOW))
+            assertThat(repository.sumActiveReservations(List.of(stockA, stockB), new ReservationHolderId(UUID.randomUUID()), NOW))
                     .containsOnly(Map.entry(stockA, 4), Map.entry(stockB, 5));
         }
 
@@ -148,8 +151,8 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("持ち主の前の引当を消してから加えると、新しい期限になる")
         void insertsWithNewExpiresAt() {
             // 準備：持ち主の引当と、ほかの持ち主の引当（どちらも 60 秒後が期限）
-            var stockA = createStock(UUID.randomUUID(), 10);
-            var stockB = createStock(UUID.randomUUID(), 10);
+            var stockA = createStock(new VariantId(UUID.randomUUID()), 10);
+            var stockB = createStock(new VariantId(UUID.randomUUID()), 10);
             var holder = reserveForHolderAndOther(stockA, stockB);
 
             // 操作：持ち主の引当を消し（呼ぶ側の手順）、120 秒後が期限の内容で加える
@@ -157,7 +160,7 @@ class JooqStockReservationRepositoryTest {
             repository.insert(holder, Map.of(stockB, 5), NOW.plusSeconds(120), NOW);
 
             // 確認：90 秒後には、新しく加えた引当だけが有効
-            assertThat(repository.sumActiveReservations(List.of(stockB), UUID.randomUUID(), NOW.plusSeconds(90)))
+            assertThat(repository.sumActiveReservations(List.of(stockB), new ReservationHolderId(UUID.randomUUID()), NOW.plusSeconds(90)))
                     .containsOnly(Map.entry(stockB, 5));
         }
 
@@ -165,15 +168,15 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("空の内容を加えても、何も加わらず、持ち主の前の引当は消えない")
         void insertsNothing() {
             // 準備：持ち主の引当
-            var stock = createStock(UUID.randomUUID(), 10);
-            var holder = UUID.randomUUID();
+            var stock = createStock(new VariantId(UUID.randomUUID()), 10);
+            var holder = new ReservationHolderId(UUID.randomUUID());
             repository.insert(holder, Map.of(stock, 2), NOW.plusSeconds(60), NOW);
 
             // 操作：空の内容を加える
             repository.insert(holder, Map.of(), NOW.plusSeconds(60), NOW);
 
             // 確認：持ち主の前の引当は残る（消すのは呼ぶ側）
-            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW))
+            assertThat(repository.sumActiveReservations(List.of(stock), new ReservationHolderId(UUID.randomUUID()), NOW))
                     .containsOnly(Map.entry(stock, 2));
         }
     }
@@ -186,16 +189,16 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("持ち主の引当を消すと、その持ち主の引当だけが消える")
         void deletesReservationsOfHolder() {
             // 準備：持ち主の引当 2 と、ほかの持ち主の引当 3
-            var stock = createStock(UUID.randomUUID(), 10);
-            var holder = UUID.randomUUID();
+            var stock = createStock(new VariantId(UUID.randomUUID()), 10);
+            var holder = new ReservationHolderId(UUID.randomUUID());
             repository.insert(holder, Map.of(stock, 2), NOW.plusSeconds(60), NOW);
-            repository.insert(UUID.randomUUID(), Map.of(stock, 3), NOW.plusSeconds(60), NOW);
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 3), NOW.plusSeconds(60), NOW);
 
             // 操作：持ち主の引当を消す
             repository.deleteByHolder(holder);
 
             // 確認：ほかの持ち主の 3 だけが残る
-            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW))
+            assertThat(repository.sumActiveReservations(List.of(stock), new ReservationHolderId(UUID.randomUUID()), NOW))
                     .containsOnly(Map.entry(stock, 3));
         }
 
@@ -203,15 +206,15 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("引当のない持ち主の引当を消しても、何も起きない")
         void ignoresHolderWithoutReservations() {
             // 準備：持ち主の引当 2 と、ほかの持ち主の引当 3
-            var stock = createStock(UUID.randomUUID(), 10);
-            repository.insert(UUID.randomUUID(), Map.of(stock, 2), NOW.plusSeconds(60), NOW);
-            repository.insert(UUID.randomUUID(), Map.of(stock, 3), NOW.plusSeconds(60), NOW);
+            var stock = createStock(new VariantId(UUID.randomUUID()), 10);
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 2), NOW.plusSeconds(60), NOW);
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 3), NOW.plusSeconds(60), NOW);
 
             // 操作：引当のない持ち主の引当を消す
-            repository.deleteByHolder(UUID.randomUUID());
+            repository.deleteByHolder(new ReservationHolderId(UUID.randomUUID()));
 
             // 確認：合計が 5 のまま
-            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW))
+            assertThat(repository.sumActiveReservations(List.of(stock), new ReservationHolderId(UUID.randomUUID()), NOW))
                     .containsOnly(Map.entry(stock, 5));
         }
     }
@@ -224,18 +227,18 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("複数の持ち主の引当を消すと、渡した持ち主の引当だけが消える")
         void deletesReservationsOfHolders() {
             // 準備：2 人の持ち主の引当 2 と 3 と、ほかの持ち主の引当 4
-            var stock = createStock(UUID.randomUUID(), 10);
-            var first = UUID.randomUUID();
-            var second = UUID.randomUUID();
+            var stock = createStock(new VariantId(UUID.randomUUID()), 10);
+            var first = new ReservationHolderId(UUID.randomUUID());
+            var second = new ReservationHolderId(UUID.randomUUID());
             repository.insert(first, Map.of(stock, 2), NOW.plusSeconds(60), NOW);
             repository.insert(second, Map.of(stock, 3), NOW.plusSeconds(60), NOW);
-            repository.insert(UUID.randomUUID(), Map.of(stock, 4), NOW.plusSeconds(60), NOW);
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 4), NOW.plusSeconds(60), NOW);
 
             // 操作：2 人の引当をまとめて消す
             repository.deleteByHolders(List.of(first, second));
 
             // 確認：ほかの持ち主の 4 だけが残る
-            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW))
+            assertThat(repository.sumActiveReservations(List.of(stock), new ReservationHolderId(UUID.randomUUID()), NOW))
                     .containsOnly(Map.entry(stock, 4));
         }
 
@@ -243,14 +246,14 @@ class JooqStockReservationRepositoryTest {
         @DisplayName("空のコレクションを渡すと、何も消えない")
         void deletesNothingForEmptyHolders() {
             // 準備：持ち主の引当 2
-            var stock = createStock(UUID.randomUUID(), 10);
-            repository.insert(UUID.randomUUID(), Map.of(stock, 2), NOW.plusSeconds(60), NOW);
+            var stock = createStock(new VariantId(UUID.randomUUID()), 10);
+            repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 2), NOW.plusSeconds(60), NOW);
 
             // 操作：空のコレクションを渡す
             repository.deleteByHolders(List.of());
 
             // 確認：合計が 2 のまま
-            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW))
+            assertThat(repository.sumActiveReservations(List.of(stock), new ReservationHolderId(UUID.randomUUID()), NOW))
                     .containsOnly(Map.entry(stock, 2));
         }
     }
@@ -286,7 +289,7 @@ class JooqStockReservationRepositoryTest {
 
             // 確認：期限ちょうどと有効の 2 つが残り、どちらも 5 秒前の時点で有効
             assertThat(countReservations(stock)).isEqualTo(2L);
-            assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), LONG_AGO.minusSeconds(5)))
+            assertThat(repository.sumActiveReservations(List.of(stock), new ReservationHolderId(UUID.randomUUID()), LONG_AGO.minusSeconds(5)))
                     .containsOnly(Map.entry(stock, 2));
         }
     }
@@ -299,8 +302,8 @@ class JooqStockReservationRepositoryTest {
      * @param stockItemId 在庫 ID
      * @return 引当の行数
      */
-    private Long countReservations(UUID stockItemId) {
-        return (long) dsl.fetchCount(STOCK_RESERVATION, STOCK_RESERVATION.STOCK_ITEM_ID.eq(stockItemId));
+    private Long countReservations(StockItemId stockItemId) {
+        return (long) dsl.fetchCount(STOCK_RESERVATION, STOCK_RESERVATION.STOCK_ITEM_ID.eq(stockItemId.value()));
     }
 
     // ============================== 準備の補助 ==============================
@@ -312,15 +315,15 @@ class JooqStockReservationRepositoryTest {
      * @param quantity  在庫数
      * @return 在庫 ID
      */
-    private UUID createStock(UUID variantId, int quantity) {
+    private StockItemId createStock(VariantId variantId, int quantity) {
         var productId = UUID.randomUUID();
         if (quantity > 0) {
-            inventory.stock(variantId, productId, quantity);
+            inventory.stock(variantId.value(), productId, quantity);
         } else {
-            inventory.create(variantId, productId);
+            inventory.create(variantId.value(), productId);
         }
-        return dsl.select(STOCK_ITEM.ID).from(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId))
-                .fetchSingle(STOCK_ITEM.ID);
+        return new StockItemId(dsl.select(STOCK_ITEM.ID).from(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId.value()))
+                .fetchSingle(STOCK_ITEM.ID));
     }
 
     /**
@@ -332,10 +335,10 @@ class JooqStockReservationRepositoryTest {
      * @param stockB 在庫 B の ID
      * @return 持ち主 ID
      */
-    private UUID reserveForHolderAndOther(UUID stockA, UUID stockB) {
-        var holder = UUID.randomUUID();
+    private ReservationHolderId reserveForHolderAndOther(StockItemId stockA, StockItemId stockB) {
+        var holder = new ReservationHolderId(UUID.randomUUID());
         repository.insert(holder, Map.of(stockA, 2, stockB, 1), NOW.plusSeconds(60), NOW);
-        repository.insert(UUID.randomUUID(), Map.of(stockA, 4), NOW.plusSeconds(60), NOW);
+        repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stockA, 4), NOW.plusSeconds(60), NOW);
         return holder;
     }
 
@@ -346,12 +349,12 @@ class JooqStockReservationRepositoryTest {
      *
      * @return 在庫 ID
      */
-    private UUID createExpiringReservations() {
-        var stock = createStock(UUID.randomUUID(), 10);
-        repository.insert(UUID.randomUUID(), Map.of(stock, 1), LONG_AGO.minusSeconds(20), LONG_AGO.minusSeconds(100));
-        repository.insert(UUID.randomUUID(), Map.of(stock, 1), LONG_AGO.minusSeconds(10), LONG_AGO.minusSeconds(100));
-        repository.insert(UUID.randomUUID(), Map.of(stock, 1), LONG_AGO, LONG_AGO.minusSeconds(100));
-        repository.insert(UUID.randomUUID(), Map.of(stock, 1), LONG_AGO.plusSeconds(10), LONG_AGO.minusSeconds(100));
+    private StockItemId createExpiringReservations() {
+        var stock = createStock(new VariantId(UUID.randomUUID()), 10);
+        repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 1), LONG_AGO.minusSeconds(20), LONG_AGO.minusSeconds(100));
+        repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 1), LONG_AGO.minusSeconds(10), LONG_AGO.minusSeconds(100));
+        repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 1), LONG_AGO, LONG_AGO.minusSeconds(100));
+        repository.insert(new ReservationHolderId(UUID.randomUUID()), Map.of(stock, 1), LONG_AGO.plusSeconds(10), LONG_AGO.minusSeconds(100));
         return stock;
     }
 }

@@ -1,11 +1,13 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -138,7 +140,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("新しい注文の支払を保存すると、true を返す")
         void insertReturnsTrue() {
             // 準備：新しい注文の未払いの支払
-            var payment = payment(UUID.randomUUID(), DEADLINE);
+            var payment = payment(new OrderId(UUID.randomUUID()), DEADLINE);
 
             // 操作と確認：保存すると true
             assertThat(repository.insertIfAbsent(payment)).isTrue();
@@ -148,7 +150,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("保存した支払を、ID から同じ内容で再構築できる")
         void restoresById() {
             // 準備：新しい注文の未払いの支払
-            var payment = payment(UUID.randomUUID(), DEADLINE);
+            var payment = payment(new OrderId(UUID.randomUUID()), DEADLINE);
             repository.insertIfAbsent(payment);
 
             // 操作：ID から再構築する
@@ -162,7 +164,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("保存した支払を、注文 ID から同じ内容で再構築できる")
         void restoresByOrderId() {
             // 準備：新しい注文の未払いの支払
-            var payment = payment(UUID.randomUUID(), DEADLINE);
+            var payment = payment(new OrderId(UUID.randomUUID()), DEADLINE);
             repository.insertIfAbsent(payment);
 
             // 操作：注文 ID から再構築する
@@ -176,8 +178,8 @@ class JooqPaymentRepositoryTest {
         @DisplayName("ない ID・注文 ID には、空を返す")
         void returnsEmptyForUnknown() {
             // 操作と確認：ない ID とない注文 ID の、どちらも空
-            assertThat(repository.findById(UUID.randomUUID())).isEmpty();
-            assertThat(repository.findByOrderId(UUID.randomUUID())).isEmpty();
+            assertThat(repository.findById(new PaymentId(UUID.randomUUID()))).isEmpty();
+            assertThat(repository.findByOrderId(new OrderId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -189,7 +191,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("同じ注文の支払がすでにあれば、保存せずに false を返す")
         void returnsFalse() {
             // 準備：同じ注文の支払が保存されている
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             repository.insertIfAbsent(payment(orderId, DEADLINE));
             var second = payment(orderId, DEADLINE.plusSeconds(60));
 
@@ -201,7 +203,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("同じ注文の 2 つ目の支払は保存されず、先の支払が残る")
         void keepsFirst() {
             // 準備：同じ注文の支払が保存されている
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             var first = payment(orderId, DEADLINE);
             repository.insertIfAbsent(first);
             var second = payment(orderId, DEADLINE.plusSeconds(60));
@@ -371,8 +373,8 @@ class JooqPaymentRepositoryTest {
         @DisplayName("ない ID・注文 ID・支払画面の ID で行ロックすると、空を返す")
         void returnsEmptyForUnknown() {
             // 操作と確認：ない ID、ない注文 ID、ない支払画面の ID の、どれも空
-            assertThat(repository.lockById(UUID.randomUUID())).isEmpty();
-            assertThat(repository.lockByOrderId(UUID.randomUUID())).isEmpty();
+            assertThat(repository.lockById(new PaymentId(UUID.randomUUID()))).isEmpty();
+            assertThat(repository.lockByOrderId(new OrderId(UUID.randomUUID()))).isEmpty();
             assertThat(repository.lockByPageId("page-none")).isEmpty();
         }
 
@@ -381,7 +383,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("支払を行ロックして取得している間は、別のトランザクションが同じ支払の行をロックできない")
         void blocksOtherTransactionWhileLocked() {
             // 準備：ロールバックしないので、このテストで作った支払の行だけを使う
-            var payment = payment(UUID.randomUUID(), DEADLINE);
+            var payment = payment(new OrderId(UUID.randomUUID()), DEADLINE);
             transactionTemplate.executeWithoutResult(status -> repository.insertIfAbsent(payment));
             var executor = Executors.newSingleThreadExecutor();
             try {
@@ -389,7 +391,7 @@ class JooqPaymentRepositoryTest {
                     // 操作：行ロックを取得し、その間に別のトランザクションで、待たずにロックを求める
                     assertThat(repository.lockById(payment.id())).isPresent();
                     var other = executor.submit(() -> transactionTemplate.executeWithoutResult(inner ->
-                            dsl.selectFrom(PAYMENT_).where(PAYMENT_.ID.eq(payment.id())).forUpdate().noWait().fetch()));
+                            dsl.selectFrom(PAYMENT_).where(PAYMENT_.ID.eq(payment.id().value())).forUpdate().noWait().fetch()));
 
                     // 確認：別のトランザクションはロックを取れない
                     assertThatThrownBy(() -> other.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS))
@@ -410,14 +412,14 @@ class JooqPaymentRepositoryTest {
         @DisplayName("注文の支払をまとめて取得でき、支払のない注文は含まない")
         void findsPaymentsOfOrders() {
             // 準備：取得する 2 件と、取得しない 1 件
-            var first = payment(UUID.randomUUID(), DEADLINE);
-            var second = payment(UUID.randomUUID(), DEADLINE);
+            var first = payment(new OrderId(UUID.randomUUID()), DEADLINE);
+            var second = payment(new OrderId(UUID.randomUUID()), DEADLINE);
             repository.insertIfAbsent(first);
             repository.insertIfAbsent(second);
-            repository.insertIfAbsent(payment(UUID.randomUUID(), DEADLINE));
+            repository.insertIfAbsent(payment(new OrderId(UUID.randomUUID()), DEADLINE));
 
             // 操作：支払のない注文を加えて取得する
-            var found = repository.findByOrderIds(List.of(first.orderId(), second.orderId(), UUID.randomUUID()));
+            var found = repository.findByOrderIds(List.of(first.orderId(), second.orderId(), new OrderId(UUID.randomUUID())));
 
             // 確認：取得する 2 件だけ
             assertThat(found).extracting(Payment::id).containsExactlyInAnyOrder(first.id(), second.id());
@@ -439,9 +441,9 @@ class JooqPaymentRepositoryTest {
         @DisplayName("期限を過ぎた未払いの支払を、期限の古い順に取得する。期限ちょうどの支払も含む")
         void findsInDeadlineOrder() {
             // 準備：期限が古い順に 3 件を、順を入れ替えて保存する
-            var oldest = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(300));
-            var older = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(200));
-            var onDeadline = payment(UUID.randomUUID(), SEARCH_NOW);
+            var oldest = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(300));
+            var older = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(200));
+            var onDeadline = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW);
             insertAll(older, onDeadline, oldest);
 
             // 操作と確認：3 件が期限の古い順に並ぶ
@@ -453,9 +455,9 @@ class JooqPaymentRepositoryTest {
         @DisplayName("期限を過ぎた未払いの支払を、上限の件数まで取得する")
         void findsUpToLimit() {
             // 準備：期限を過ぎた 3 件
-            var oldest = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(300));
-            var older = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(200));
-            insertAll(older, payment(UUID.randomUUID(), SEARCH_NOW), oldest);
+            var oldest = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(300));
+            var older = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(200));
+            insertAll(older, payment(new OrderId(UUID.randomUUID()), SEARCH_NOW), oldest);
 
             // 操作と確認：古い 2 件
             assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 2)).extracting(PastDeadlinePaymentView::id)
@@ -466,8 +468,8 @@ class JooqPaymentRepositoryTest {
         @DisplayName("期限内の支払は取得しない")
         void excludesBeforeDeadline() {
             // 準備：期限を過ぎた 1 件と、期限が 1 秒後の 1 件
-            var past = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(100));
-            insertAll(past, payment(UUID.randomUUID(), SEARCH_NOW.plusSeconds(1)));
+            var past = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(100));
+            insertAll(past, payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.plusSeconds(1)));
 
             // 操作と確認：期限を過ぎた 1 件だけ
             assertThat(queryRepository.findUnpaidPastDeadline(SEARCH_NOW, 10)).extracting(PastDeadlinePaymentView::id)
@@ -478,8 +480,8 @@ class JooqPaymentRepositoryTest {
         @DisplayName("未払いでない（期限切れにした）支払は取得しない")
         void excludesNotUnpaid() {
             // 準備：期限を過ぎた 1 件と、期限切れにした 1 件
-            var past = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(200));
-            var expired = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(100));
+            var past = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(200));
+            var expired = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(100));
             insertAll(past, expired);
             repository.update(expired(expired, SEARCH_NOW));
 
@@ -494,9 +496,9 @@ class JooqPaymentRepositoryTest {
             // 準備：上限（2 件）より多い 3 件の待つ支払と、それより期限が新しい 1 件
             var awaiting = new ArrayList<Payment>();
             for (int i = 0; i < 3; i++) {
-                awaiting.add(payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(300 - i)));
+                awaiting.add(payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(300 - i)));
             }
-            var newer = payment(UUID.randomUUID(), SEARCH_NOW.minusSeconds(100));
+            var newer = payment(new OrderId(UUID.randomUUID()), SEARCH_NOW.minusSeconds(100));
             awaiting.forEach(repository::insertIfAbsent);
             repository.insertIfAbsent(newer);
             awaiting.forEach(payment -> awaitAuthorization(payment, SEARCH_NOW.minusSeconds(10)));
@@ -545,10 +547,10 @@ class JooqPaymentRepositoryTest {
         @DisplayName("BR-423-1 売上確定を求めた時刻が基準の時刻以前の与信済みの支払を、求めた時刻の古い順に取得する。基準の時刻ちょうどは含み、1 マイクロ秒後は含まない")
         void findsInRequestOrder() {
             // 準備：求めた時刻が古い順に 2 件と、基準ちょうどの 1 件と、基準の 1 マイクロ秒後の 1 件を、順を入れ替えて保存する
-            var oldest = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(300));
-            var older = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(200));
-            var onBoundary = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW);
-            captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.plus(1, ChronoUnit.MICROS));
+            var oldest = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(300));
+            var older = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(200));
+            var onBoundary = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW);
+            captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.plus(1, ChronoUnit.MICROS));
 
             // 操作と確認：基準の時刻以前の 3 件が、求めた時刻の古い順に並ぶ
             assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 10)).extracting(CaptureReconcileView::id)
@@ -559,7 +561,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("BR-423-1 取得する支払は、支払 ID、与信の参照、求めた時刻を持つ")
         void returnsIdAuthorizationRefAndRequestedAt() {
             // 準備：売上確定を求めた支払
-            var requested = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(300));
+            var requested = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(300));
 
             // 操作と確認：支払 ID、与信の参照、求めた時刻
             assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 10))
@@ -570,9 +572,9 @@ class JooqPaymentRepositoryTest {
         @DisplayName("BR-423-1 上限の件数まで、求めた時刻の古いものから取得する")
         void findsUpToLimit() {
             // 準備：求めた時刻の異なる 3 件
-            var oldest = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(300));
-            var older = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(200));
-            captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            var oldest = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(300));
+            var older = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(200));
+            captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(100));
 
             // 操作と確認：古い 2 件
             assertThat(queryRepository.findCaptureRequestedUntil(SEARCH_NOW, 2)).extracting(CaptureReconcileView::id)
@@ -583,13 +585,13 @@ class JooqPaymentRepositoryTest {
         @DisplayName("BR-423-1 求めた時刻のない与信済みの支払と、与信済みでない（売上確定済み、与信期限切れ）支払は取得しない")
         void excludesOthers() {
             // 準備：対象の 1 件と、求めていない与信済み、売上確定済み、与信期限切れ
-            var target = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
-            var notRequested = payment(UUID.randomUUID(), DEADLINE);
+            var target = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            var notRequested = payment(new OrderId(UUID.randomUUID()), DEADLINE);
             repository.insertIfAbsent(notRequested);
             repository.update(authorized(notRequested));
-            var captured = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            var captured = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(100));
             progress(captured, payment -> payment.capture(SEARCH_NOW));
-            var expired = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            var expired = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(100));
             progress(expired, Payment::expireAuthorization);
 
             // 操作と確認：対象の 1 件だけ
@@ -601,7 +603,7 @@ class JooqPaymentRepositoryTest {
         @DisplayName("求めた時刻を削除した支払は取得しない")
         void excludesCleared() {
             // 準備：売上確定を求めた後、記録を削除した支払
-            var cleared = captureRequested(payment(UUID.randomUUID(), DEADLINE), SEARCH_NOW.minusSeconds(100));
+            var cleared = captureRequested(payment(new OrderId(UUID.randomUUID()), DEADLINE), SEARCH_NOW.minusSeconds(100));
             progress(cleared, payment -> payment.clearCaptureRequest(SEARCH_NOW.minusSeconds(100)));
 
             // 操作と確認：取得しない
@@ -639,8 +641,8 @@ class JooqPaymentRepositoryTest {
         void countsUntilLatestInclusive() {
             // 準備：他のテストの支払を含む今の件数と、基準の時刻ちょうどから待つ支払、その 1 マイクロ秒後から待つ支払
             var before = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
-            var atLatest = payment(UUID.randomUUID(), DEADLINE);
-            var afterLatest = payment(UUID.randomUUID(), DEADLINE);
+            var atLatest = payment(new OrderId(UUID.randomUUID()), DEADLINE);
+            var afterLatest = payment(new OrderId(UUID.randomUUID()), DEADLINE);
             insertAll(atLatest, afterLatest);
             awaitAuthorization(atLatest, LATEST_AWAITING_SINCE);
             awaitAuthorization(afterLatest, LATEST_AWAITING_SINCE.plus(Duration.ofNanos(1_000)));
@@ -657,7 +659,7 @@ class JooqPaymentRepositoryTest {
         void excludesAuthorized() {
             // 準備：他のテストの支払を含む今の件数と、基準の時刻から待ち、その後に与信済みになった支払
             var before = queryRepository.countUnpaidAwaitingAuthorizationUntil(LATEST_AWAITING_SINCE);
-            var authorized = payment(UUID.randomUUID(), DEADLINE);
+            var authorized = payment(new OrderId(UUID.randomUUID()), DEADLINE);
             insertAll(authorized);
             awaitAuthorization(authorized, LATEST_AWAITING_SINCE);
             var loaded = repository.findById(authorized.id()).orElseThrow();
@@ -684,7 +686,7 @@ class JooqPaymentRepositoryTest {
 
             // 操作と確認：与信の参照のないまま与信済みにする更新は、制約に反して失敗する
             assertThatThrownBy(() -> dsl.update(PAYMENT_).set(PAYMENT_.STATUS, "AUTHORIZED")
-                    .where(PAYMENT_.ID.eq(payment.id())).execute())
+                    .where(PAYMENT_.ID.eq(payment.id().value())).execute())
                     .hasMessageContaining("payment_authorization_ref_check");
         }
     }
@@ -803,7 +805,7 @@ class JooqPaymentRepositoryTest {
     // ============================== 確認の補助 ==============================
 
     /**
-     * 作ったまま保存した未払いの支払（{@link #payment(UUID, Instant)}）を、そのまま再構築したことを確認する。
+     * 作ったまま保存した未払いの支払（{@link #payment(OrderId, Instant)}）を、そのまま再構築したことを確認する。
      *
      * <p>確認すること（ID のほかの期待値は定数）：
      * <ul>
@@ -818,7 +820,7 @@ class JooqPaymentRepositoryTest {
      * @param paymentId 保存した支払 ID（実行ごとに作るので、定数にできない）
      * @param orderId   保存した注文 ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertUnpaidSaved(Payment restored, UUID paymentId, UUID orderId) {
+    private static void assertUnpaidSaved(Payment restored, PaymentId paymentId, OrderId orderId) {
         var snapshot = restored.toSnapshot();
         assertThat(snapshot.id()).isEqualTo(paymentId);
         assertThat(snapshot.orderId()).isEqualTo(orderId);
@@ -863,7 +865,7 @@ class JooqPaymentRepositoryTest {
      * @param older  次に古くから待つ支払
      * @param mine   このテストで保存した全ての支払の ID
      */
-    private record AwaitingPayments(Payment oldest, Payment older, List<UUID> mine) {
+    private record AwaitingPayments(Payment oldest, Payment older, List<PaymentId> mine) {
     }
 
     /**
@@ -873,8 +875,8 @@ class JooqPaymentRepositoryTest {
      * @param deadline 期限
      * @return 支払
      */
-    private static Payment payment(UUID orderId, Instant deadline) {
-        return Payment.create(UUID.randomUUID(), orderId, AMOUNT, deadline);
+    private static Payment payment(OrderId orderId, Instant deadline) {
+        return Payment.create(new PaymentId(UUID.randomUUID()), orderId, AMOUNT, deadline);
     }
 
     /**
@@ -884,8 +886,8 @@ class JooqPaymentRepositoryTest {
      * @param deadline 期限
      * @return 支払
      */
-    private static Payment paymentWithId(UUID id, Instant deadline) {
-        return Payment.create(id, UUID.randomUUID(), AMOUNT, deadline);
+    private static Payment paymentWithId(PaymentId id, Instant deadline) {
+        return Payment.create(id, new OrderId(UUID.randomUUID()), AMOUNT, deadline);
     }
 
     /**
@@ -893,11 +895,11 @@ class JooqPaymentRepositoryTest {
      *
      * @return 支払 ID（小さい順）
      */
-    private static List<UUID> tiedIds() {
+    private static List<PaymentId> tiedIds() {
         return List.of(
-                UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                UUID.fromString("00000000-0000-0000-0000-000000000002"),
-                UUID.fromString("00000000-0000-0000-0000-000000000003"));
+                new PaymentId(UUID.fromString("00000000-0000-0000-0000-000000000001")),
+                new PaymentId(UUID.fromString("00000000-0000-0000-0000-000000000002")),
+                new PaymentId(UUID.fromString("00000000-0000-0000-0000-000000000003")));
     }
 
     /**
@@ -936,7 +938,7 @@ class JooqPaymentRepositoryTest {
      * @return 保存した支払
      */
     private Payment savedPayment() {
-        var payment = payment(UUID.randomUUID(), DEADLINE);
+        var payment = payment(new OrderId(UUID.randomUUID()), DEADLINE);
         repository.insertIfAbsent(payment);
         return payment;
     }
@@ -1022,10 +1024,10 @@ class JooqPaymentRepositoryTest {
      * @return 保存した支払
      */
     private AwaitingPayments awaitingPayments() {
-        var oldest = payment(UUID.randomUUID(), DEADLINE);
-        var older = payment(UUID.randomUUID(), DEADLINE);
-        var notAwaiting = payment(UUID.randomUUID(), DEADLINE);
-        var authorized = payment(UUID.randomUUID(), DEADLINE);
+        var oldest = payment(new OrderId(UUID.randomUUID()), DEADLINE);
+        var older = payment(new OrderId(UUID.randomUUID()), DEADLINE);
+        var notAwaiting = payment(new OrderId(UUID.randomUUID()), DEADLINE);
+        var authorized = payment(new OrderId(UUID.randomUUID()), DEADLINE);
         insertAll(older, notAwaiting, oldest, authorized);
         awaitAuthorization(older, SEARCH_NOW.plusSeconds(100));
         awaitAuthorization(oldest, SEARCH_NOW);

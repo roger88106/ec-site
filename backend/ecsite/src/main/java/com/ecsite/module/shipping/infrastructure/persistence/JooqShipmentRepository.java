@@ -2,12 +2,14 @@ package com.ecsite.module.shipping.infrastructure.persistence;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.shipping.tables.records.ShipmentRecord;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
+import com.ecsite.module.shipping.domain.ShipmentId;
 import com.ecsite.module.shipping.domain.ShippingErrorCode;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 import lombok.RequiredArgsConstructor;
@@ -56,8 +58,8 @@ class JooqShipmentRepository implements ShipmentRepository {
     public void insert(Shipment shipment) {
         var now = clock.instant();
         CONSTRAINTS.run(() -> dsl.insertInto(SHIPMENT)
-                .set(SHIPMENT.ID, shipment.id())
-                .set(SHIPMENT.ORDER_ID, shipment.orderId())
+                .set(SHIPMENT.ID, shipment.id().value())
+                .set(SHIPMENT.ORDER_ID, shipment.orderId().value())
                 .set(SHIPMENT.CARRIER, shipment.carrier().name())
                 .set(SHIPMENT.TRACKING_NUMBER, shipment.trackingNumber().value())
                 .set(SHIPMENT.STATUS, shipment.status().name())
@@ -72,11 +74,11 @@ class JooqShipmentRepository implements ShipmentRepository {
      * {@inheritDoc}
      */
     @Override
-    public List<Shipment> findAllByOrderIds(Collection<UUID> orderIds) {
+    public List<Shipment> findAllByOrderIds(Collection<OrderId> orderIds) {
         if (orderIds.isEmpty()) {
             return List.of();
         }
-        return dsl.selectFrom(SHIPMENT).where(SHIPMENT.ORDER_ID.in(orderIds)).fetch(JooqShipmentRepository::toShipment);
+        return dsl.selectFrom(SHIPMENT).where(SHIPMENT.ORDER_ID.in(orderIds.stream().map(OrderId::value).toList())).fetch(JooqShipmentRepository::toShipment);
     }
 
     /**
@@ -102,7 +104,7 @@ class JooqShipmentRepository implements ShipmentRepository {
         }
         var rows = shipments.stream()
                 .map(shipment -> DSL.row(new SelectField<?>[]{
-                        DSL.val(shipment.id(), SHIPMENT.ID),
+                        DSL.val(shipment.id().value(), SHIPMENT.ID),
                         DSL.val(shipment.status().name(), SHIPMENT.STATUS),
                         DSL.val(shipment.lastNotifiedAt().orElse(null), SHIPMENT.LAST_NOTIFIED_AT)}))
                 .toArray(RowN[]::new);
@@ -121,11 +123,11 @@ class JooqShipmentRepository implements ShipmentRepository {
      * {@inheritDoc}
      */
     @Override
-    public List<UUID> findReturnedOrderIds() {
+    public List<OrderId> findReturnedOrderIds() {
         return dsl.select(SHIPMENT.ORDER_ID)
                 .from(SHIPMENT)
                 .where(SHIPMENT.STATUS.eq(DeliveryStatus.RETURNED.name()))
-                .fetch(SHIPMENT.ORDER_ID);
+                .fetch(r -> new OrderId(r.get(SHIPMENT.ORDER_ID)));
     }
 
 // ============================== プライベートメソッド ==============================
@@ -135,7 +137,7 @@ class JooqShipmentRepository implements ShipmentRepository {
      */
     private static Shipment toShipment(ShipmentRecord record) {
         // 列挙と追跡番号も含め、復元の全体を失敗の扱いの中で行う
-        return RestoreGuard.restore("shipment", () -> Shipment.restore(record.getId(), record.getOrderId(),
+        return RestoreGuard.restore("shipment", () -> Shipment.restore(new ShipmentId(record.getId()), new OrderId(record.getOrderId()),
                 Carrier.valueOf(record.getCarrier()),
                 new TrackingNumber(record.getTrackingNumber()),
                 DeliveryStatus.valueOf(record.getStatus()),

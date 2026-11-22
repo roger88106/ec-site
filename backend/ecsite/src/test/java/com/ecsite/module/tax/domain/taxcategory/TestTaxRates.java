@@ -3,6 +3,7 @@ package com.ecsite.module.tax.domain.taxcategory;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateDraft;
+import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,7 +33,7 @@ public final class TestTaxRates {
      * @return 税率
      */
     public static TaxRate rate(String percent, Instant from, Instant to) {
-        return new TaxRate(UUID.randomUUID(), RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
+        return new TaxRate(new TaxRateId(UUID.randomUUID()), RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
     }
 
     /**
@@ -48,6 +49,19 @@ public final class TestTaxRates {
     }
 
     /**
+     * 新しい税率（ID なし）の置き換えの要素を、使う ID を決めて作る。
+     *
+     * @param newId   新しい税率に使う ID
+     * @param percent 税率（%）
+     * @param from    適用の開始
+     * @param to      適用の終了
+     * @return 置き換えの要素
+     */
+    public static TaxRateDraft newDraft(TaxRateId newId, String percent, Instant from, Instant to) {
+        return new TaxRateDraft(null, newId, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
+    }
+
+    /**
      * 置き換えの要素を作る。
      *
      * <p>既存の税率を残すなら、その ID を渡す。
@@ -58,7 +72,7 @@ public final class TestTaxRates {
      * @param to      適用の終了
      * @return 置き換えの要素
      */
-    public static TaxRateDraft draft(UUID id, String percent, Instant from, Instant to) {
-        return new TaxRateDraft(id, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
+    public static TaxRateDraft draft(TaxRateId id, String percent, Instant from, Instant to) {
+        return new TaxRateDraft(id, id == null ? new TaxRateId(UUID.randomUUID()) : null, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
     }
 }

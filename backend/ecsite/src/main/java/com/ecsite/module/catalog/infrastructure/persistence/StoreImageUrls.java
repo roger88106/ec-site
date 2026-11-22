@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -96,10 +97,10 @@ class StoreImageUrls {
      * @return キー → 配信の URL。URL のないアセット（メディアモジュールに記録がない）は含めない
      */
     private <K> Map<K, String> toUrls(Map<K, UUID> assetIds) {
-        var urls = mediaDirectory.urls(assetIds.values());
+        var urls = mediaDirectory.urls(assetIds.values().stream().map(AssetId::new).toList());
         var result = new LinkedHashMap<K, String>();
         assetIds.forEach((key, assetId) -> {
-            var url = urls.get(assetId);
+            var url = urls.get(new AssetId(assetId));
             if (url != null) {
                 result.put(key, url.toString());
             }

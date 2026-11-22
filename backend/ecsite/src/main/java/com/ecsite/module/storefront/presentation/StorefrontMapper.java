@@ -16,6 +16,7 @@ import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.api.store.model.Variant;
 import com.ecsite.api.store.model.VariantAxis;
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.StorePrices;
@@ -60,7 +61,7 @@ class StorefrontMapper {
      */
     ProductCondition toProductCondition(@Nullable UUID categoryId, @Nullable Long minPrice, @Nullable Long maxPrice,
                                           ProductSort sort) {
-        return new ProductCondition(categoryId, minPrice == null ? null : Money.of(minPrice),
+        return new ProductCondition(categoryId == null ? null : new CategoryId(categoryId), minPrice == null ? null : Money.of(minPrice),
                 maxPrice == null ? null : Money.of(maxPrice), toSort(sort));
     }
 
@@ -97,7 +98,7 @@ class StorefrontMapper {
      */
     ProductDetail toProductDetail(ProductDetailView view) {
         return new ProductDetail()
-                .id(view.id())
+                .id(view.id().value())
                 .name(view.name())
                 .description(view.description())
                 .price(StorePrices.of(view.priceInclTax(), view.priceExclTax()))
@@ -114,7 +115,7 @@ class StorefrontMapper {
      */
     CategoryNode toCategoryNode(CatalogCategory category) {
         return new CategoryNode()
-                .id(category.id())
+                .id(category.id().value())
                 .name(category.name())
                 .children(category.children().stream().map(this::toCategoryNode).toList());
     }
@@ -127,7 +128,7 @@ class StorefrontMapper {
      */
     Cart toCart(CartView view) {
         return new Cart()
-                .id(view.cartId())
+                .id(view.cartId().value())
                 .items(view.items().stream().map(StorefrontMapper::toQuoteItem).toList())
                 .amounts(toAmounts(view.amounts()))
                 .orderable(view.orderable());
@@ -153,7 +154,7 @@ class StorefrontMapper {
      */
     private static ProductSummary toProductSummary(ProductSummaryView view) {
         return new ProductSummary()
-                .id(view.id())
+                .id(view.id().value())
                 .name(view.name())
                 .price(StorePrices.of(view.priceInclTax(), view.priceExclTax()))
                 .inStock(view.inStock())
@@ -174,7 +175,7 @@ class StorefrontMapper {
      */
     private static Variant toVariant(ProductDetailView.VariantView variant) {
         return new Variant()
-                .id(variant.id())
+                .id(variant.id().value())
                 .axisValues(variant.axisValues())
                 .inStock(variant.inStock())
                 .salesSuspended(variant.salesSuspended())
@@ -190,8 +191,8 @@ class StorefrontMapper {
         var reason = item.unpurchasableReason();
         var purchasable = reason == null;
         return new QuoteItem()
-                .variantId(item.variantId())
-                .productId(item.productId())
+                .variantId(item.variantId().value())
+                .productId(item.productId().value())
                 .productName(item.productName())
                 .axisValues(item.axisValues().stream().map(StorefrontMapper::toAxisValue).toList())
                 .imageUrl(item.imageUrl())

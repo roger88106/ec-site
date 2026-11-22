@@ -3,11 +3,10 @@ package com.ecsite.module.cart.presentation;
 import com.ecsite.api.store.model.MemberCart;
 import com.ecsite.api.store.model.MergeCartResult;
 import com.ecsite.api.store.model.MergedCartItem;
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.module.cart.application.model.MergedCart;
 import com.ecsite.module.cart.domain.CartMergeResult;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * カートの API の型への変換
@@ -21,8 +20,8 @@ class CartMapper {
      * @param cartId カート ID
      * @return 会員のカートのレスポンス
      */
-    MemberCart toMemberCart(UUID cartId) {
-        return new MemberCart().cartId(cartId);
+    MemberCart toMemberCart(CartId cartId) {
+        return new MemberCart().cartId(cartId.value());
     }
 
     /**
@@ -33,7 +32,7 @@ class CartMapper {
      */
     MergeCartResult toMergeCartResult(MergedCart merged) {
         return new MergeCartResult()
-                .cartId(merged.cartId())
+                .cartId(merged.cartId().value())
                 .truncatedItems(merged.result().truncatedItems().stream().map(CartMapper::toMergedItem).toList())
                 .skippedItems(merged.result().skippedItems().stream().map(CartMapper::toMergedItem).toList());
     }
@@ -45,7 +44,7 @@ class CartMapper {
      */
     private static MergedCartItem toMergedItem(CartMergeResult.Item item) {
         return new MergedCartItem()
-                .variantId(item.variantId())
+                .variantId(item.variantId().value())
                 .quantity(item.quantity());
     }
 }

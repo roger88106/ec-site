@@ -1,10 +1,11 @@
 package com.ecsite.module.storefront.application.model;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品カタログの商品の詳細
@@ -18,7 +19,7 @@ import java.util.UUID;
  * @param variants     すべてのバリアント（表示順）
  * @param imageUrls    画像の URL（表示順。先頭が代表画像）
  */
-public record CatalogProductDetail(UUID id, String name, String description, Money priceInclTax, Money priceExclTax,
+public record CatalogProductDetail(ProductId id, String name, String description, Money priceInclTax, Money priceExclTax,
                                    List<String> axes, List<Variant> variants, List<String> imageUrls) {
 
     /**
@@ -29,6 +30,6 @@ public record CatalogProductDetail(UUID id, String name, String description, Mon
      * @param salesSuspended 販売停止中
      * @param imageUrl       指定した画像の URL。なければ null（代表画像を使う）
      */
-    public record Variant(UUID id, List<String> axisValues, boolean salesSuspended, @Nullable String imageUrl) {
+    public record Variant(VariantId id, List<String> axisValues, boolean salesSuspended, @Nullable String imageUrl) {
     }
 }

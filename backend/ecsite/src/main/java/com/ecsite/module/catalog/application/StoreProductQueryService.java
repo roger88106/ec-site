@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.application;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * C 側の商品照会のクエリサービス
@@ -77,7 +77,7 @@ public class StoreProductQueryService {
      * @param id 商品 ID
      * @return 商品の詳細。表示されない商品なら空（存在しない商品と同じ扱い）
      */
-    public Optional<StoreProductDetailView> findProduct(@NonNull UUID id) {
+    public Optional<StoreProductDetailView> findProduct(@NonNull ProductId id) {
         var now = clock.instant();
         return storeProductQueryRepository.findVisibleDetail(id, now, taxDirectory.ratesAt(now));
     }

@@ -1,9 +1,8 @@
 package com.ecsite.module.member.application;
 
+import com.ecsite.common.model.id.MemberId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * IdP のアカウントの ID から会員 ID を求める。初めての会員なら会員を作る。
@@ -38,7 +37,7 @@ public class MemberIdResolver {
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID
      */
-    public UUID resolve(String idpSubject) {
+    public MemberId resolve(String idpSubject) {
         // キャッシュにあれば、トランザクションを始めずに返す
         var cached = cache.find(idpSubject);
         if (cached.isPresent()) {

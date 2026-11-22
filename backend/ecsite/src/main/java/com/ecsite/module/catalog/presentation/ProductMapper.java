@@ -15,6 +15,10 @@ import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.api.admin.model.Variant;
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
@@ -53,10 +57,10 @@ class ProductMapper {
                 request.getProductCode(),
                 request.getName(),
                 request.getDescription(),
-                request.getTaxCategoryId(),
+                new TaxCategoryId(request.getTaxCategoryId()),
                 Money.of(request.getPriceExclTax()),
                 // 所属カテゴリと軸は LinkedHashSet で受け取るので、送られた順を保つ
-                List.copyOf(request.getCategoryIds()),
+                request.getCategoryIds().stream().map(CategoryId::new).toList(),
                 List.copyOf(request.getAxes()));
     }
 
@@ -69,12 +73,12 @@ class ProductMapper {
      */
     UpdateProductCommand toUpdateProductCommand(UUID productId, UpdateProductRequest request) {
         return new UpdateProductCommand(
-                productId,
+                new ProductId(productId),
                 request.getName(),
                 request.getDescription(),
-                request.getTaxCategoryId(),
+                new TaxCategoryId(request.getTaxCategoryId()),
                 Money.of(request.getPriceExclTax()),
-                List.copyOf(request.getCategoryIds()),
+                request.getCategoryIds().stream().map(CategoryId::new).toList(),
                 request.getVersion());
     }
 
@@ -86,7 +90,7 @@ class ProductMapper {
      * @return バリアントの登録コマンド
      */
     AddVariantCommand toAddVariantCommand(UUID productId, AddVariantRequest request) {
-        return new AddVariantCommand(productId, request.getVariantCode(), List.copyOf(request.getAxisValues()),
+        return new AddVariantCommand(new ProductId(productId), request.getVariantCode(), List.copyOf(request.getAxisValues()),
                 request.getVersion());
     }
 
@@ -99,7 +103,8 @@ class ProductMapper {
      */
     ReorderVariantsCommand toReorderVariantsCommand(UUID productId, ReorderVariantsRequest request) {
         // variantIds は LinkedHashSet で受け取るので、送られた順を保つ
-        return new ReorderVariantsCommand(productId, List.copyOf(request.getVariantIds()), request.getVersion());
+        return new ReorderVariantsCommand(new ProductId(productId),
+                request.getVariantIds().stream().map(VariantId::new).toList(), request.getVersion());
     }
 
     /**
@@ -112,7 +117,7 @@ class ProductMapper {
      * @return 公開期間の変更コマンド
      */
     ChangePublicationPeriodCommand toChangePublicationPeriodCommand(UUID productId, SetPublicationPeriodRequest request) {
-        return new ChangePublicationPeriodCommand(productId,
+        return new ChangePublicationPeriodCommand(new ProductId(productId),
                 ApiDateTimes.toInstant(request.getPublishStart().orElse(null)),
                 ApiDateTimes.toInstant(request.getPublishEnd().orElse(null)),
                 request.getVersion());
@@ -126,14 +131,14 @@ class ProductMapper {
      */
     ProductDetail toProductDetail(ProductDetailView view) {
         return new ProductDetail()
-                .id(view.id())
+                .id(view.id().value())
                 .productCode(view.productCode())
                 .name(view.name())
                 .description(view.description())
-                .taxCategoryId(view.taxCategoryId())
+                .taxCategoryId(view.taxCategoryId().value())
                 .priceExclTax(view.priceExclTax().yen())
                 .priceInclTax(view.priceInclTax() == null ? null : view.priceInclTax().yen())
-                .categoryIds(view.categoryIds())
+                .categoryIds(view.categoryIds().stream().map(CategoryId::value).toList())
                 .axes(view.axes())
                 .status(toResponseStatus(view.status()))
                 .images(view.images().stream().map(ProductMapper::toImage).toList())
@@ -170,7 +175,7 @@ class ProductMapper {
      */
     ImageUpload toImageUpload(ImageUploadView view) {
         return new ImageUpload()
-                .uploadId(view.uploadId())
+                .uploadId(view.uploadId().value())
                 .uploadUrl(view.uploadUrl())
                 .headers(view.headers())
                 .expiresAt(ApiDateTimes.toOffsetDateTime(view.expiresAt()));
@@ -187,7 +192,8 @@ class ProductMapper {
      */
     ProductListQuery toProductListQuery(@Nullable String code, @Nullable String name, @Nullable PublicationStatus status,
                                       @Nullable UUID categoryId) {
-        return new ProductListQuery(code, name, status == null ? null : toDomainStatus(status), categoryId);
+        return new ProductListQuery(code, name, status == null ? null : toDomainStatus(status),
+                categoryId == null ? null : new CategoryId(categoryId));
     }
 
     /**
@@ -226,11 +232,11 @@ class ProductMapper {
      */
     private static Variant toVariant(ProductDetailView.VariantView view) {
         return new Variant()
-                .id(view.id())
+                .id(view.id().value())
                 .variantCode(view.variantCode())
                 .axisValues(view.axisValues())
                 .salesSuspended(view.salesSuspended())
-                .imageId(view.imageId());
+                .imageId(view.imageId() == null ? null : view.imageId().value());
     }
 
     /**
@@ -238,7 +244,7 @@ class ProductMapper {
      */
     private static ProductImage toImage(ProductDetailView.ImageView view) {
         return new ProductImage()
-                .id(view.id())
+                .id(view.id().value())
                 .url(view.url());
     }
 
@@ -247,7 +253,7 @@ class ProductMapper {
      */
     private static ProductSummary toSummary(ProductSummaryView view) {
         return new ProductSummary()
-                .id(view.id())
+                .id(view.id().value())
                 .productCode(view.productCode())
                 .name(view.name())
                 .status(toResponseStatus(view.status()))

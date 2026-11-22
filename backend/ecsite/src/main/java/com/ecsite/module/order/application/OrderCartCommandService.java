@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
@@ -8,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 注文に使ったカートの更新のサービス
@@ -40,7 +40,7 @@ public class OrderCartCommandService {
      * @param orderId    注文 ID
      * @param acceptedAt 受付にした時刻（注文の状態の変化のイベントの発生時刻）
      */
-    public void removeOrderedItems(UUID orderId, Instant acceptedAt) {
+    public void removeOrderedItems(OrderId orderId, Instant acceptedAt) {
         orderRepository.findById(orderId).ifPresent(order -> {
             var variantIds = order.lines().stream().map(OrderLine::variantId).distinct().toList();
             cartDirectory.findMemberCartId(order.memberId())

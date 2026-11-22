@@ -1,5 +1,7 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -127,7 +129,7 @@ class CheckoutCartChangeApiTest {
         orders.startCheckout(cartId);
 
         // 確認（前提）：2 個を引き当てている
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
+        assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), 1);
 
         // 操作：カートの数量を変え、変更のイベントの処理を待つ
         mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + variant).with(owner.bearer())
@@ -138,7 +140,7 @@ class CheckoutCartChangeApiTest {
         asyncEvents.awaitCartChanged(cartId);
 
         // 確認：引当が解け、販売可能数が在庫数に戻っている
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
+        assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), 3);
     }
 
     @Test
@@ -155,7 +157,7 @@ class CheckoutCartChangeApiTest {
         publishAndAwait(startedVersion);
 
         // 確認：引当が残っている
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
+        assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), 1);
     }
 
     @Test
@@ -172,7 +174,7 @@ class CheckoutCartChangeApiTest {
         publishAndAwait(startedVersion - 1);
 
         // 確認：引当が残っている
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
+        assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), 1);
     }
 
     @Test
@@ -189,7 +191,7 @@ class CheckoutCartChangeApiTest {
         publishAndAwait(startedVersion + 1);
 
         // 確認
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
+        assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), 3);
     }
 
     @Test
@@ -205,7 +207,7 @@ class CheckoutCartChangeApiTest {
         publishAndAwait(null);
 
         // 確認
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
+        assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), 3);
     }
 
     // ============================== 準備の補助 ==============================
@@ -224,7 +226,7 @@ class CheckoutCartChangeApiTest {
      * @param cartVersion カートのバージョン。バージョンを持たないイベントは null
      */
     private void publishAndAwait(@Nullable Long cartVersion) {
-        var event = new CartChanged(UUID.randomUUID(), clock.instant(), cartId, cartVersion);
+        var event = new CartChanged(UUID.randomUUID(), clock.instant(), new CartId(cartId), cartVersion);
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> publisher.publishEvent(event));
         asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.eventId().equals(event.eventId()));
     }

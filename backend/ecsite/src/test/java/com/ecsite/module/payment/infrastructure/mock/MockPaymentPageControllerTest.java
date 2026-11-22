@@ -1,8 +1,10 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -58,7 +60,7 @@ class MockPaymentPageControllerTest {
      * 画面の状態を持つ本番の mock
      */
     private final MockPaymentGateway gateway = new MockPaymentGateway(receiver, new MockPaymentProperties("http://localhost:8080"),
-            Clock.systemUTC());
+            Clock.systemUTC(), UUID::randomUUID);
 
     /**
      * 画面を呼ぶ MockMvc
@@ -73,7 +75,7 @@ class MockPaymentPageControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new MockPaymentPageController(gateway)).build();
-        pageId = gateway.openPage(new PageRequest(UUID.randomUUID(), UUID.randomUUID(), AMOUNT, RETURN_URL)).id();
+        pageId = gateway.openPage(new PageRequest(new PaymentId(UUID.randomUUID()), new OrderId(UUID.randomUUID()), AMOUNT, RETURN_URL)).id();
     }
 
     // ============================== テスト ==============================
@@ -107,7 +109,7 @@ class MockPaymentPageControllerTest {
         @DisplayName("戻る先の URL は、画面に出すときに HTML の記号を逃がす")
         void escapesReturnUrl() throws Exception {
             // 準備：HTML の記号を含む戻る先の、閉じた画面（戻る先を画面に出す）
-            var unsafe = gateway.openPage(new PageRequest(UUID.randomUUID(), UUID.randomUUID(), Money.of(100),
+            var unsafe = gateway.openPage(new PageRequest(new PaymentId(UUID.randomUUID()), new OrderId(UUID.randomUUID()), Money.of(100),
                     "http://localhost:3000/orders/1?a=\"<b>")).id();
             gateway.closePage(unsafe);
 

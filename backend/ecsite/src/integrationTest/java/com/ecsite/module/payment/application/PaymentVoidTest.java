@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.model.PaymentSummary;
@@ -295,7 +296,7 @@ class PaymentVoidTest {
             cancel(orderId);
             awaitStatus(orderId, PaymentSummary.Status.VOIDED);
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-            var payment = paymentRepository.findByOrderId(orderId).orElseThrow();
+            var payment = paymentRepository.findByOrderId(new OrderId(orderId)).orElseThrow();
 
             // 操作：取消済みの反映がもう一度届く
             commandService.markVoided(payment.id());
@@ -378,7 +379,7 @@ class PaymentVoidTest {
             });
 
             // 操作：売上を確定する
-            paymentApi.capture(orderId);
+            paymentApi.capture(new OrderId(orderId));
 
             // 確認：返金は 1 回で、与信は取り消さない
             asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
@@ -410,7 +411,7 @@ class PaymentVoidTest {
     private UUID capturedWithLostResponse() {
         var orderId = payments.authorized(ORDERED_AT);
         gateway.loseNextCaptureResponses(1);
-        assertSystemError(() -> paymentApi.capture(orderId), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        assertSystemError(() -> paymentApi.capture(new OrderId(orderId)), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
         return orderId;
     }
@@ -421,6 +422,6 @@ class PaymentVoidTest {
      * @param orderId 注文 ID
      */
     private void cancel(UUID orderId) {
-        transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(orderId));
+        transactionTemplate.executeWithoutResult(status -> paymentApi.cancel(new OrderId(orderId)));
     }
 }

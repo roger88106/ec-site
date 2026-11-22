@@ -1,11 +1,11 @@
 package com.ecsite.module.shipping.support;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.api.model.ShipmentSummary;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 出荷のモジュールの出荷のテストデータ
@@ -45,7 +45,7 @@ public class ShipmentTestData {
      * @param trackingNumber 送り状番号
      * @param shippedAt      出荷日時
      */
-    public void create(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+    public void create(OrderId orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
         transactionTemplate.executeWithoutResult(status -> shippingApi.create(orderId, carrier, trackingNumber, shippedAt));
     }
 }

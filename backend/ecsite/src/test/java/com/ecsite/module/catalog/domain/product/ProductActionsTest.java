@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.domain.product;
 
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductActions;
@@ -17,6 +19,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.ecsite.module.catalog.domain.product.ProductTestIds.newProductId;
+import static com.ecsite.module.catalog.domain.product.ProductTestIds.newVariantId;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -42,7 +46,7 @@ class ProductActionsTest {
      *
      * <p>税モジュールの ID なので、存在しなくてよい。
      */
-    private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final TaxCategoryId TAX_CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
     /**
      * 商品の生成
@@ -189,7 +193,7 @@ class ProductActionsTest {
         void withAxesAndVariant() {
             // 準備：軸が色で、バリアントを 1 つ持つ商品
             var product = productWithAxes("色");
-            product.addVariant(VariantCode.of("ABC-001-BK"), List.of("黒"), NOW);
+            product.addVariant(newVariantId(), VariantCode.of("ABC-001-BK"), List.of("黒"), NOW);
 
             // 操作と確認：追加のフラグが立つ
             assertThat(product.actions(NOW).addVariant()).isTrue();
@@ -210,13 +214,13 @@ class ProductActionsTest {
         void withoutAxesAndVariant() {
             // 準備：軸がなく、バリアントを 1 つ持つ商品
             var product = productWithAxes();
-            product.addVariant(VariantCode.of("ABC-001"), List.of(), NOW);
+            product.addVariant(newVariantId(), VariantCode.of("ABC-001"), List.of(), NOW);
 
             // 確認：追加のフラグが立たない
             assertThat(product.actions(NOW).addVariant()).isFalse();
 
             // 操作と確認：集約も、業務のエラー SINGLE_VARIANT_ONLY で追加を拒む
-            assertBusinessError(() -> product.addVariant(VariantCode.of("ABC-002"), List.of(), NOW),
+            assertBusinessError(() -> product.addVariant(newVariantId(), VariantCode.of("ABC-002"), List.of(), NOW),
                     ProductErrorCode.SINGLE_VARIANT_ONLY);
         }
     }
@@ -237,7 +241,7 @@ class ProductActionsTest {
      * @param product   確認する商品
      * @param variantId 商品のバリアントの ID（集約が振るので、定数にできない）
      */
-    private static void assertNotDeletable(Product product, UUID variantId) {
+    private static void assertNotDeletable(Product product, VariantId variantId) {
         assertThat(product.actions(NOW).delete()).isFalse();
         assertThat(product.actions(NOW).deleteVariants()).isFalse();
         assertBusinessError(() -> product.delete(NOW), ProductErrorCode.PRODUCT_ALREADY_SHOWN);
@@ -253,7 +257,7 @@ class ProductActionsTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productWithAxes(String... axes) {
-        return factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+        return factory.create(newProductId(), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of(axes));
     }
 
@@ -264,7 +268,7 @@ class ProductActionsTest {
      */
     private Product productWithVariant() {
         var product = productWithAxes();
-        product.addVariant(VariantCode.of("ABC-001"), List.of(), NOW.minus(Duration.ofDays(1)));
+        product.addVariant(newVariantId(), VariantCode.of("ABC-001"), List.of(), NOW.minus(Duration.ofDays(1)));
         return product;
     }
 

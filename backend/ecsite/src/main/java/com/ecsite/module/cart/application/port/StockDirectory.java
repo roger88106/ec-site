@@ -1,6 +1,6 @@
 package com.ecsite.module.cart.application.port;
 
-import java.util.UUID;
+import com.ecsite.common.model.id.VariantId;
 
 /**
  * 在庫の腐敗防止層の port
@@ -17,5 +17,5 @@ public interface StockDirectory {
      * @param variantId バリアント ID
      * @return 販売可能数。在庫がなければ 0
      */
-    int sellableQuantity(UUID variantId);
+    int sellableQuantity(VariantId variantId);
 }

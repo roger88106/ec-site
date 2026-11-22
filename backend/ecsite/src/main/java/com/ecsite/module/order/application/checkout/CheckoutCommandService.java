@@ -2,6 +2,11 @@ package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
@@ -11,6 +16,7 @@ import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.checkout.Checkout;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.quote.Quote;
@@ -25,7 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 注文手続きのサービス
@@ -81,6 +86,11 @@ public class CheckoutCommandService {
     private final Clock clock;
 
     /**
+     * 識別子の生成
+     */
+    private final IdGenerator idGenerator;
+
+    /**
      * 注文手続きに進む。
      *
      * <p>全品目をカートの数量だけ引き当てる。同じカートの前の注文手続きの引当は解く（進み直し）。
@@ -99,7 +109,7 @@ public class CheckoutCommandService {
      * @throws BusinessException 注文できないカート（{@code CART_NOT_ORDERABLE}）
      * @throws BusinessException 総額が決済の範囲の外（{@code ORDER_AMOUNT_OUT_OF_RANGE}）
      */
-    public UUID start(@NonNull UUID cartId, @NonNull UUID memberId, @NonNull Set<UUID> acknowledgedOrderIds) {
+    public CheckoutId start(@NonNull CartId cartId, @NonNull MemberId memberId, @NonNull Set<OrderId> acknowledgedOrderIds) {
         // 会員のロック ※同じ会員の開始と注文を 1 つずつ処理し、同じカートの引当が二重に残らないようにする。カートや前の引当を読む前に取るので、ロックを待った後の読み取りに先の開始が見える
         orderRepository.lockForMember(memberId);
         // 時刻はロックを待った後に取る
@@ -122,7 +132,7 @@ public class CheckoutCommandService {
         verifyAmountInRange(quote.amounts().total(), paymentDirectory.amountRange());
 
         // 注文手続き登録と引当
-        var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);
+        var checkout = Checkout.start(new CheckoutId(idGenerator.generate()), memberId, cartId, cart.version(), now, properties.reservationTtl(), pendingOrderIds);
         checkoutRepository.insert(checkout);
         var shortages = stockDirectory.reserve(checkout.id(), quantities(cart.lines()), checkout.expiresAt());
         if (!shortages.isEmpty()) {
@@ -139,7 +149,7 @@ public class CheckoutCommandService {
      *
      * @param cartId カート ID
      */
-    public void releaseReservations(@NonNull UUID cartId) {
+    public void releaseReservations(@NonNull CartId cartId) {
         stockDirectory.release(checkoutRepository.findIdsByCartId(cartId));
     }
 
@@ -151,7 +161,7 @@ public class CheckoutCommandService {
      * @param cartId      カート ID
      * @param cartVersion このバージョンより古いカートのバージョンで始めた注文手続きを対象にする
      */
-    public void releaseReservationsStartedBefore(UUID cartId, long cartVersion) {
+    public void releaseReservationsStartedBefore(CartId cartId, long cartVersion) {
         stockDirectory.release(checkoutRepository.findIdsByCartIdStartedBefore(cartId, cartVersion));
     }
 
@@ -202,8 +212,8 @@ public class CheckoutCommandService {
      * @param lines 品目
      * @return バリアント ID → 数量
      */
-    static Map<UUID, Integer> quantities(List<CartSnapshot.Line> lines) {
-        var quantities = new LinkedHashMap<UUID, Integer>();
+    static Map<VariantId, Integer> quantities(List<CartSnapshot.Line> lines) {
+        var quantities = new LinkedHashMap<VariantId, Integer>();
         lines.forEach(line -> quantities.put(line.variantId(), line.quantity()));
         return quantities;
     }

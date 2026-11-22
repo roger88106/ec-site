@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
@@ -68,7 +69,7 @@ class OrderRestoreFailureTest {
             var database = new RestoreFailures().with("sales_order", validOrder()).with("sales_order_line", validLine());
 
             // 操作：注文を読む
-            var order = repository(database).findById(UUID.randomUUID());
+            var order = repository(database).findById(new OrderId(UUID.randomUUID()));
 
             // 確認：注文と明細を戻せる（他のテストの失敗が、準備の行のせいでないことの前提）
             assertThat(order).hasValueSatisfying(restored -> assertThat(restored.toSnapshot().lines()).hasSize(1));
@@ -232,7 +233,7 @@ class OrderRestoreFailureTest {
             var database = new RestoreFailures().with("sales_order", order);
 
             // 操作と確認：例外の出力に総額が出ない
-            assertValueIsHidden(() -> repository(database).findById(UUID.randomUUID()), Long.toString(VIOLATING_AMOUNT),
+            assertValueIsHidden(() -> repository(database).findById(new OrderId(UUID.randomUUID())), Long.toString(VIOLATING_AMOUNT),
                     IllegalArgumentException.class);
         }
 
@@ -280,7 +281,7 @@ class OrderRestoreFailureTest {
             var database = new RestoreFailures().with("sales_order", validOrder()).failingOn(table);
 
             // 操作と確認：DB の失敗のまま出る
-            assertDatabaseFailurePropagates(() -> repository(database).findById(UUID.randomUUID()));
+            assertDatabaseFailurePropagates(() -> repository(database).findById(new OrderId(UUID.randomUUID())));
         }
     }
 
@@ -316,7 +317,7 @@ class OrderRestoreFailureTest {
         breaking.accept(order);
         var database = new RestoreFailures().with("sales_order", order);
 
-        assertValueIsHidden(() -> repository(database).findById(UUID.randomUUID()), value, causeType);
+        assertValueIsHidden(() -> repository(database).findById(new OrderId(UUID.randomUUID())), value, causeType);
     }
 
     /**
@@ -329,7 +330,7 @@ class OrderRestoreFailureTest {
     private static void assertLineHides(SalesOrderLineRecord line, String hidden, Class<? extends Exception> causeType) {
         var database = new RestoreFailures().with("sales_order", validOrder()).with("sales_order_line", line);
 
-        assertValueIsHidden(() -> repository(database).findById(UUID.randomUUID()), hidden, causeType);
+        assertValueIsHidden(() -> repository(database).findById(new OrderId(UUID.randomUUID())), hidden, causeType);
     }
 
     // ============================== 準備の補助 ==============================

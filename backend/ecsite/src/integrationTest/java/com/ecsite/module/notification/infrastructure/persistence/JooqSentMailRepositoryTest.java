@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.infrastructure.persistence;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.notification.application.port.SentMailRepository;
 import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
@@ -63,7 +64,7 @@ class JooqSentMailRepositoryTest {
         @DisplayName("送ったメールを初めて記録すると、true を返す")
         void returnsTrue() {
             // 操作と確認：true
-            assertThat(repository.recordIfAbsent(UUID.randomUUID(), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT))
+            assertThat(repository.recordIfAbsent(new OrderId(UUID.randomUUID()), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT))
                     .isTrue();
         }
 
@@ -72,7 +73,7 @@ class JooqSentMailRepositoryTest {
         void savesRecord() {
             // 操作：記録する
             var orderId = UUID.randomUUID();
-            repository.recordIfAbsent(orderId, SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
+            repository.recordIfAbsent(new OrderId(orderId), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
 
             // 確認：この注文の行の項目
             assertSavedRow(dsl.fetchOne("select kind, recipient, sent_at from notification.sent_mail where order_id = ?", orderId));
@@ -82,10 +83,10 @@ class JooqSentMailRepositoryTest {
         @DisplayName("注文が違えば、同じ種類のメールも別に記録できる")
         void recordsMailOfOtherOrder() {
             // 準備：別の注文のメールを記録する
-            repository.recordIfAbsent(UUID.randomUUID(), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
+            repository.recordIfAbsent(new OrderId(UUID.randomUUID()), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
 
             // 操作と確認：true
-            assertThat(repository.recordIfAbsent(UUID.randomUUID(), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT))
+            assertThat(repository.recordIfAbsent(new OrderId(UUID.randomUUID()), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT))
                     .isTrue();
         }
     }
@@ -99,10 +100,10 @@ class JooqSentMailRepositoryTest {
         void returnsFalse() {
             // 準備：記録する
             var orderId = UUID.randomUUID();
-            repository.recordIfAbsent(orderId, SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
+            repository.recordIfAbsent(new OrderId(orderId), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
 
             // 操作と確認：別の宛先で記録しようとすると false
-            assertThat(repository.recordIfAbsent(orderId, SentMailRepository.Kind.SHIPMENT, OTHER_RECIPIENT,
+            assertThat(repository.recordIfAbsent(new OrderId(orderId), SentMailRepository.Kind.SHIPMENT, OTHER_RECIPIENT,
                     SENT_AT.plusSeconds(60))).isFalse();
         }
 
@@ -111,10 +112,10 @@ class JooqSentMailRepositoryTest {
         void keepsFirstRecord() {
             // 準備：記録する
             var orderId = UUID.randomUUID();
-            repository.recordIfAbsent(orderId, SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
+            repository.recordIfAbsent(new OrderId(orderId), SentMailRepository.Kind.SHIPMENT, RECIPIENT, SENT_AT);
 
             // 操作：別の宛先で記録しようとする
-            repository.recordIfAbsent(orderId, SentMailRepository.Kind.SHIPMENT, OTHER_RECIPIENT, SENT_AT.plusSeconds(60));
+            repository.recordIfAbsent(new OrderId(orderId), SentMailRepository.Kind.SHIPMENT, OTHER_RECIPIENT, SENT_AT.plusSeconds(60));
 
             // 確認：この注文の行は 1 つで、先の宛先
             assertThat(dsl.fetchValue("select count(*) from notification.sent_mail where order_id = ?", orderId))

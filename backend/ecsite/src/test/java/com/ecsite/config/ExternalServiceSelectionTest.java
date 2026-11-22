@@ -1,5 +1,6 @@
 package com.ecsite.config;
 
+import com.ecsite.common.id.IdGenerator;
 import com.ecsite.common.message.MessageResolver;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
@@ -26,6 +27,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -78,6 +80,7 @@ class ExternalServiceSelectionTest {
                     "ecsite.payment.return-url=http://store.example/orders/{orderId}?payment=returned")
             .withBean(PaymentNotificationReceiver.class, () -> mock(PaymentNotificationReceiver.class))
             .withBean(Clock.class, Clock::systemUTC)
+            .withBean(IdGenerator.class, () -> UUID::randomUUID)
             .withBean(CarrierSignature.class, () -> new CarrierSignature("test-carrier-webhook-secret"))
             .withBean(JsonMapper.class, JsonMapper::new)
             .withBean(RestClient.Builder.class, RestClient::builder)

@@ -1,5 +1,6 @@
 package com.ecsite.support.data;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.payment.OrderPayments;
 import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentProperties;
@@ -362,7 +363,7 @@ public class OrderTestData {
      * @return 支払画面 ID
      */
     public String openPaymentPage(UUID orderId) {
-        var payable = applicationContext.getBean(PaymentQueryService.class).findPayable(orderId).orElseThrow();
+        var payable = applicationContext.getBean(PaymentQueryService.class).findPayable(new OrderId(orderId)).orElseThrow();
         var url = payable.page() != null ? payable.page().url() : openNewPage(orderId, payable);
         return url.substring(url.lastIndexOf('/') + 1);
     }
@@ -375,10 +376,11 @@ public class OrderTestData {
      * @return 支払画面の URL
      */
     private String openNewPage(UUID orderId, PayablePaymentView payable) {
+        var id = new OrderId(orderId);
         var properties = applicationContext.getBean(PaymentProperties.class);
         var opened = gateway.openPage(
-                new PaymentGateway.PageRequest(payable.id(), orderId, payable.amount(), properties.returnUrlOf(orderId)));
-        var used = applicationContext.getBean(PaymentCommandService.class).recordPage(orderId, opened).orElseThrow();
+                new PaymentGateway.PageRequest(payable.id(), id, payable.amount(), properties.returnUrlOf(id)));
+        var used = applicationContext.getBean(PaymentCommandService.class).recordPage(id, opened).orElseThrow();
         if (!used.id().equals(opened.id())) {
             gateway.closePage(opened.id());
         }
@@ -455,7 +457,7 @@ public class OrderTestData {
      * @return イベントの条件
      */
     public static Predicate<Object> paymentAuthorized(UUID orderId) {
-        return event -> event instanceof PaymentAuthorized authorized && authorized.orderId().equals(orderId);
+        return event -> event instanceof PaymentAuthorized authorized && authorized.orderId().equals(new OrderId(orderId));
     }
 
     /**

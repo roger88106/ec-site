@@ -1,5 +1,7 @@
 package com.ecsite.module.inventory.application.handler;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
@@ -100,7 +102,7 @@ class CatalogEventHandlerTest {
             var variantId = UUID.randomUUID();
 
             // 操作：バリアント登録のイベントを発行する
-            publish(VariantRegistered.of(NOW, productId, variantId));
+            publish(VariantRegistered.of(NOW, new ProductId(productId), new VariantId(variantId)));
 
             // 確認：その商品の、在庫数 0 の在庫が作られる
             assertStockCreated(productId, variantId);
@@ -112,7 +114,7 @@ class CatalogEventHandlerTest {
             // 準備：バリアント登録のイベント
             var productId = UUID.randomUUID();
             var variantId = UUID.randomUUID();
-            var event = VariantRegistered.of(NOW, productId, variantId);
+            var event = VariantRegistered.of(NOW, new ProductId(productId), new VariantId(variantId));
 
             // 操作：同じイベントを 2 回発行する
             publish(event);
@@ -130,7 +132,7 @@ class CatalogEventHandlerTest {
             var variantId = UUID.randomUUID();
 
             // 操作と確認：トランザクションの外で発行すると例外になる
-            assertThatThrownBy(() -> eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, variantId)))
+            assertThatThrownBy(() -> eventPublisher.publishEvent(VariantRegistered.of(NOW, new ProductId(productId), new VariantId(variantId))))
                     .isInstanceOf(IllegalTransactionStateException.class);
 
             // 確認：在庫はできない
@@ -146,7 +148,7 @@ class CatalogEventHandlerTest {
 
             // 操作と確認：イベントを発行し、同じトランザクションの中で、その商品の在庫数 0 の在庫が作られている
             transactionTemplate.executeWithoutResult(status -> {
-                eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, variantId));
+                eventPublisher.publishEvent(VariantRegistered.of(NOW, new ProductId(productId), new VariantId(variantId)));
                 assertStockCreated(productId, variantId);
             });
         }
@@ -161,7 +163,7 @@ class CatalogEventHandlerTest {
 
             // 操作：イベントを発行し、在庫が作られたことを確認してから、トランザクションを巻き戻す
             transactionTemplate.executeWithoutResult(status -> {
-                eventPublisher.publishEvent(VariantRegistered.of(NOW, productId, rolledBack));
+                eventPublisher.publishEvent(VariantRegistered.of(NOW, new ProductId(productId), new VariantId(rolledBack)));
                 // 確認（前提）：巻き戻す前に在庫がある（イベントがリスナーに届いたうえで、巻き戻しで消えることを確認するため）
                 assertThat(stockCount(rolledBack)).isEqualTo(1);
                 status.setRollbackOnly();
@@ -169,7 +171,7 @@ class CatalogEventHandlerTest {
 
             // 確認：後に発行してコミットしたイベントの在庫が作られるのを待ってから、巻き戻したバリアントの在庫がないことを確認する
             // リスナーが非同期で動くと、巻き戻したイベントの処理が遅れて動き、確認の後に在庫を作って、テストが誤って通ることがあるのを防ぐため
-            publish(VariantRegistered.of(NOW, productId, committed));
+            publish(VariantRegistered.of(NOW, new ProductId(productId), new VariantId(committed)));
             await().atMost(TIMEOUT).until(() -> stockCount(committed) == 1);
             assertThat(stockCount(rolledBack)).isZero();
         }
@@ -180,7 +182,7 @@ class CatalogEventHandlerTest {
             // 準備：バリアント登録のイベント
             var productId = UUID.randomUUID();
             var variantId = UUID.randomUUID();
-            var event = VariantRegistered.of(NOW, productId, variantId);
+            var event = VariantRegistered.of(NOW, new ProductId(productId), new VariantId(variantId));
 
             // 操作：イベントを発行する
             publish(event);
@@ -190,7 +192,7 @@ class CatalogEventHandlerTest {
             assertStockCreated(productId, variantId);
 
             // 確認（前提）：同じ組み立て方の ID で、削除のリスナー宛ての記録は見つかる（削除は非同期のまま記録が残る）。ID の形を誤っていても確認が通ってしまうのを防ぐため
-            var deletion = VariantDeleted.of(NOW, productId, variantId);
+            var deletion = VariantDeleted.of(NOW, new ProductId(productId), new VariantId(variantId));
             publish(deletion);
             asyncEvents.awaitPublishedThenHandled(deletion::equals);
             assertThat(asyncEvents.isRecorded(deletion::equals, listenerId(VariantDeleted.class))).isTrue();
@@ -230,7 +232,7 @@ class CatalogEventHandlerTest {
             var stockItemId = addAdjustment(deleted);
 
             // 操作：バリアント削除のイベントを発行する
-            publish(VariantDeleted.of(NOW, productId, deleted));
+            publish(VariantDeleted.of(NOW, new ProductId(productId), new VariantId(deleted)));
 
             // 確認：在庫が消え、調整履歴も消える
             await().atMost(TIMEOUT).until(() -> stockCount(deleted) == 0);
@@ -247,7 +249,7 @@ class CatalogEventHandlerTest {
             register(productId, deleted, kept);
 
             // 操作：片方のバリアント削除のイベントを発行する
-            publish(VariantDeleted.of(NOW, productId, deleted));
+            publish(VariantDeleted.of(NOW, new ProductId(productId), new VariantId(deleted)));
 
             // 確認：消した方の削除を待ってから、もう片方が残ることを確認する
             await().atMost(TIMEOUT).until(() -> stockCount(deleted) == 0);
@@ -270,7 +272,7 @@ class CatalogEventHandlerTest {
             var stockItemId = addAdjustment(first);
 
             // 操作：商品削除のイベントを発行する
-            publish(ProductDeleted.of(NOW, productId));
+            publish(ProductDeleted.of(NOW, new ProductId(productId)));
 
             // 確認：両方の在庫が消え、調整履歴も消える
             await().atMost(TIMEOUT).until(() -> stockCount(first) + stockCount(second) == 0);
@@ -289,7 +291,7 @@ class CatalogEventHandlerTest {
             register(otherProductId, other);
 
             // 操作：商品削除のイベントを発行する
-            publish(ProductDeleted.of(NOW, productId));
+            publish(ProductDeleted.of(NOW, new ProductId(productId)));
 
             // 確認：削除する商品の在庫が消えるのを待ってから、ほかの商品の在庫が残ることを確認する
             await().atMost(TIMEOUT).until(() -> stockCount(first) == 0);
@@ -462,7 +464,7 @@ class CatalogEventHandlerTest {
      * @param variantIds バリアント ID
      */
     private void register(UUID productId, UUID... variantIds) {
-        Stream.of(variantIds).forEach(variantId -> publish(VariantRegistered.of(NOW, productId, variantId)));
+        Stream.of(variantIds).forEach(variantId -> publish(VariantRegistered.of(NOW, new ProductId(productId), new VariantId(variantId))));
         assertThat(variantIds).allMatch(variantId -> stockCount(variantId) == 1);
     }
 

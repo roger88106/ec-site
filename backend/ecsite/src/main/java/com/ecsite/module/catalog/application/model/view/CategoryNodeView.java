@@ -1,7 +1,8 @@
 package com.ecsite.module.catalog.application.model.view;
 
+import com.ecsite.common.model.id.CategoryId;
+
 import java.util.List;
-import java.util.UUID;
 
 /**
  * カテゴリの木の節のビュー
@@ -14,6 +15,6 @@ import java.util.UUID;
  * @param children     子カテゴリ（並び順）
  * @param addChild     子のカテゴリを追加できる
  */
-public record CategoryNodeView(UUID id, String name, int depth, int displayOrder, long version,
+public record CategoryNodeView(CategoryId id, String name, int depth, int displayOrder, long version,
                                List<CategoryNodeView> children, boolean addChild) {
 }

@@ -1,10 +1,11 @@
 package com.ecsite.module.catalog.api.model;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 店舗に表示される商品の一覧の 1 件
@@ -18,6 +19,6 @@ import java.util.UUID;
  * @param sellableVariantIds 販売中（販売停止でない）のバリアントの ID
  * @param imageUrl           代表画像の URL。画像がなければ null
  */
-public record ShownProductSummary(UUID id, String name, Money priceInclTax, Money priceExclTax,
-                                  List<UUID> sellableVariantIds, @Nullable String imageUrl) {
+public record ShownProductSummary(ProductId id, String name, Money priceInclTax, Money priceExclTax,
+                                  List<VariantId> sellableVariantIds, @Nullable String imageUrl) {
 }

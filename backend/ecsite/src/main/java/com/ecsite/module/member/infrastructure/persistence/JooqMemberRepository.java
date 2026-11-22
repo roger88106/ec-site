@@ -1,5 +1,6 @@
 package com.ecsite.module.member.infrastructure.persistence;
 
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +9,6 @@ import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.ecsite.jooq.member.Tables.MEMBER_;
 
@@ -31,8 +31,8 @@ class JooqMemberRepository implements MemberRepository {
      * @return 会員 ID。いなければ空
      */
     @Override
-    public Optional<UUID> findIdByIdpSubject(String idpSubject) {
-        return dsl.select(MEMBER_.ID).from(MEMBER_).where(MEMBER_.IDP_SUBJECT.eq(idpSubject)).fetchOptional(MEMBER_.ID);
+    public Optional<MemberId> findIdByIdpSubject(String idpSubject) {
+        return dsl.select(MEMBER_.ID).from(MEMBER_).where(MEMBER_.IDP_SUBJECT.eq(idpSubject)).fetchOptional(MEMBER_.ID).map(MemberId::new);
     }
 
     /**
@@ -44,10 +44,10 @@ class JooqMemberRepository implements MemberRepository {
      * @return 会員 ID
      */
     @Override
-    public UUID createOrGetId(Member member) {
+    public MemberId createOrGetId(Member member) {
         // 衝突したときは、一意の列を同じ値で書き換えて RETURNING で既存の行の ID を得る（DO NOTHING では行が返らない）。他の列は書き換えない
-        return dsl.insertInto(MEMBER_)
-                .set(MEMBER_.ID, member.id())
+        var id = dsl.insertInto(MEMBER_)
+                .set(MEMBER_.ID, member.id().value())
                 .set(MEMBER_.IDP_SUBJECT, member.idpSubject())
                 .set(MEMBER_.CREATED_AT, member.createdAt())
                 .onConflict(MEMBER_.IDP_SUBJECT)
@@ -56,5 +56,6 @@ class JooqMemberRepository implements MemberRepository {
                 .returning(MEMBER_.ID)
                 .fetchSingle()
                 .getId();
+        return new MemberId(id);
     }
 }

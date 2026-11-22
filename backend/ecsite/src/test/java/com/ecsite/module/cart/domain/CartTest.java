@@ -1,6 +1,8 @@
 package com.ecsite.module.cart.domain;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.VariantId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,12 +48,12 @@ class CartTest {
     /**
      * 白のバリアント ID
      */
-    private static final UUID WHITE = UUID.randomUUID();
+    private static final VariantId WHITE = new VariantId(UUID.randomUUID());
 
     /**
      * 黒のバリアント ID
      */
-    private static final UUID BLACK = UUID.randomUUID();
+    private static final VariantId BLACK = new VariantId(UUID.randomUUID());
 
     // ============================== テスト ==============================
 
@@ -215,10 +217,10 @@ class CartTest {
         void rejects31stItem() {
             // 準備：30 品目のカート
             var cart = newCart();
-            fill(cart, UUID.randomUUID());
+            fill(cart, new VariantId(UUID.randomUUID()));
 
             // 操作と確認：業務のエラー TOO_MANY_CART_ITEMS で拒否される
-            assertBusinessError(() -> cart.add(UUID.randomUUID(), 1, NOW), CartErrorCode.TOO_MANY_CART_ITEMS);
+            assertBusinessError(() -> cart.add(new VariantId(UUID.randomUUID()), 1, NOW), CartErrorCode.TOO_MANY_CART_ITEMS);
         }
 
         @Test
@@ -226,7 +228,7 @@ class CartTest {
         void mergesExistingItemWhenFull() {
             // 準備：30 品目のカート
             var cart = newCart();
-            var first = UUID.randomUUID();
+            var first = new VariantId(UUID.randomUUID());
             fill(cart, first);
 
             // 操作：カートにあるバリアントを入れる
@@ -331,7 +333,7 @@ class CartTest {
         void removesOnlyGivenItems() {
             // 準備：白、黒、他の 3 品目のカート
             var cart = newCart();
-            var other = UUID.randomUUID();
+            var other = new VariantId(UUID.randomUUID());
             addThree(cart, other);
 
             // 操作：白と黒を一度に除く
@@ -346,7 +348,7 @@ class CartTest {
         void incrementsVersionOnce() {
             // 準備：3 品目を入れて、バージョンが 3 のカート
             var cart = newCart();
-            addThree(cart, UUID.randomUUID());
+            addThree(cart, new VariantId(UUID.randomUUID()));
 
             // 操作：白と黒を一度に除く
             cart.removeAll(List.of(WHITE, BLACK), NOW, NOW);
@@ -360,11 +362,11 @@ class CartTest {
         void keepsVersionWithoutChange() {
             // 準備：白と黒を除いて、バージョンが 4 のカート
             var cart = newCart();
-            addThree(cart, UUID.randomUUID());
+            addThree(cart, new VariantId(UUID.randomUUID()));
             cart.removeAll(List.of(WHITE, BLACK), NOW, NOW);
 
             // 操作：もうない白と、入れていないバリアントを除く
-            cart.removeAll(List.of(WHITE, UUID.randomUUID()), NOW, NOW);
+            cart.removeAll(List.of(WHITE, new VariantId(UUID.randomUUID())), NOW, NOW);
 
             // 確認：4 のまま
             assertThat(cart.version()).isEqualTo(4);
@@ -566,7 +568,7 @@ class CartTest {
      * @return カート
      */
     private static Cart newCart() {
-        return Cart.create(UUID.randomUUID(), NOW);
+        return Cart.create(new CartId(UUID.randomUUID()), NOW);
     }
 
     /**
@@ -587,7 +589,7 @@ class CartTest {
      * @param cart  入れるカート
      * @param other 他のバリアント ID（実行ごとに作るので、定数にできない）
      */
-    private static void addThree(Cart cart, UUID other) {
+    private static void addThree(Cart cart, VariantId other) {
         cart.add(WHITE, 1, NOW);
         cart.add(BLACK, 2, NOW);
         cart.add(other, 1, NOW);
@@ -599,7 +601,7 @@ class CartTest {
      * @param cart  入れるカート
      * @param first 先頭のバリアント ID（実行ごとに作るので、定数にできない）
      */
-    private static void fill(Cart cart, UUID first) {
+    private static void fill(Cart cart, VariantId first) {
         cart.add(first, 1, NOW);
         addDistinct(cart, MAX_ITEMS - 1);
     }
@@ -612,7 +614,7 @@ class CartTest {
      */
     private static void addDistinct(Cart cart, int count) {
         for (int i = 0; i < count; i++) {
-            cart.add(UUID.randomUUID(), 1, NOW);
+            cart.add(new VariantId(UUID.randomUUID()), 1, NOW);
         }
     }
 }

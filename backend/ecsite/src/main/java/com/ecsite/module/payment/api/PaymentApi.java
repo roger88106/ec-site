@@ -3,6 +3,7 @@ package com.ecsite.module.payment.api;
 import com.ecsite.common.conversion.EnumConversion;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.model.AmountRange;
 import com.ecsite.module.payment.api.model.AuthorizationDeadline;
@@ -22,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 支払の API
@@ -56,7 +56,7 @@ public class PaymentApi {
      * @param amount    金額（注文の総額）
      * @param orderedAt 注文日時
      */
-    public void create(@NonNull UUID orderId, @NonNull Money amount, @NonNull Instant orderedAt) {
+    public void create(@NonNull OrderId orderId, @NonNull Money amount, @NonNull Instant orderedAt) {
         commandService.create(orderId, amount, orderedAt);
     }
 
@@ -70,7 +70,7 @@ public class PaymentApi {
      * @return 支払画面の URL。支払がない、未払いでない、期限の後なら空
      * @throws SystemException 決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）
      */
-    public Optional<String> pageUrl(@NonNull UUID orderId) {
+    public Optional<String> pageUrl(@NonNull OrderId orderId) {
         return gatewayService.pageUrl(orderId);
     }
 
@@ -83,7 +83,7 @@ public class PaymentApi {
      *
      * @param orderId 注文 ID
      */
-    public void cancel(@NonNull UUID orderId) {
+    public void cancel(@NonNull OrderId orderId) {
         commandService.cancel(orderId);
     }
 
@@ -99,7 +99,7 @@ public class PaymentApi {
      * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
      * @throws SystemException   決済サービスに接続できない（{@code PAYMENT_GATEWAY_UNAVAILABLE}）。支払は与信済みのまま残る
      */
-    public void capture(@NonNull UUID orderId) {
+    public void capture(@NonNull OrderId orderId) {
         gatewayService.capture(orderId);
     }
 
@@ -109,7 +109,7 @@ public class PaymentApi {
      * @param orderIds 注文 ID
      * @return 支払の状態。支払のない注文は含まない
      */
-    public List<PaymentSummary> find(@NonNull Collection<UUID> orderIds) {
+    public List<PaymentSummary> find(@NonNull Collection<OrderId> orderIds) {
         return queryService.findSummaries(orderIds).stream().map(PaymentApi::toSummary).toList();
     }
 
@@ -119,7 +119,7 @@ public class PaymentApi {
      * @param orderIds 注文 ID
      * @return 支払える注文 ID
      */
-    public Set<UUID> findPayableOrderIds(@NonNull Collection<UUID> orderIds) {
+    public Set<OrderId> findPayableOrderIds(@NonNull Collection<OrderId> orderIds) {
         return queryService.findPayableOrderIds(orderIds);
     }
 
@@ -129,7 +129,7 @@ public class PaymentApi {
      * @param orderIds 注文 ID
      * @return 与信期限。与信を受けていない注文は含まない
      */
-    public List<AuthorizationDeadline> findAuthorizationDeadlines(@NonNull Collection<UUID> orderIds) {
+    public List<AuthorizationDeadline> findAuthorizationDeadlines(@NonNull Collection<OrderId> orderIds) {
         return queryService.findAuthorizationDeadlines(orderIds).stream()
                 .map(view -> new AuthorizationDeadline(view.orderId(), view.deadline(), view.expiring()))
                 .toList();
@@ -142,7 +142,7 @@ public class PaymentApi {
      *
      * @return 注文 ID（与信の古い順）
      */
-    public List<UUID> findExpiringOrderIds() {
+    public List<OrderId> findExpiringOrderIds() {
         return queryService.findExpiringOrderIds();
     }
 

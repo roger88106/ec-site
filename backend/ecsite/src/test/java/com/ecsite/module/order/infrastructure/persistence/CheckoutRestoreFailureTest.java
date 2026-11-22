@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.jooq.ordering.tables.records.CheckoutRecord;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.support.RestoreFailures;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.DisplayName;
@@ -41,7 +42,7 @@ class CheckoutRestoreFailureTest {
     @DisplayName("壊していない注文手続きの行は、戻せる")
     void restoresValidRow() {
         // 操作と確認：戻せる行を読むと、注文手続きがある（他のテストの失敗が、準備の行のせいでないことの前提）
-        assertThat(repository(validCheckout()).findById(UUID.randomUUID())).isPresent();
+        assertThat(repository(validCheckout()).findById(new CheckoutId(UUID.randomUUID()))).isPresent();
     }
 
     @Test
@@ -53,7 +54,7 @@ class CheckoutRestoreFailureTest {
         checkout.setAcknowledgedOrderIds(JSONB.valueOf("[\"" + value + "\"]"));
 
         // 操作と確認：例外の出力に値が出ない
-        assertValueIsHidden(() -> repository(checkout).findById(UUID.randomUUID()), value,
+        assertValueIsHidden(() -> repository(checkout).findById(new CheckoutId(UUID.randomUUID())), value,
                 InvalidFormatException.class);
     }
 
@@ -66,11 +67,11 @@ class CheckoutRestoreFailureTest {
         checkout.setExpiresAt(expiresAt);
 
         // 操作と確認：例外の出力に、期限・作成日時・会員 ID が出ない
-        assertValueIsHidden(() -> repository(checkout).findById(UUID.randomUUID()), expiresAt.toString(),
+        assertValueIsHidden(() -> repository(checkout).findById(new CheckoutId(UUID.randomUUID())), expiresAt.toString(),
                 IllegalArgumentException.class);
-        assertValueIsHidden(() -> repository(checkout).findById(UUID.randomUUID()), CREATED_AT.toString(),
+        assertValueIsHidden(() -> repository(checkout).findById(new CheckoutId(UUID.randomUUID())), CREATED_AT.toString(),
                 IllegalArgumentException.class);
-        assertValueIsHidden(() -> repository(checkout).findById(UUID.randomUUID()), checkout.getMemberId().toString(),
+        assertValueIsHidden(() -> repository(checkout).findById(new CheckoutId(UUID.randomUUID())), checkout.getMemberId().toString(),
                 IllegalArgumentException.class);
     }
 
@@ -82,7 +83,7 @@ class CheckoutRestoreFailureTest {
         checkout.setExpiresAt(CREATED_AT);
 
         // 操作と確認：例外の出力に日時が出ない
-        assertValueIsHidden(() -> repository(checkout).findById(UUID.randomUUID()), CREATED_AT.toString(),
+        assertValueIsHidden(() -> repository(checkout).findById(new CheckoutId(UUID.randomUUID())), CREATED_AT.toString(),
                 IllegalArgumentException.class);
     }
 

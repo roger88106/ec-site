@@ -2,6 +2,9 @@ package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.support.LogCapture;
@@ -55,8 +58,8 @@ class ProductImageGatewayServiceTest {
     @DisplayName("DC-489-6 保存が競合で失敗し、破棄も失敗したとき、競合の例外を投げ、破棄の例外は抑制された例外に含まれる")
     void keepsOriginalExceptionWhenDiscardFails() {
         // 準備：保存が競合の例外を投げ、破棄も例外を投げる
-        var productId = UUID.randomUUID();
-        var prepared = new PreparedImage(UUID.randomUUID());
+        var productId = new ProductId(UUID.randomUUID());
+        var prepared = new PreparedImage(new AssetId(UUID.randomUUID()));
         var conflict = BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
         var discardFailure = new IllegalStateException("discard failed");
         when(mediaDirectory.prepareImage(any(), any())).thenReturn(prepared);
@@ -64,7 +67,7 @@ class ProductImageGatewayServiceTest {
         doThrow(discardFailure).when(mediaDirectory).discardImage(prepared);
 
         // 操作：画像を追加する
-        var thrown = catchThrowable(() -> service.addImage(productId, UUID.randomUUID(), 1L));
+        var thrown = catchThrowable(() -> service.addImage(productId, new UploadId(UUID.randomUUID()), 1L));
 
         // 確認：競合の例外が投げられ、破棄の例外は抑制された例外に含まれる
         assertThat(thrown).isSameAs(conflict);
@@ -75,15 +78,15 @@ class ProductImageGatewayServiceTest {
     @DisplayName("DC-489-6 保存が失敗し、破棄も失敗したとき、warn のログに用意した画像のアセット ID と破棄の例外を出力する")
     void logsDiscardFailure() {
         // 準備：保存が競合の例外を投げ、破棄も例外を投げる
-        var productId = UUID.randomUUID();
-        var prepared = new PreparedImage(UUID.randomUUID());
+        var productId = new ProductId(UUID.randomUUID());
+        var prepared = new PreparedImage(new AssetId(UUID.randomUUID()));
         when(mediaDirectory.prepareImage(any(), any())).thenReturn(prepared);
         when(commandService.saveAddedImage(productId, 1L, prepared))
                 .thenThrow(BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION));
         doThrow(new IllegalStateException("discard failed")).when(mediaDirectory).discardImage(prepared);
 
         // 操作：画像を追加する
-        assertThatThrownBy(() -> service.addImage(productId, UUID.randomUUID(), 1L)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> service.addImage(productId, new UploadId(UUID.randomUUID()), 1L)).isInstanceOf(BusinessException.class);
 
         // 確認：アセット ID を含む warn が 1 行出力され、破棄の例外が付いている
         assertThat(logs.entries()).filteredOn(entry -> entry.level() == Level.WARN).singleElement().satisfies(entry -> {

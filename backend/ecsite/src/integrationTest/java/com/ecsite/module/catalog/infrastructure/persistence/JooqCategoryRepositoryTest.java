@@ -1,6 +1,9 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.category.Category;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
@@ -42,7 +45,7 @@ class JooqCategoryRepositoryTest {
      *
      * <p>税モジュールの ID なので、存在しなくてよい。
      */
-    private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final TaxCategoryId TAX_CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
     /**
      * カテゴリの名称の上限（文字）
@@ -85,7 +88,7 @@ class JooqCategoryRepositoryTest {
         void rejectsDeletingCategoryWithProductsByForeignKey() {
             // 準備：商品が所属しているカテゴリ。削除の確認の後に、商品への割り当てが同時に起きた場合を再現する
             var category = added(null, "衣類 " + UUID.randomUUID());
-            var product = productFactory.create(ProductCode.of("ABC-001"), "T シャツ", "",
+            var product = productFactory.create(new ProductId(UUID.randomUUID()), ProductCode.of("ABC-001"), "T シャツ", "",
                     TAX_CATEGORY_ID, PriceExclTax.of(1000), Set.of(category.id()), List.of());
             productRepository.add(product);
 
@@ -101,7 +104,7 @@ class JooqCategoryRepositoryTest {
             repository.delete(parent);
 
             // 操作と確認：その子の登録は、業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> repository.add(factory.create(parent, "トップス", 1)), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> repository.add(factory.create(new CategoryId(UUID.randomUUID()), parent, "トップス", 1)), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -162,7 +165,7 @@ class JooqCategoryRepositoryTest {
         void savesMaxLengthName() {
             // 準備：サロゲートペアの文字だけの、50 文字の名称のカテゴリ
             var name = "𩸽".repeat(NAME_MAX_LENGTH);
-            var category = factory.create(null, name, repository.nextDisplayOrder(null));
+            var category = factory.create(new CategoryId(UUID.randomUUID()), null, name, repository.nextDisplayOrder(null));
 
             // 操作：登録して読み戻す
             repository.add(category);
@@ -232,7 +235,7 @@ class JooqCategoryRepositoryTest {
      * @return 登録したカテゴリ
      */
     private Category added(Category parent, String name) {
-        var category = factory.create(parent, name, repository.nextDisplayOrder(parent == null ? null : parent.id()));
+        var category = factory.create(new CategoryId(UUID.randomUUID()), parent, name, repository.nextDisplayOrder(parent == null ? null : parent.id()));
         repository.add(category);
         return category;
     }

@@ -1,6 +1,7 @@
 package com.ecsite.module.inventory.domain.stock;
 
-import java.util.UUID;
+import com.ecsite.common.model.id.VariantId;
+import com.ecsite.module.inventory.domain.stock.vo.StockItemId;
 
 /**
  * 行ロックして読み込んだ在庫
@@ -12,5 +13,5 @@ import java.util.UUID;
  * @param variantId   バリアント ID
  * @param quantity    在庫数
  */
-public record LockedStock(UUID stockItemId, UUID variantId, int quantity) {
+public record LockedStock(StockItemId stockItemId, VariantId variantId, int quantity) {
 }

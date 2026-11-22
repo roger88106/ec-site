@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.api.CatalogApi;
 import com.ecsite.module.catalog.api.model.VariantDetail;
 import com.ecsite.module.order.application.port.CatalogDirectory;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 商品カタログの腐敗防止層
@@ -31,8 +31,8 @@ class CatalogApiDirectory implements CatalogDirectory {
      * バリアントの情報を、商品カタログの API から取って変換する。
      */
     @Override
-    public Map<UUID, VariantInfo> findVariants(Collection<UUID> variantIds) {
-        var result = new LinkedHashMap<UUID, VariantInfo>();
+    public Map<VariantId, VariantInfo> findVariants(Collection<VariantId> variantIds) {
+        var result = new LinkedHashMap<VariantId, VariantInfo>();
         catalogApi.findVariants(variantIds).forEach((variantId, variant) -> result.put(variantId, toInfo(variant)));
         return result;
     }

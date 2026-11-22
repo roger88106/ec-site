@@ -1,9 +1,9 @@
 package com.ecsite.module.reporting.application.port;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrder;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の腐敗防止層の port
@@ -18,5 +18,5 @@ public interface OrderDirectory {
      * @param orderId 注文 ID
      * @return 写し。注文がなければ空
      */
-    Optional<ReportOrder> find(UUID orderId);
+    Optional<ReportOrder> find(OrderId orderId);
 }

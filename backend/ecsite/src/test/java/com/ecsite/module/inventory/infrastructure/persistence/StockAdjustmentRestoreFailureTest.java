@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.support.RestoreFailures;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +26,7 @@ class StockAdjustmentRestoreFailureTest {
         // 準備：列挙にない理由の調整履歴を返す DB
         var value = RestoreFailures.value();
         var adjustment = RECORDS.newRecord(STOCK_ADJUSTMENT);
+        adjustment.setId(UUID.randomUUID());
         adjustment.setDelta(1);
         adjustment.setReason(value);
         var dsl = new RestoreFailures()
@@ -34,7 +36,7 @@ class StockAdjustmentRestoreFailureTest {
         var repository = new JooqStockQueryRepository(dsl);
 
         // 操作と確認：履歴の取得が失敗し、例外の出力に理由の値が出ない
-        assertValueIsHidden(() -> repository.findAdjustments(UUID.randomUUID(), new PageRequest(1, 20)), value,
+        assertValueIsHidden(() -> repository.findAdjustments(new VariantId(UUID.randomUUID()), new PageRequest(1, 20)), value,
                 IllegalArgumentException.class);
     }
 }

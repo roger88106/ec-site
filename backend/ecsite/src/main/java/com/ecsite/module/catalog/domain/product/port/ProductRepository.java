@@ -1,11 +1,11 @@
 package com.ecsite.module.catalog.domain.product.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.catalog.domain.product.Product;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 商品のリポジトリ
@@ -19,7 +19,7 @@ public interface ProductRepository {
      * @param id 商品 ID
      * @return 商品。なければ空
      */
-    Optional<Product> findById(UUID id);
+    Optional<Product> findById(ProductId id);
 
     /**
      * 商品を登録する。

@@ -1,10 +1,10 @@
 package com.ecsite.module.media.application.port;
 
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.media.domain.PendingAsset;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 仮のアセットのリポジトリ
@@ -26,7 +26,7 @@ public interface PendingAssetRepository {
      * @param id アセット ID
      * @return 削除したら true。なければ false
      */
-    boolean deleteById(UUID id);
+    boolean deleteById(AssetId id);
 
     /**
      * 用意した時刻が指定した時刻より前の仮のアセットを、件数の上限まで削除する。

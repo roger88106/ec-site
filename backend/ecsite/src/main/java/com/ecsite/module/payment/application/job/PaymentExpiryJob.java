@@ -6,6 +6,7 @@ import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.AwaitingAuthorizationPaymentView;
 import com.ecsite.module.payment.application.model.view.CaptureReconcileView;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -13,7 +14,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -128,7 +128,7 @@ class PaymentExpiryJob {
      * @param abortMessage   打ち切りの warn のログの書式（引数は続けて失敗した件数）
      * @param <T>            支払の型
      */
-    private <T> void processUntilUnavailable(List<T> payments, Consumer<T> processor, Function<T, UUID> idOf,
+    private <T> void processUntilUnavailable(List<T> payments, Consumer<T> processor, Function<T, PaymentId> idOf,
                                              String failureMessage, String abortMessage) {
         int unavailable = 0;
         for (var payment : payments) {

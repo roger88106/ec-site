@@ -1,8 +1,11 @@
 package com.ecsite.module.order.application.job;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.checkout.CheckoutCommandService;
 import com.ecsite.module.order.domain.checkout.Checkout;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.LogCapture;
@@ -369,9 +372,10 @@ class CheckoutCleanupJobTest {
      * @return 注文手続き ID
      */
     private UUID insertCheckout(Instant startedAt) {
-        var checkout = Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, startedAt, TTL, Set.of());
+        var checkout = Checkout.start(new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), new CartId(UUID.randomUUID()), 1, startedAt,
+                TTL, Set.of());
         checkoutRepository.insert(checkout);
-        return checkout.id();
+        return checkout.id().value();
     }
 
     /**

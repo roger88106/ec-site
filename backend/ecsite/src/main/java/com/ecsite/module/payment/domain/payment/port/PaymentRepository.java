@@ -1,13 +1,14 @@
 package com.ecsite.module.payment.domain.payment.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.payment.domain.payment.Payment;
+import com.ecsite.module.payment.domain.payment.PaymentId;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 支払のリポジトリ
@@ -43,7 +44,7 @@ public interface PaymentRepository {
      * @param id 支払 ID
      * @return 支払。なければ空
      */
-    Optional<Payment> lockById(UUID id);
+    Optional<Payment> lockById(PaymentId id);
 
     /**
      * 注文の支払を行ロックして取得する。
@@ -53,7 +54,7 @@ public interface PaymentRepository {
      * @param orderId 注文 ID
      * @return 支払。なければ空
      */
-    Optional<Payment> lockByOrderId(UUID orderId);
+    Optional<Payment> lockByOrderId(OrderId orderId);
 
     /**
      * 支払画面の支払を行ロックして取得する。
@@ -71,7 +72,7 @@ public interface PaymentRepository {
      * @param id 支払 ID
      * @return 支払。なければ空
      */
-    Optional<Payment> findById(UUID id);
+    Optional<Payment> findById(PaymentId id);
 
     /**
      * 注文の支払を取得する。
@@ -79,7 +80,7 @@ public interface PaymentRepository {
      * @param orderId 注文 ID
      * @return 支払。なければ空
      */
-    Optional<Payment> findByOrderId(UUID orderId);
+    Optional<Payment> findByOrderId(OrderId orderId);
 
     /**
      * 注文の支払をまとめて取得する。
@@ -87,5 +88,5 @@ public interface PaymentRepository {
      * @param orderIds 注文 ID
      * @return 支払。支払のない注文は含まない
      */
-    List<Payment> findByOrderIds(Collection<UUID> orderIds);
+    List<Payment> findByOrderIds(Collection<OrderId> orderIds);
 }

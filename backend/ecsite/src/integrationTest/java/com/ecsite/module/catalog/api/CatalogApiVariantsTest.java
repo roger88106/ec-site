@@ -1,5 +1,8 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.api.model.AxisValue;
 import com.ecsite.module.catalog.api.model.VariantDetail;
@@ -134,11 +137,11 @@ class CatalogApiVariantsTest {
             var product = tShirt().publish();
 
             // 操作：2 つのバリアントの情報を取得する
-            var variants = api.findVariants(product.variantIds);
+            var variants = api.findVariants(variantIds(product));
 
             // 確認：2 つとも返り、1 つ目は定数どおりの情報を持つ
             assertThat(variants).hasSize(2);
-            assertWhiteMediumTShirt(variants.get(product.variantIds.getFirst()), product.variantIds.getFirst(), product.id,
+            assertWhiteMediumTShirt(variants.get(variantIds(product).getFirst()), variantIds(product).getFirst(), new ProductId(product.id),
                     product.productCode, product.variantCodes.getFirst());
         }
 
@@ -149,10 +152,10 @@ class CatalogApiVariantsTest {
             var product = catalog.product(standard, "軸のない商品", 1000).publish();
 
             // 操作：バリアントの情報を取得する
-            var variants = api.findVariants(product.variantIds);
+            var variants = api.findVariants(variantIds(product));
 
             // 確認：軸の値が空
-            assertThat(variants.get(product.variantIds.getFirst()).axisValues()).isEmpty();
+            assertThat(variants.get(variantIds(product).getFirst()).axisValues()).isEmpty();
         }
 
         @Test
@@ -162,11 +165,11 @@ class CatalogApiVariantsTest {
             var product = tShirt().publish().suspend(1);
 
             // 操作：2 つのバリアントの情報を取得する
-            var variants = api.findVariants(product.variantIds);
+            var variants = api.findVariants(variantIds(product));
 
             // 確認：販売停止にしたバリアントだけが販売停止
-            assertThat(variants.get(product.variantIds.get(1)).salesSuspended()).isTrue();
-            assertThat(variants.get(product.variantIds.getFirst()).salesSuspended()).isFalse();
+            assertThat(variants.get(variantIds(product).get(1)).salesSuspended()).isTrue();
+            assertThat(variants.get(variantIds(product).getFirst()).salesSuspended()).isFalse();
         }
     }
 
@@ -181,7 +184,7 @@ class CatalogApiVariantsTest {
             var unpublished = catalog.product(standard, "非公開", 1000);
 
             // 操作と確認：表示されない
-            assertInvisible(unpublished.variantIds.getFirst());
+            assertInvisible(variantIds(unpublished).getFirst());
         }
 
         @Test
@@ -191,7 +194,7 @@ class CatalogApiVariantsTest {
             var hidden = catalog.product(standard, "非公開にした", 1000).publish().unpublish();
 
             // 操作と確認：表示されない
-            assertInvisible(hidden.variantIds.getFirst());
+            assertInvisible(variantIds(hidden).getFirst());
         }
 
         @Test
@@ -201,7 +204,7 @@ class CatalogApiVariantsTest {
             var discontinued = catalog.product(standard, "販売終了", 1000).publish().discontinue();
 
             // 操作と確認：表示されない
-            assertInvisible(discontinued.variantIds.getFirst());
+            assertInvisible(variantIds(discontinued).getFirst());
         }
 
         @Test
@@ -211,7 +214,7 @@ class CatalogApiVariantsTest {
             var reserved = catalog.product(standard, "予約", 1000).period(NOW.plus(Duration.ofDays(1)), null).publish();
 
             // 操作と確認：まだ表示されない
-            assertInvisible(reserved.variantIds.getFirst());
+            assertInvisible(variantIds(reserved).getFirst());
         }
     }
 
@@ -224,13 +227,13 @@ class CatalogApiVariantsTest {
         void excludesUnknownVariants() throws Exception {
             // 準備：公開した商品のバリアントと、存在しないバリアントの ID
             var product = catalog.product(standard, "商品", 1000).publish();
-            var unknown = UUID.randomUUID();
+            var unknown = new VariantId(UUID.randomUUID());
 
             // 操作：両方を指定して取得する
-            var variants = api.findVariants(List.of(product.variantIds.getFirst(), unknown));
+            var variants = api.findVariants(List.of(variantIds(product).getFirst(), unknown));
 
             // 確認：存在するバリアントだけが返る
-            assertThat(variants).containsOnlyKeys(product.variantIds.getFirst());
+            assertThat(variants).containsOnlyKeys(variantIds(product).getFirst());
         }
 
         @Test
@@ -252,10 +255,10 @@ class CatalogApiVariantsTest {
             var product = productWithSecondVariantImage();
 
             // 操作：バリアントの情報を取得する
-            var variants = api.findVariants(product.variantIds);
+            var variants = api.findVariants(variantIds(product));
 
             // 確認：2 枚目の画像の URL
-            assertThat(variants.get(product.variantIds.get(1)).imageUrl()).isEqualTo(product.imageUrls.get(1));
+            assertThat(variants.get(variantIds(product).get(1)).imageUrl()).isEqualTo(product.imageUrls.get(1));
         }
 
         @Test
@@ -265,10 +268,10 @@ class CatalogApiVariantsTest {
             var product = productWithSecondVariantImage();
 
             // 操作：バリアントの情報を取得する
-            var variants = api.findVariants(product.variantIds);
+            var variants = api.findVariants(variantIds(product));
 
             // 確認：指定のない 1 つ目のバリアントは、先頭の画像（代表画像）の URL
-            assertThat(variants.get(product.variantIds.getFirst()).imageUrl()).isEqualTo(product.imageUrls.getFirst());
+            assertThat(variants.get(variantIds(product).getFirst()).imageUrl()).isEqualTo(product.imageUrls.getFirst());
         }
     }
 
@@ -298,7 +301,7 @@ class CatalogApiVariantsTest {
      * @param productCode 商品品番（補助が実行ごとに振るので、定数にできない）
      * @param variantCode バリアント品番（補助が商品品番から振るので、定数にできない）
      */
-    private void assertWhiteMediumTShirt(VariantDetail variant, UUID variantId, UUID productId, String productCode,
+    private void assertWhiteMediumTShirt(VariantDetail variant, VariantId variantId, ProductId productId, String productCode,
                                          String variantCode) {
         assertThat(variant.variantId()).isEqualTo(variantId);
         assertThat(variant.productId()).isEqualTo(productId);
@@ -307,7 +310,7 @@ class CatalogApiVariantsTest {
         assertThat(variant.productName()).isEqualTo(PRODUCT_NAME);
         assertThat(variant.axisValues()).containsExactly(new AxisValue(COLOR, WHITE), new AxisValue(SIZE, MEDIUM));
         assertThat(variant.priceExclTax()).isEqualTo(Money.of(PRICE_EXCL_TAX));
-        assertThat(variant.taxCategoryId()).isEqualTo(standard);
+        assertThat(variant.taxCategoryId()).isEqualTo(new TaxCategoryId(standard));
         assertThat(variant.imageUrl()).isNull();
         assertThat(variant.visible()).isTrue();
         assertThat(variant.salesSuspended()).isFalse();
@@ -318,7 +321,7 @@ class CatalogApiVariantsTest {
      *
      * @param variantId バリアント ID
      */
-    private void assertInvisible(UUID variantId) {
+    private void assertInvisible(VariantId variantId) {
         assertThat(api.findVariants(List.of(variantId)).get(variantId).visible()).isFalse();
     }
 
@@ -341,5 +344,15 @@ class CatalogApiVariantsTest {
     private CatalogTestData.TestProduct productWithSecondVariantImage() throws Exception {
         return catalog.product(standard, "画像あり", 1000, COLOR)
                 .variant(WHITE).variant(BLACK).image().image().variantImage(1, 1).publish();
+    }
+
+    /**
+     * 商品のバリアントの ID を、バリアントの識別子の一覧で返す。
+     *
+     * @param product 商品
+     * @return バリアントの識別子（登録の順）
+     */
+    private static List<VariantId> variantIds(CatalogTestData.TestProduct product) {
+        return product.variantIds.stream().map(VariantId::new).toList();
     }
 }

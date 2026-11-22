@@ -11,9 +11,9 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 /**
- * 検索が使う索引を、実行計画で確認する補助
+ * 実行計画を確認し、強制する補助
  *
- * <p>索引の名前が計画に出るだけでは足りない。シーケンシャルスキャンを無効にすると、照合順序が C でない列でも、
+ * <p>検索が使う索引を、実行計画で確認する。索引の名前が計画に出るだけでは足りない。シーケンシャルスキャンを無効にすると、照合順序が C でない列でも、
  * 索引を全て読んで Filter で絞る計画になり、索引の名前が計画に出るため。
  * 索引を範囲の条件（Index Cond）で使うことを、{@link #indexRangeCondition} の正規表現で確認する。
  *
@@ -21,9 +21,16 @@ import java.util.regex.Pattern;
  * 理由：検索の SQL の形を変えても、同じテストで確認するため。テストのためにリポジトリの可視性を広げないため。
  *
  * <p>行がなくても、シーケンシャルスキャンを無効にすれば、使える索引があれば計画に選ばれる。
- * 設定はトランザクションの中だけで有効なので、テストごとにロールバックするテストで使う。
+ *
+ * <p>計画の設定は {@code SET LOCAL} で変えるので、トランザクションの外で呼ぶと有効にならない。トランザクションの終わりに元に戻る。
  */
 public final class QueryPlans {
+
+    /**
+     * 副問い合わせを再評価する計画を選ばせるために無効にする、プランナーの設定
+     */
+    public static final List<String> RESCAN_DISABLED_SETTINGS =
+            List.of("enable_hashjoin", "enable_mergejoin", "enable_hashagg", "enable_sort", "enable_material");
 
     /**
      * インスタンスを作らない。
@@ -51,6 +58,22 @@ public final class QueryPlans {
         }).dsl();
         action.accept(recording);
         return executed.stream().map(query -> dsl.explain(query).plan()).toList();
+    }
+
+    /**
+     * 副問い合わせを、外側の行ごとに再評価する計画を選ばせる
+     *
+     * <p>{@link #RESCAN_DISABLED_SETTINGS} を無効にすると、{@code IN} の副問い合わせは入れ子のループ（Nested Loop Semi Join）の
+     * 内側に置かれ、外側の行ごとに再評価される。副問い合わせが {@code LIMIT} と {@code FOR UPDATE SKIP LOCKED} を持つと、
+     * 再評価のたびに、同じ文で削除した行をスキップして次の行を選ぶ。そのため、件数の上限より多く削除する。
+     * プランナーが選ぶ計画では起きにくく、毎回は再現しない。
+     *
+     * @param dsl トランザクションの接続で動く DSLContext
+     */
+    public static void forceSubqueryRescan(DSLContext dsl) {
+        for (var setting : RESCAN_DISABLED_SETTINGS) {
+            dsl.execute("SET LOCAL " + setting + " = off");
+        }
     }
 
     /**

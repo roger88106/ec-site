@@ -8,6 +8,7 @@ import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
 import com.ecsite.module.inventory.domain.stock.vo.StockItemId;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.InventoryTestData;
+import com.ecsite.support.persistence.QueryPlans;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -276,6 +277,17 @@ class JooqStockReservationRepositoryTest {
 
             // 操作と確認：期限切れが残っていなければ、何も消さない
             assertThat(repository.deleteExpiredBefore(LONG_AGO, 10)).isZero();
+        }
+
+        @Test
+        @DisplayName("選ぶ行を再評価する計画でも、1 回に件数の上限までしか消さない")
+        void deletesUpToLimitEvenIfSubqueryIsRescanned() {
+            // 準備：期限切れ 2 つ、期限ちょうど 1 つ、有効 1 つと、選ぶ行を外側の行ごとに再評価する計画
+            createExpiringReservations();
+            QueryPlans.forceSubqueryRescan(dsl);
+
+            // 操作と確認：上限 1 件なら 1 件だけ消す
+            assertThat(repository.deleteExpiredBefore(LONG_AGO, 1)).isEqualTo(1);
         }
 
         @Test

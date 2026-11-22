@@ -12,6 +12,7 @@ import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.OrderTestData;
 import com.ecsite.support.data.ShippingTaxCategory;
 import com.ecsite.support.http.TestJson;
+import com.ecsite.support.persistence.QueryPlans;
 import com.ecsite.support.security.TestTokens;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -287,6 +288,21 @@ class CartCleanupJobTest {
         void deletesUpToLimitAtOnce() {
             // 準備：ほかのテストが使わない古い時刻に変えた 3 つのカート
             var carts = cartsWithItem(3, LONG_AGO);
+
+            // 操作：上限を 2 にして 1 回消す
+            var deleted = service.deleteExpired(LONG_AGO_EXPIRED, SMALL_LIMIT);
+
+            // 確認：2 つだけ消え、1 つ残る
+            assertThat(deleted).isEqualTo(SMALL_LIMIT);
+            assertThat(remaining(carts)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("NFR-24 選ぶ行を再評価する計画でも、1 回の削除は、件数の上限までしか消さない")
+        void deletesUpToLimitEvenIfSubqueryIsRescanned() {
+            // 準備：ほかのテストが使わない古い時刻に変えた 3 つのカートと、選ぶ行を外側の行ごとに再評価する計画
+            var carts = cartsWithItem(3, LONG_AGO);
+            QueryPlans.forceSubqueryRescan(dsl);
 
             // 操作：上限を 2 にして 1 回消す
             var deleted = service.deleteExpired(LONG_AGO_EXPIRED, SMALL_LIMIT);

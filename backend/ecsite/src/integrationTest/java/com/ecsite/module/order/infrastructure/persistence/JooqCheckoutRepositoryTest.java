@@ -6,6 +6,8 @@ import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.support.config.IntegrationTest;
+import com.ecsite.support.persistence.QueryPlans;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,6 +61,9 @@ class JooqCheckoutRepositoryTest {
 
     @Autowired
     CheckoutRepository repository;
+
+    @Autowired
+    DSLContext dsl;
 
     // ============================== テスト ==============================
 
@@ -169,6 +174,20 @@ class JooqCheckoutRepositoryTest {
             assertThat(repository.deleteExpiredBefore(cutoff, 2)).isEqualTo(2);
             assertThat(repository.deleteExpiredBefore(cutoff, 2)).isEqualTo(1);
             assertThat(repository.deleteExpiredBefore(cutoff, 2)).isZero();
+        }
+
+        @Test
+        @DisplayName("選ぶ行を再評価する計画でも、期限切れの注文手続きは、件数の上限までしか消さない")
+        void deletesUpToLimitEvenIfSubqueryIsRescanned() {
+            // 準備：期限切れの 3 つと、選ぶ行を外側の行ごとに再評価する計画
+            for (int i = 0; i < 3; i++) {
+                repository.insert(checkout(new CartId(UUID.randomUUID()), OLD_STARTED_AT.plusSeconds(i)));
+            }
+            var cutoff = OLD_STARTED_AT.plus(TTL).plusSeconds(10);
+            QueryPlans.forceSubqueryRescan(dsl);
+
+            // 操作と確認：上限 2 件で消すと、2 件だけ消える
+            assertThat(repository.deleteExpiredBefore(cutoff, 2)).isEqualTo(2);
         }
     }
 

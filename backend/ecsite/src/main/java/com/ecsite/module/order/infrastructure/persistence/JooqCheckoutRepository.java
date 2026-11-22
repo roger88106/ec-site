@@ -11,6 +11,7 @@ import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
@@ -130,13 +131,17 @@ class JooqCheckoutRepository implements CheckoutRepository {
     @Override
     public int deleteExpiredBefore(Instant expiredBefore, int limit) {
         // 選ぶのと消すのを 1 文にする。ロックされた行は、次の回で消す
-        return dsl.deleteFrom(CHECKOUT)
-                .where(CHECKOUT.ID.in(dsl.select(CHECKOUT.ID)
-                        .from(CHECKOUT)
-                        .where(CHECKOUT.EXPIRES_AT.lt(expiredBefore))
-                        .limit(limit)
-                        .forUpdate()
-                        .skipLocked()))
+        // ※選ぶ行は MATERIALIZED の CTE で 1 回だけ確定させる。IN の副問い合わせに直接書くと、実行計画によっては
+        //   外側の行ごとに再評価され、前の評価で消した行を飛ばして次の行を選ぶので、件数の上限より多く消しうる
+        var targets = DSL.name("targets").fields("id").asMaterialized(DSL.select(CHECKOUT.ID)
+                .from(CHECKOUT)
+                .where(CHECKOUT.EXPIRES_AT.lt(expiredBefore))
+                .limit(limit)
+                .forUpdate()
+                .skipLocked());
+        return dsl.with(targets)
+                .delete(CHECKOUT)
+                .where(CHECKOUT.ID.in(DSL.select(targets.field("id", UUID.class)).from(targets)))
                 .execute();
     }
 

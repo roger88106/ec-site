@@ -1,6 +1,8 @@
 package com.ecsite.module.catalog.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,7 +17,7 @@ import java.util.UUID;
  * @param productId  商品 ID
  * @param variantId  バリアント ID
  */
-public record VariantDeleted(UUID eventId, Instant occurredAt, UUID productId, UUID variantId) implements DomainEvent {
+public record VariantDeleted(UUID eventId, Instant occurredAt, ProductId productId, VariantId variantId) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -25,7 +27,7 @@ public record VariantDeleted(UUID eventId, Instant occurredAt, UUID productId, U
      * @param variantId  バリアント ID
      * @return イベント
      */
-    public static VariantDeleted of(Instant occurredAt, UUID productId, UUID variantId) {
+    public static VariantDeleted of(Instant occurredAt, ProductId productId, VariantId variantId) {
         return new VariantDeleted(DomainEvent.newEventId(), occurredAt, productId, variantId);
     }
 }

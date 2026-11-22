@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.value.Money;
 
 import java.time.Instant;
@@ -16,7 +17,7 @@ import java.util.UUID;
  * @param productId  商品 ID
  * @param priceExclTax 変更後の税抜価格（円）
  */
-public record ProductPriceChanged(UUID eventId, Instant occurredAt, UUID productId, Money priceExclTax) implements DomainEvent {
+public record ProductPriceChanged(UUID eventId, Instant occurredAt, ProductId productId, Money priceExclTax) implements DomainEvent {
 
     /**
      * イベントを作る。
@@ -26,7 +27,7 @@ public record ProductPriceChanged(UUID eventId, Instant occurredAt, UUID product
      * @param priceExclTax 変更後の税抜価格（円）
      * @return イベント
      */
-    public static ProductPriceChanged of(Instant occurredAt, UUID productId, Money priceExclTax) {
+    public static ProductPriceChanged of(Instant occurredAt, ProductId productId, Money priceExclTax) {
         return new ProductPriceChanged(DomainEvent.newEventId(), occurredAt, productId, priceExclTax);
     }
 }

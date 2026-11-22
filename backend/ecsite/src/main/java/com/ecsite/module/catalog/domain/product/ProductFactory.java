@@ -2,13 +2,15 @@ package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import org.jmolecules.ddd.annotation.Factory;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品のファクトリー
@@ -34,8 +36,8 @@ public class ProductFactory {
      * @throws BusinessException 説明が長すぎる（{@code INVALID_PRODUCT_DESCRIPTION}）
      * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      */
-    public Product create(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
-                          PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {
+    public Product create(ProductId id, ProductCode productCode, String name, String description, TaxCategoryId taxCategoryId,
+                          PriceExclTax priceExclTax, Collection<CategoryId> categoryIds, List<String> axes) {
         return Product.create(id, productCode, name, description, taxCategoryId, priceExclTax,
                 categoryIds, axes);
     }

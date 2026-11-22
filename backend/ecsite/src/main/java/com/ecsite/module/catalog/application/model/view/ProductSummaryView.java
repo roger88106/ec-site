@@ -1,8 +1,7 @@
 package com.ecsite.module.catalog.application.model.view;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
-
-import java.util.UUID;
 
 /**
  * B 側の商品一覧の 1 件のビュー
@@ -13,6 +12,6 @@ import java.util.UUID;
  * @param status       公開状態
  * @param variantCount バリアント数
  */
-public record ProductSummaryView(UUID id, String productCode, String name, PublicationStatus status,
+public record ProductSummaryView(ProductId id, String productCode, String name, PublicationStatus status,
                                  int variantCount) {
 }

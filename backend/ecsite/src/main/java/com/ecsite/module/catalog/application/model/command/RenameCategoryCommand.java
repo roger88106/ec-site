@@ -1,8 +1,7 @@
 package com.ecsite.module.catalog.application.model.command;
 
+import com.ecsite.common.model.id.CategoryId;
 import lombok.NonNull;
-
-import java.util.UUID;
 
 /**
  * カテゴリ名の変更コマンド
@@ -11,5 +10,5 @@ import java.util.UUID;
  * @param name       新しい名称
  * @param version    取得時のバージョン
  */
-public record RenameCategoryCommand(@NonNull UUID categoryId, @NonNull String name, long version) {
+public record RenameCategoryCommand(@NonNull CategoryId categoryId, @NonNull String name, long version) {
 }

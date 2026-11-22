@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
@@ -92,11 +94,11 @@ class ProductVisibilityTest {
             // 操作：ドメインの判定と SQL の条件で、それぞれ表示される商品を求める
             var visibleByDomain = products.stream()
                     .filter(product -> product.isVisibleAt(NOW))
-                    .map(Product::id)
+                    .map(product -> product.id().value())
                     .collect(Collectors.toSet());
             Set<UUID> visibleBySql = dsl.select(PRODUCT.ID)
                     .from(PRODUCT)
-                    .where(PRODUCT.ID.in(products.stream().map(Product::id).toList()))
+                    .where(PRODUCT.ID.in(products.stream().map(product -> product.id().value()).toList()))
                     .and(ProductVisibility.visibleAt(NOW))
                     .fetchSet(PRODUCT.ID);
 
@@ -120,7 +122,7 @@ class ProductVisibilityTest {
             repository.add(startsNow);
 
             // 操作と確認：SQL の条件で表示される
-            assertThat(visibleIds(startsNow.id())).containsExactly(startsNow.id());
+            assertThat(visibleIds(startsNow.id().value())).containsExactly(startsNow.id().value());
         }
 
         @Test
@@ -131,7 +133,7 @@ class ProductVisibilityTest {
             repository.add(endsNow);
 
             // 操作と確認：SQL の条件で表示されない
-            assertThat(visibleIds(endsNow.id())).isEmpty();
+            assertThat(visibleIds(endsNow.id().value())).isEmpty();
         }
     }
 
@@ -163,8 +165,8 @@ class ProductVisibilityTest {
      * @return 商品
      */
     private Product restored(int sequence, PublicationStatus status, PublicationPeriod period) {
-        var created = factory.create(UUID.randomUUID(), ProductCode.of("VIS-" + sequence), "商品 " + sequence, "",
-                UUID.randomUUID(), PriceExclTax.of(1000), Set.of(), List.of());
+        var created = factory.create(new ProductId(UUID.randomUUID()), ProductCode.of("VIS-" + sequence), "商品 " + sequence, "",
+                new TaxCategoryId(UUID.randomUUID()), PriceExclTax.of(1000), Set.of(), List.of());
         var snapshot = created.toSnapshot();
         return factory.restore(new Product.Snapshot(snapshot.id(), snapshot.productCode(), snapshot.name(),
                 snapshot.description(), snapshot.taxCategoryId(), snapshot.priceExclTax(), snapshot.categoryIds(),

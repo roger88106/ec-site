@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.jooq.catalog.tables.records.CategoryRecord;
 import com.ecsite.module.catalog.application.model.view.CategoryView;
 import com.ecsite.module.catalog.application.port.CategoryQueryRepository;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.CATEGORY;
 
@@ -45,9 +45,9 @@ class JooqCategoryQueryRepository implements CategoryQueryRepository {
      * @return カテゴリ
      */
     @Override
-    public Optional<CategoryView> findById(UUID id) {
+    public Optional<CategoryView> findById(CategoryId id) {
         return dsl.selectFrom(CATEGORY)
-                .where(CATEGORY.ID.eq(id))
+                .where(CATEGORY.ID.eq(id.value()))
                 .fetchOptional(JooqCategoryQueryRepository::toView);
     }
 
@@ -61,8 +61,8 @@ class JooqCategoryQueryRepository implements CategoryQueryRepository {
      */
     private static CategoryView toView(CategoryRecord record) {
         return new CategoryView(
-                record.getId(),
-                record.getParentId(),
+                new CategoryId(record.getId()),
+                record.getParentId() == null ? null : new CategoryId(record.getParentId()),
                 record.getName(),
                 record.getDepth(),
                 record.getDisplayOrder(),

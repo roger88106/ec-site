@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.application.port;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.StoredProductDetail;
@@ -7,7 +8,6 @@ import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 商品照会のクエリリポジトリ
@@ -22,7 +22,7 @@ public interface ProductQueryRepository {
      * @param id 商品 ID
      * @return 商品の詳細（バリアントは表示順）。なければ空
      */
-    Optional<StoredProductDetail> findDetailById(UUID id);
+    Optional<StoredProductDetail> findDetailById(ProductId id);
 
     /**
      * B 側の商品一覧を取得する。

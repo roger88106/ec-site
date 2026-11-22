@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.infrastructure.directory;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.application.port.CatalogDirectory;
 import com.ecsite.module.catalog.api.CatalogApi;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,8 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public boolean isSelectable(UUID variantId) {
-        var variant = catalogApi.findVariants(List.of(variantId)).get(variantId);
+        var id = new VariantId(variantId);
+        var variant = catalogApi.findVariants(List.of(id)).get(id);
         return variant != null && variant.visible() && !variant.salesSuspended();
     }
 }

@@ -1,6 +1,9 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.api.model.ShownProductQuery;
@@ -197,7 +200,7 @@ class CatalogApiShownProductsTest {
             var page = api.listShownProducts(query(Money.of(1100), Money.of(2160), ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：下限ちょうど・上限ちょうどの商品だけが含まれる
-            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(lower.id, upper.id);
+            assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(lower.id, upper.id);
             assertThat(page.items()).extracting(ShownProductSummary::priceExclTax).containsExactly(Money.of(1000), Money.of(2000));
         }
 
@@ -212,7 +215,7 @@ class CatalogApiShownProductsTest {
             var page = api.listShownProducts(query(Money.of(1100), Money.of(2160), ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：税込 2,160 円の商品だけが含まれる
-            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(reducedProduct.id);
+            assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(reducedProduct.id);
         }
 
         @Test
@@ -227,7 +230,7 @@ class CatalogApiShownProductsTest {
             var page = api.listShownProducts(query(Money.of(1100), null, ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：税込 1,100 円以上の商品が含まれる
-            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(atMin.id, aboveMin.id);
+            assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(atMin.id, aboveMin.id);
         }
 
         @Test
@@ -242,7 +245,7 @@ class CatalogApiShownProductsTest {
             var page = api.listShownProducts(query(null, Money.of(1100), ShownProductSort.PRICE_ASC), FIRST_PAGE);
 
             // 確認：税込 1,100 円以下の商品が含まれる
-            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(belowMax.id, atMax.id);
+            assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(belowMax.id, atMax.id);
         }
     }
 
@@ -309,7 +312,7 @@ class CatalogApiShownProductsTest {
             // 操作：安い順で、1 ページ 3 件の 3 ページを続けて取得する
             var collected = IntStream.rangeClosed(1, 3).boxed()
                     .flatMap(page -> api.listShownProducts(query(null, null, ShownProductSort.PRICE_ASC), PageRequest.of(page, 3)).items().stream())
-                    .map(ShownProductSummary::id)
+                    .map(summary -> summary.id().value())
                     .toList();
 
             // 確認：重複がなく、ID の順に全てが並ぶ
@@ -374,7 +377,7 @@ class CatalogApiShownProductsTest {
             var product = publishedBeforeRateStarts();
 
             // 操作と確認：詳細は空
-            assertThat(api.findShownProduct(product.id)).isEmpty();
+            assertThat(api.findShownProduct(new ProductId(product.id))).isEmpty();
         }
     }
 
@@ -429,10 +432,10 @@ class CatalogApiShownProductsTest {
             publishedIn(food);
 
             // 操作：「衣類」で絞って取得する
-            var page = api.listShownProducts(new ShownProductQuery(clothing, null, null, ShownProductSort.NEWEST), FIRST_PAGE);
+            var page = api.listShownProducts(new ShownProductQuery(new CategoryId(clothing), null, null, ShownProductSort.NEWEST), FIRST_PAGE);
 
             // 確認：「衣類」の商品だけ
-            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(inClothing);
+            assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(inClothing);
         }
 
         @Test
@@ -446,10 +449,10 @@ class CatalogApiShownProductsTest {
             var inTShirts = publishedIn(tShirts);
 
             // 操作：「衣類」で絞って取得する
-            var page = api.listShownProducts(new ShownProductQuery(clothing, null, null, ShownProductSort.NEWEST), FIRST_PAGE);
+            var page = api.listShownProducts(new ShownProductQuery(new CategoryId(clothing), null, null, ShownProductSort.NEWEST), FIRST_PAGE);
 
             // 確認：孫のカテゴリの商品も、新着順で含まれる
-            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(inTShirts, inClothing);
+            assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(inTShirts, inClothing);
         }
     }
 
@@ -500,7 +503,7 @@ class CatalogApiShownProductsTest {
      */
     private void assertOnlyVisibleListed(UUID visibleId) {
         var page = api.listShownProducts(query(null, null, ShownProductSort.NEWEST), FIRST_PAGE);
-        assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(visibleId);
+        assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(visibleId);
         assertThat(page.totalItems()).isEqualTo(1);
     }
 
@@ -520,10 +523,10 @@ class CatalogApiShownProductsTest {
      * @param sellableVariantId 販売中のバリアントの ID（実行ごとに作るので、定数にできない）
      */
     private static void assertSellableVariants(ShownProductSummary item, UUID productId, UUID sellableVariantId) {
-        assertThat(item.id()).isEqualTo(productId);
+        assertThat(item.id()).isEqualTo(new ProductId(productId));
         assertThat(item.name()).isEqualTo("商品 1");
         assertThat(item.sellableVariantIds()).hasSize(1);
-        assertThat(item.sellableVariantIds()).containsExactly(sellableVariantId);
+        assertThat(item.sellableVariantIds()).containsExactly(new VariantId(sellableVariantId));
     }
 
     // ============================== 準備の補助 ==============================
@@ -573,7 +576,7 @@ class CatalogApiShownProductsTest {
      * @return 絞り込みと並び順
      */
     private ShownProductQuery query(Money minPrice, Money maxPrice, ShownProductSort sort) {
-        return new ShownProductQuery(category, minPrice, maxPrice, sort);
+        return new ShownProductQuery(new CategoryId(category), minPrice, maxPrice, sort);
     }
 
     /**
@@ -608,6 +611,6 @@ class CatalogApiShownProductsTest {
      * @return 商品 ID（一覧の並び）
      */
     private List<UUID> listIds(ShownProductSort sort) {
-        return api.listShownProducts(query(null, null, sort), FIRST_PAGE).items().stream().map(ShownProductSummary::id).toList();
+        return api.listShownProducts(query(null, null, sort), FIRST_PAGE).items().stream().map(summary -> summary.id().value()).toList();
     }
 }

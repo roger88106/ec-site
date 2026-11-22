@@ -1,6 +1,8 @@
 package com.ecsite.module.catalog.api;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.model.AxisValue;
@@ -31,7 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
@@ -72,8 +73,8 @@ public class CatalogApi {
      * @param variantIds バリアント ID
      * @return バリアント ID → 詳細。存在しないバリアントは含めない
      */
-    public Map<UUID, VariantDetail> findVariants(@NonNull Collection<UUID> variantIds) {
-        var result = new LinkedHashMap<UUID, VariantDetail>();
+    public Map<VariantId, VariantDetail> findVariants(@NonNull Collection<VariantId> variantIds) {
+        var result = new LinkedHashMap<VariantId, VariantDetail>();
         variantQueryService.findVariants(variantIds).forEach((variantId, view) -> result.put(variantId, toVariant(view)));
         return result;
     }
@@ -84,7 +85,7 @@ public class CatalogApi {
      * @param productId 商品 ID
      * @return 商品。なければ空
      */
-    public Optional<ProductVariants> findProduct(@NonNull UUID productId) {
+    public Optional<ProductVariants> findProduct(@NonNull ProductId productId) {
         return productQueryService.findProduct(productId).map(CatalogApi::toProduct);
     }
 
@@ -123,7 +124,7 @@ public class CatalogApi {
      * @param productId 商品 ID
      * @return 商品の詳細。表示されない商品なら空
      */
-    public Optional<ShownProductDetail> findShownProduct(@NonNull UUID productId) {
+    public Optional<ShownProductDetail> findShownProduct(@NonNull ProductId productId) {
         return shownProductQueryService.findProduct(productId).map(CatalogApi::toDetail);
     }
 

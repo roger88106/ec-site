@@ -1,6 +1,7 @@
 package com.ecsite.config.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.catalog.event.ProductPriceChanged;
@@ -97,7 +98,7 @@ class EventRecordJsonTest {
         return Stream.of(
                 row("CartChanged", new CartChanged(EVENT_ID, OCCURRED_AT, TARGET_ID, 7L),
                         COMMON + "\"cartId\":" + targetId + ",\"cartVersion\":7}"),
-                row("ProductPriceChanged", new ProductPriceChanged(EVENT_ID, OCCURRED_AT, TARGET_ID, Money.of(1000)),
+                row("ProductPriceChanged", new ProductPriceChanged(EVENT_ID, OCCURRED_AT, new ProductId(TARGET_ID), Money.of(1000)),
                         COMMON + "\"productId\":" + targetId + ",\"priceExclTax\":{\"yen\":1000}}"),
                 row("OrderStatusChanged", new OrderStatusChanged(EVENT_ID, OCCURRED_AT, TARGET_ID, null,
                                 OrderStatusChanged.Status.ACCEPTED, null, null),

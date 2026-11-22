@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.CategoryId;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jooq.Condition;
@@ -27,10 +28,10 @@ final class CategoryConditions {
      * @param categoryId カテゴリ ID
      * @return 条件
      */
-    static Condition productInCategory(UUID categoryId) {
+    static Condition productInCategory(CategoryId categoryId) {
         return PRODUCT.ID.in(DSL.select(PRODUCT_CATEGORY.PRODUCT_ID)
                 .from(PRODUCT_CATEGORY)
-                .where(PRODUCT_CATEGORY.CATEGORY_ID.in(selfAndDescendants(categoryId))));
+                .where(PRODUCT_CATEGORY.CATEGORY_ID.in(selfAndDescendants(categoryId.value()))));
     }
 
     /**

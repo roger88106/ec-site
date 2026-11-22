@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.catalog.application.model.command.ChangePublicationPeriodCommand;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.UUID;
 
 /**
  * 商品の公開のコマンドサービス
@@ -47,7 +47,7 @@ public class ProductPublicationCommandService {
      * @throws BusinessException バリアントがない（{@code PRODUCT_HAS_NO_VARIANTS}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    public void publishProduct(@NonNull UUID productId) {
+    public void publishProduct(@NonNull ProductId productId) {
         productLoader.changeStatus(productId, Product::publish);
     }
 
@@ -61,7 +61,7 @@ public class ProductPublicationCommandService {
      * @throws BusinessException 販売終了の商品（{@code PRODUCT_DISCONTINUED}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    public void unpublishProduct(@NonNull UUID productId) {
+    public void unpublishProduct(@NonNull ProductId productId) {
         productLoader.changeStatus(productId, Product::unpublish);
     }
 
@@ -74,7 +74,7 @@ public class ProductPublicationCommandService {
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    public void discontinueProduct(@NonNull UUID productId) {
+    public void discontinueProduct(@NonNull ProductId productId) {
         productLoader.changeStatus(productId, Product::discontinue);
     }
 

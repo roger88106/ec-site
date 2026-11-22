@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.application.model;
 
-import java.util.UUID;
+import com.ecsite.common.model.id.AssetId;
 
 /**
  * 用意した画像
@@ -9,5 +9,5 @@ import java.util.UUID;
  *
  * @param assetId 登録したときのアセット ID
  */
-public record PreparedImage(UUID assetId) {
+public record PreparedImage(AssetId assetId) {
 }

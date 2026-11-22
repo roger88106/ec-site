@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.UUID;
 import java.util.function.BiPredicate;
 
 /**
@@ -40,7 +40,7 @@ class ProductLoader {
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    Product get(UUID productId, long version) {
+    Product get(ProductId productId, long version) {
         var product = get(productId);
 
         // 取得時のバージョンと一致しなければ、他の人が先に更新している（保存のときにもリポジトリが比べる）
@@ -55,7 +55,7 @@ class ProductLoader {
      * @return 商品
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      */
-    Product get(UUID productId) {
+    Product get(ProductId productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
@@ -68,7 +68,7 @@ class ProductLoader {
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 取得から保存までの間に他で更新された（{@code CONCURRENT_MODIFICATION}）
      */
-    void changeStatus(UUID productId, BiPredicate<Product, Instant> operation) {
+    void changeStatus(ProductId productId, BiPredicate<Product, Instant> operation) {
         // 状態の切り替えはバージョンを受け取らない（API の規約）。取得から保存までの間の更新は、保存のときに競合として検出する
         var product = get(productId);
 

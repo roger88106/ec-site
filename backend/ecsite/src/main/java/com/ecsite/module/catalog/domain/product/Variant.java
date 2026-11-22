@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.domain.product;
 
+import com.ecsite.common.model.id.VariantId;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -10,7 +12,6 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * バリアント
@@ -33,7 +34,7 @@ public final class Variant {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final VariantId id;
 
     /**
      * バリアント品番
@@ -59,7 +60,7 @@ public final class Variant {
      * 指定した画像。なければ null（代表画像を使う）
      */
     @Nullable
-    private final UUID imageId;
+    private final ProductImageId imageId;
 
     /**
      * コンストラクタ
@@ -75,8 +76,8 @@ public final class Variant {
      * @param salesSuspended 販売停止
      * @param imageId        指定した画像。なければ null
      */
-    public Variant(@NonNull UUID id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues, int displayOrder,
-                   boolean salesSuspended, @Nullable UUID imageId) {
+    public Variant(@NonNull VariantId id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues, int displayOrder,
+                   boolean salesSuspended, @Nullable ProductImageId imageId) {
         if (displayOrder < 0) {
             throw new IllegalArgumentException("表示順は 0 以上にする");
         }
@@ -125,7 +126,7 @@ public final class Variant {
      * @param imageId 画像 ID。null で指定を外す
      * @return バリアント
      */
-    Variant withImageId(@Nullable UUID imageId) {
+    Variant withImageId(@Nullable ProductImageId imageId) {
         return new Variant(id, variantCode, axisValues, displayOrder, salesSuspended, imageId);
     }
 }

@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.domain;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.VariantId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,17 +24,17 @@ class DisplayOrdersTest {
     /**
      * 今の要素の ID（1 つ目）
      */
-    private final UUID a = UUID.randomUUID();
+    private final VariantId a = new VariantId(UUID.randomUUID());
 
     /**
      * 今の要素の ID（2 つ目）
      */
-    private final UUID b = UUID.randomUUID();
+    private final VariantId b = new VariantId(UUID.randomUUID());
 
     /**
      * 今の要素の ID（3 つ目）
      */
-    private final UUID c = UUID.randomUUID();
+    private final VariantId c = new VariantId(UUID.randomUUID());
 
     // ============================== テスト ==============================
 
@@ -45,7 +46,7 @@ class DisplayOrdersTest {
         @DisplayName("指定された順に 1 から表示順を振る")
         void assignsInOrder() {
             // 操作：A、B、C を C、A、B の順に並べ替える
-            Map<UUID, Integer> orders = DisplayOrders.assign(List.of(a, b, c), List.of(c, a, b), CommonErrorCode.INVALID_REQUEST);
+            Map<VariantId, Integer> orders = DisplayOrders.assign(List.of(a, b, c), List.of(c, a, b), CommonErrorCode.INVALID_REQUEST);
 
             // 確認：C が 1、A が 2、B が 3
             assertThat(orders).containsExactlyInAnyOrderEntriesOf(Map.of(c, 1, a, 2, b, 3));
@@ -55,7 +56,7 @@ class DisplayOrdersTest {
         @DisplayName("今の要素にない ID があれば、指定した業務のエラー")
         void rejectsUnknownId() {
             // 操作と確認：知らない ID を混ぜると、指定した業務のエラーで拒否される
-            assertBusinessError(() -> DisplayOrders.assign(List.of(a, b, c), List.of(a, b, UUID.randomUUID()),
+            assertBusinessError(() -> DisplayOrders.assign(List.of(a, b, c), List.of(a, b, new VariantId(UUID.randomUUID())),
                     CommonErrorCode.INVALID_REQUEST), CommonErrorCode.INVALID_REQUEST);
         }
 
@@ -133,7 +134,7 @@ class DisplayOrdersTest {
      * @param id           ID
      * @param displayOrder 表示順
      */
-    private record Item(UUID id, int displayOrder) {
+    private record Item(VariantId id, int displayOrder) {
 
         /**
          * 表示順を変えた要素を作る。

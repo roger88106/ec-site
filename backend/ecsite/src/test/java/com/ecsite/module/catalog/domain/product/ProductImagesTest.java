@@ -1,7 +1,9 @@
 package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.AssetId;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -103,7 +105,7 @@ class ProductImagesTest {
             var images = new ProductImages(List.of(image(1)));
 
             // 操作と確認：一覧にない ID は拒否される
-            assertBusinessError(() -> images.require(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> images.require(new ProductImageId(UUID.randomUUID())), CommonErrorCode.NOT_FOUND);
         }
 
         @Test
@@ -115,7 +117,7 @@ class ProductImagesTest {
 
             // 操作と確認：ある ID は含み、ない ID は含まない
             assertThat(images.contains(image.id())).isTrue();
-            assertThat(images.contains(UUID.randomUUID())).isFalse();
+            assertThat(images.contains(new ProductImageId(UUID.randomUUID()))).isFalse();
         }
     }
 
@@ -212,7 +214,7 @@ class ProductImagesTest {
             var images = new ProductImages(List.of(image(1)));
 
             // 操作と確認：一覧にない ID は拒否される
-            assertBusinessError(() -> images.remove(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> images.remove(new ProductImageId(UUID.randomUUID())), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -257,7 +259,7 @@ class ProductImagesTest {
      * @return 画像
      */
     private static ProductImage image(int displayOrder) {
-        return new ProductImage(UUID.randomUUID(), UUID.randomUUID(), displayOrder);
+        return new ProductImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID()), displayOrder);
     }
 
     /**

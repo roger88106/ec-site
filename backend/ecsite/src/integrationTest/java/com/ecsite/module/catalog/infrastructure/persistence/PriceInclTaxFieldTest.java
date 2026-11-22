@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.domain.taxcategory.TaxCalculator;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
@@ -47,7 +48,7 @@ class PriceInclTaxFieldTest {
         var productId = insertProduct(taxCategoryId, priceExclTax);
 
         // 操作：その税区分の率を埋め込んだ SQL の式で、税込価格を求める
-        var sql = dsl.select(PriceInclTaxField.of(Map.of(taxCategoryId, ratePercent)))
+        var sql = dsl.select(PriceInclTaxField.of(Map.of(new TaxCategoryId(taxCategoryId), ratePercent)))
                 .from(PRODUCT).where(PRODUCT.ID.eq(productId))
                 .fetchOne().value1();
 

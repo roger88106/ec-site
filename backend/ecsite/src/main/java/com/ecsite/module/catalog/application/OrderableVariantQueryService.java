@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.application;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.application.model.view.OrderableVariantView;
 import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;
 import lombok.NonNull;
@@ -10,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 注文に使うバリアントの情報の参照
@@ -38,7 +38,7 @@ public class OrderableVariantQueryService {
      * @param variantIds バリアント ID
      * @return バリアント ID → 情報。存在しないバリアントは含めない
      */
-    public Map<UUID, OrderableVariantView> findVariants(@NonNull Collection<UUID> variantIds) {
+    public Map<VariantId, OrderableVariantView> findVariants(@NonNull Collection<VariantId> variantIds) {
         if (variantIds.isEmpty()) {
             return Map.of();
         }

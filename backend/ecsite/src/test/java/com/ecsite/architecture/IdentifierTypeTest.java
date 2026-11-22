@@ -57,7 +57,6 @@ class IdentifierTypeTest {
      */
     private static final List<String> UNCONVERTED_PACKAGES = List.of(
             "com.ecsite.module.cart",
-            "com.ecsite.module.catalog",
             "com.ecsite.module.inventory",
             "com.ecsite.module.notification",
             "com.ecsite.module.order",

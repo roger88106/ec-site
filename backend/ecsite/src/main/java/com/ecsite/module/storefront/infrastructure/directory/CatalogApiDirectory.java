@@ -1,6 +1,9 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.CatalogApi;
@@ -40,8 +43,8 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public PageResult<CatalogProduct> listProducts(ProductCondition condition, PageRequest request) {
-        var query = new ShownProductQuery(condition.categoryId(), condition.minPrice(), condition.maxPrice(),
-                toSort(condition.sort()));
+        var categoryId = condition.categoryId() == null ? null : new CategoryId(condition.categoryId());
+        var query = new ShownProductQuery(categoryId, condition.minPrice(), condition.maxPrice(), toSort(condition.sort()));
         return catalogApi.listShownProducts(query, request).map(CatalogApiDirectory::toProduct);
     }
 
@@ -58,7 +61,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public Optional<CatalogProductDetail> findProduct(UUID productId) {
-        return catalogApi.findShownProduct(productId).map(CatalogApiDirectory::toDetail);
+        return catalogApi.findShownProduct(new ProductId(productId)).map(CatalogApiDirectory::toDetail);
     }
 
     /**
@@ -82,18 +85,18 @@ class CatalogApiDirectory implements CatalogDirectory {
      * 商品カタログの一覧の要素を、店舗の型に変換する。
      */
     private static CatalogProduct toProduct(ShownProductSummary summary) {
-        return new CatalogProduct(summary.id(), summary.name(), summary.priceInclTax(), summary.priceExclTax(),
-                summary.sellableVariantIds(), summary.imageUrl());
+        return new CatalogProduct(summary.id().value(), summary.name(), summary.priceInclTax(), summary.priceExclTax(),
+                summary.sellableVariantIds().stream().map(VariantId::value).toList(), summary.imageUrl());
     }
 
     /**
      * 商品カタログの商品の詳細を、店舗の型に変換する（バリアントを含む）。
      */
     private static CatalogProductDetail toDetail(ShownProductDetail detail) {
-        return new CatalogProductDetail(detail.id(), detail.name(), detail.description(), detail.priceInclTax(),
+        return new CatalogProductDetail(detail.id().value(), detail.name(), detail.description(), detail.priceInclTax(),
                 detail.priceExclTax(), detail.axes(),
                 detail.variants().stream()
-                        .map(variant -> new CatalogProductDetail.Variant(variant.id(), variant.axisValues(),
+                        .map(variant -> new CatalogProductDetail.Variant(variant.id().value(), variant.axisValues(),
                                 variant.salesSuspended(), variant.imageUrl()))
                         .toList(),
                 detail.imageUrls());
@@ -103,6 +106,7 @@ class CatalogApiDirectory implements CatalogDirectory {
      * 商品カタログのカテゴリを、子孫まで含めて店舗の型に変換する（再帰）。
      */
     private static CatalogCategory toCategory(CategoryNode node) {
-        return new CatalogCategory(node.id(), node.name(), node.children().stream().map(CatalogApiDirectory::toCategory).toList());
+        return new CatalogCategory(node.id().value(), node.name(),
+                node.children().stream().map(CatalogApiDirectory::toCategory).toList());
     }
 }

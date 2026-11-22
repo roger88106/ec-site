@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +51,7 @@ class StoreProductSummaries {
         var images = storeImageUrls.representatives(productIds);
         return rows.map(row -> {
             var productId = row.get(PRODUCT.ID);
-            return new StoreProductSummaryView(productId, row.get(PRODUCT.NAME), Money.of(row.get(priceInclTax)),
+            return new StoreProductSummaryView(new ProductId(productId), row.get(PRODUCT.NAME), Money.of(row.get(priceInclTax)),
                     Money.of(row.get(PRODUCT.PRICE_EXCL_TAX)), sellable.getOrDefault(productId, List.of()), images.get(productId));
         });
     }
@@ -60,12 +62,12 @@ class StoreProductSummaries {
      * @param productIds 商品 ID
      * @return 商品 ID → バリアント ID。販売中のバリアントがない商品は含まない
      */
-    private Map<UUID, List<UUID>> sellableVariants(Collection<UUID> productIds) {
+    private Map<UUID, List<VariantId>> sellableVariants(Collection<UUID> productIds) {
         return dsl.select(VARIANT.PRODUCT_ID, VARIANT.ID)
                 .from(VARIANT)
                 .where(VARIANT.PRODUCT_ID.in(productIds))
                 .and(VARIANT.SALES_SUSPENDED.isFalse())
                 .orderBy(VARIANT.PRODUCT_ID, VARIANT.DISPLAY_ORDER, VARIANT.ID)
-                .fetchGroups(VARIANT.PRODUCT_ID, VARIANT.ID);
+                .fetchGroups(VARIANT.PRODUCT_ID, row -> new VariantId(row.get(VARIANT.ID)));
     }
 }

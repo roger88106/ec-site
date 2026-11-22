@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.StoredProductDetail;
@@ -18,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 商品のクエリサービス
@@ -59,7 +59,7 @@ public class ProductQueryService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
-    public void verifyCanAddImage(@NonNull UUID productId, long version) {
+    public void verifyCanAddImage(@NonNull ProductId productId, long version) {
         productLoader.get(productId, version).verifyCanAddImage();
     }
 
@@ -72,7 +72,7 @@ public class ProductQueryService {
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 画像が上限に達している（{@code TOO_MANY_PRODUCT_IMAGES}）
      */
-    public void verifyCanAddImage(@NonNull UUID productId) {
+    public void verifyCanAddImage(@NonNull ProductId productId) {
         productLoader.get(productId).verifyCanAddImage();
     }
 
@@ -85,7 +85,7 @@ public class ProductQueryService {
      * @return 商品の詳細
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      */
-    public ProductDetailView getProduct(@NonNull UUID id) {
+    public ProductDetailView getProduct(@NonNull ProductId id) {
         // 商品の詳細の取得
         var stored = productQueryRepository.findDetailById(id)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
@@ -106,7 +106,7 @@ public class ProductQueryService {
      * @param id 商品 ID
      * @return 保存されている商品の詳細。なければ空
      */
-    public Optional<StoredProductDetail> findProduct(@NonNull UUID id) {
+    public Optional<StoredProductDetail> findProduct(@NonNull ProductId id) {
         return productQueryRepository.findDetailById(id);
     }
 

@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.domain.category.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.module.catalog.domain.category.Category;
 import org.jmolecules.ddd.annotation.Repository;
 import org.jspecify.annotations.Nullable;
@@ -8,7 +9,6 @@ import org.jspecify.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * カテゴリのリポジトリ
@@ -22,7 +22,7 @@ public interface CategoryRepository {
      * @param id カテゴリ ID
      * @return カテゴリ。なければ空
      */
-    Optional<Category> findById(UUID id);
+    Optional<Category> findById(CategoryId id);
 
     /**
      * 子カテゴリを全て取得し、ID の順にロックする。
@@ -32,7 +32,7 @@ public interface CategoryRepository {
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 子カテゴリの一覧
      */
-    List<Category> lockChildren(@Nullable UUID parentId);
+    List<Category> lockChildren(@Nullable CategoryId parentId);
 
     /**
      * 新しい子カテゴリの表示順を返す。
@@ -42,7 +42,7 @@ public interface CategoryRepository {
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 表示順
      */
-    int nextDisplayOrder(@Nullable UUID parentId);
+    int nextDisplayOrder(@Nullable CategoryId parentId);
 
     /**
      * 子カテゴリを持つかを返す。
@@ -50,7 +50,7 @@ public interface CategoryRepository {
      * @param id カテゴリ ID
      * @return 子カテゴリを持つなら true
      */
-    boolean hasChildren(UUID id);
+    boolean hasChildren(CategoryId id);
 
     /**
      * 商品が所属しているかを返す。
@@ -58,7 +58,7 @@ public interface CategoryRepository {
      * @param id カテゴリ ID
      * @return 商品が所属していれば true
      */
-    boolean hasProducts(UUID id);
+    boolean hasProducts(CategoryId id);
 
     /**
      * カテゴリが全て存在するかを返す。
@@ -66,7 +66,7 @@ public interface CategoryRepository {
      * @param ids カテゴリ ID
      * @return 全て存在すれば true。空なら true
      */
-    boolean existsAll(Collection<UUID> ids);
+    boolean existsAll(Collection<CategoryId> ids);
 
     /**
      * カテゴリを登録する。

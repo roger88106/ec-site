@@ -1,5 +1,7 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.api.CatalogApi;
 import com.ecsite.module.reporting.application.model.CatalogProduct;
 import com.ecsite.module.reporting.application.model.CatalogVariant;
@@ -37,7 +39,8 @@ class CatalogApiDirectory implements CatalogDirectory {
     @Override
     public Map<UUID, UUID> productIdsOf(Collection<UUID> variantIds) {
         var result = new LinkedHashMap<UUID, UUID>();
-        catalogApi.findVariants(variantIds).forEach((variantId, variant) -> result.put(variantId, variant.productId()));
+        catalogApi.findVariants(variantIds.stream().map(VariantId::new).toList())
+                .forEach((variantId, variant) -> result.put(variantId.value(), variant.productId().value()));
         return result;
     }
 
@@ -49,8 +52,8 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     @Override
     public Optional<CatalogProduct> findProduct(UUID productId) {
-        return catalogApi.findProduct(productId).map(product -> new CatalogProduct(product.productId(), product.name(),
-                product.variants().stream().map(variant -> new CatalogVariant(variant.variantId(), variant.variantCode(),
+        return catalogApi.findProduct(new ProductId(productId)).map(product -> new CatalogProduct(product.productId().value(), product.name(),
+                product.variants().stream().map(variant -> new CatalogVariant(variant.variantId().value(), variant.variantCode(),
                                 variant.axisValues().stream()
                                         .map(axis -> new ReportOrder.AxisValue(axis.name(), axis.value()))
                                         .toList()))

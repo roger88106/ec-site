@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.api.CatalogApi;
 import com.ecsite.module.catalog.api.model.VariantDetail;
 import com.ecsite.module.order.application.port.CatalogDirectory;
@@ -33,7 +34,8 @@ class CatalogApiDirectory implements CatalogDirectory {
     @Override
     public Map<UUID, VariantInfo> findVariants(Collection<UUID> variantIds) {
         var result = new LinkedHashMap<UUID, VariantInfo>();
-        catalogApi.findVariants(variantIds).forEach((variantId, variant) -> result.put(variantId, toInfo(variant)));
+        catalogApi.findVariants(variantIds.stream().map(VariantId::new).toList())
+                .forEach((variantId, variant) -> result.put(variantId.value(), toInfo(variant)));
         return result;
     }
 
@@ -42,14 +44,14 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     private static VariantInfo toInfo(VariantDetail variant) {
         return new VariantInfo(
-                variant.variantId(),
-                variant.productId(),
+                variant.variantId().value(),
+                variant.productId().value(),
                 variant.productCode(),
                 variant.variantCode(),
                 variant.productName(),
                 variant.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
                 variant.priceExclTax(),
-                variant.taxCategoryId(),
+                variant.taxCategoryId().value(),
                 variant.imageUrl(),
                 variant.visible(),
                 variant.salesSuspended());

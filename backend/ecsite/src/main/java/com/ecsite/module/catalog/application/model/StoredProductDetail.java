@@ -1,5 +1,8 @@
 package com.ecsite.module.catalog.application.model;
 
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
@@ -7,7 +10,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 保存されている商品の詳細
@@ -34,8 +36,8 @@ import java.util.UUID;
  * @param createdAt     登録日時
  * @param updatedAt     更新日時
  */
-public record StoredProductDetail(UUID id, String productCode, String name, String description, UUID taxCategoryId,
-                                  Money priceExclTax, List<UUID> categoryIds, List<String> axes,
+public record StoredProductDetail(ProductId id, String productCode, String name, String description, TaxCategoryId taxCategoryId,
+                                  Money priceExclTax, List<CategoryId> categoryIds, List<String> axes,
                                   PublicationStatus status, @Nullable Instant firstShownAt,
                                   @Nullable Instant publishStart, @Nullable Instant publishEnd,
                                   List<ProductDetailView.ImageView> images,

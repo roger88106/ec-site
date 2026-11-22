@@ -1,6 +1,9 @@
 package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
@@ -50,17 +53,17 @@ class ProductVariantTest {
      *
      * <p>税モジュールの ID なので、存在しなくてよい。
      */
-    private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final TaxCategoryId TAX_CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
     /**
      * 白・M のバリアントの ID
      */
-    private static final UUID WHITE_M_ID = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
+    private static final VariantId WHITE_M_ID = new VariantId(UUID.fromString("00000000-0000-0000-0000-0000000000a1"));
 
     /**
      * 黒・M のバリアントの ID
      */
-    private static final UUID BLACK_M_ID = UUID.fromString("00000000-0000-0000-0000-0000000000a2");
+    private static final VariantId BLACK_M_ID = new VariantId(UUID.fromString("00000000-0000-0000-0000-0000000000a2"));
 
     /**
      * 白・M のバリアント品番
@@ -132,7 +135,7 @@ class ProductVariantTest {
             var product = productWithAxes("色", "サイズ");
 
             // 操作：バリアントを登録する
-            product.addVariant(UUID.randomUUID(), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
 
             // 確認：販売停止でない
             assertThat(product.variants().getFirst().salesSuspended()).isFalse();
@@ -145,8 +148,8 @@ class ProductVariantTest {
             var product = productWithAxes("色", "サイズ");
 
             // 操作：バリアントを 2 つ登録する
-            var first = product.addVariant(UUID.randomUUID(), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
-            var second = product.addVariant(UUID.randomUUID(), VariantCode.of(BLACK_M_CODE), BLACK_M, NOW);
+            var first = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
+            var second = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of(BLACK_M_CODE), BLACK_M, NOW);
 
             // 確認：登録したバリアントごとに、登録した順にイベントがある
             assertVariantRegisteredEvents(product, first, second);
@@ -160,7 +163,7 @@ class ProductVariantTest {
             product.discontinue(NOW);
 
             // 操作：バリアントを登録する
-            var variantId = product.addVariant(UUID.randomUUID(), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
+            var variantId = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of(WHITE_M_CODE), WHITE_M, NOW);
 
             // 確認：登録したバリアントを持つ
             assertThat(product.variants()).extracting(Variant::id).containsExactly(variantId);
@@ -173,7 +176,7 @@ class ProductVariantTest {
             var product = productWithAxes("色", "サイズ");
 
             // 操作と確認：色だけのバリアントは、業務のエラー INVALID_AXIS_VALUES で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW),
                     ProductErrorCode.INVALID_AXIS_VALUES);
         }
 
@@ -184,7 +187,7 @@ class ProductVariantTest {
             var product = productWithAxes("色", "サイズ");
 
             // 操作と確認：値が 3 つのバリアントは、業務のエラー INVALID_AXIS_VALUES で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白", "M", "綿"), NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白", "M", "綿"), NOW),
                     ProductErrorCode.INVALID_AXIS_VALUES);
         }
 
@@ -195,7 +198,7 @@ class ProductVariantTest {
             var product = productWithAxes("色");
 
             // 操作と確認：1 文字の値で登録できる
-            assertThatCode(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("あ"), NOW)).doesNotThrowAnyException();
+            assertThatCode(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("あ"), NOW)).doesNotThrowAnyException();
         }
 
         @Test
@@ -205,7 +208,7 @@ class ProductVariantTest {
             var product = productWithAxes("色");
 
             // 操作と確認：50 文字の値で登録できる
-            assertThatCode(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("あ".repeat(50)), NOW)).doesNotThrowAnyException();
+            assertThatCode(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("あ".repeat(50)), NOW)).doesNotThrowAnyException();
         }
 
         @Test
@@ -215,7 +218,7 @@ class ProductVariantTest {
             var product = productWithAxes("色");
 
             // 操作と確認：業務のエラー INVALID_AXIS_VALUES で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("あ".repeat(51)), NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("あ".repeat(51)), NOW),
                     ProductErrorCode.INVALID_AXIS_VALUES);
         }
 
@@ -226,7 +229,7 @@ class ProductVariantTest {
             var product = productWithAxes("色");
 
             // 操作と確認：業務のエラー INVALID_AXIS_VALUES で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V3"), List.of(" "), NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V3"), List.of(" "), NOW),
                     ProductErrorCode.INVALID_AXIS_VALUES);
         }
 
@@ -237,7 +240,7 @@ class ProductVariantTest {
             var product = productWithAxes("色", "サイズ");
 
             // 操作と確認：区切り文字を含む値は、業務のエラー INVALID_AXIS_VALUES で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V4"), List.of("白" + Variant.AXIS_KEY_SEPARATOR + "M", "L"), NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V4"), List.of("白" + Variant.AXIS_KEY_SEPARATOR + "M", "L"), NOW),
                     ProductErrorCode.INVALID_AXIS_VALUES);
 
             // 確認：バリアントは加わらない
@@ -249,10 +252,10 @@ class ProductVariantTest {
         void rejectsDuplicatedAxisValues() {
             // 準備：白・M のバリアントを持つ商品
             var product = productWithAxes("色", "サイズ");
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), WHITE_M, NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), WHITE_M, NOW);
 
             // 操作と確認：同じ白・M は、業務のエラー VARIANT_AXIS_VALUES_ALREADY_EXISTS で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), WHITE_M, NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), WHITE_M, NOW),
                     ProductErrorCode.VARIANT_AXIS_VALUES_ALREADY_EXISTS);
         }
 
@@ -261,10 +264,10 @@ class ProductVariantTest {
         void acceptsDifferentCombination() {
             // 準備：白・M のバリアントを持つ商品
             var product = productWithAxes("色", "サイズ");
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), WHITE_M, NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), WHITE_M, NOW);
 
             // 操作と確認：色が同じ白・L は登録できる
-            assertThatCode(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V3"), List.of("白", "L"), NOW)).doesNotThrowAnyException();
+            assertThatCode(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V3"), List.of("白", "L"), NOW)).doesNotThrowAnyException();
         }
 
         @Test
@@ -272,10 +275,10 @@ class ProductVariantTest {
         void acceptsOnlyOneVariantWithoutAxes() {
             // 準備：バリアントを 1 つ持つ、軸のない商品
             var product = productWithAxes();
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of(), NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of(), NOW);
 
             // 操作と確認：2 つ目は、業務のエラー SINGLE_VARIANT_ONLY で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of(), NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of(), NOW),
                     ProductErrorCode.SINGLE_VARIANT_ONLY);
         }
 
@@ -284,10 +287,10 @@ class ProductVariantTest {
         void rejectsDuplicatedVariantCode() {
             // 準備：品番 V1 のバリアントを持つ商品
             var product = productWithAxes("色");
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
 
             // 操作と確認：同じ品番は、軸の値が違っても業務のエラー VARIANT_CODE_ALREADY_EXISTS で拒否される
-            assertBusinessError(() -> product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("黒"), NOW),
+            assertBusinessError(() -> product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("黒"), NOW),
                     ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
         }
     }
@@ -301,8 +304,8 @@ class ProductVariantTest {
         void reorders() {
             // 準備：白、黒の順のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
-            var black = product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
+            var black = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("黒"), NOW);
 
             // 操作：黒、白の順に並べ替える
             product.reorderVariants(List.of(black, white));
@@ -316,8 +319,8 @@ class ProductVariantTest {
         void reassignsDisplayOrders() {
             // 準備：白、黒の順のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
-            var black = product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
+            var black = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("黒"), NOW);
 
             // 操作：黒、白の順に並べ替える
             product.reorderVariants(List.of(black, white));
@@ -331,8 +334,8 @@ class ProductVariantTest {
         void rejectsMissingVariant() {
             // 準備：白、黒のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("黒"), NOW);
 
             // 操作と確認：白だけは、業務のエラー INVALID_VARIANT_ORDER で拒否される
             assertBusinessError(() -> product.reorderVariants(List.of(white)), ProductErrorCode.INVALID_VARIANT_ORDER);
@@ -343,11 +346,11 @@ class ProductVariantTest {
         void rejectsUnknownVariant() {
             // 準備：白、黒のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
-            var black = product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
+            var black = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("黒"), NOW);
 
             // 操作と確認：知らない ID を加えると、業務のエラー INVALID_VARIANT_ORDER で拒否される
-            assertBusinessError(() -> product.reorderVariants(List.of(white, black, UUID.randomUUID())),
+            assertBusinessError(() -> product.reorderVariants(List.of(white, black, new VariantId(UUID.randomUUID()))),
                     ProductErrorCode.INVALID_VARIANT_ORDER);
         }
 
@@ -356,8 +359,8 @@ class ProductVariantTest {
         void rejectsDuplicatedVariant() {
             // 準備：白、黒のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("黒"), NOW);
 
             // 操作と確認：白を 2 回送ると、業務のエラー INVALID_VARIANT_ORDER で拒否される
             assertBusinessError(() -> product.reorderVariants(List.of(white, white)), ProductErrorCode.INVALID_VARIANT_ORDER);
@@ -404,8 +407,8 @@ class ProductVariantTest {
         void keepsOtherVariantsOnSale() {
             // 準備：白、黒のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V-WH"), List.of("白"), NOW);
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V-BK"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V-WH"), List.of("白"), NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V-BK"), List.of("黒"), NOW);
 
             // 操作：白を販売停止にする
             product.suspendVariant(white);
@@ -419,8 +422,8 @@ class ProductVariantTest {
         void keepsOrder() {
             // 準備：白、黒の順のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V-WH"), List.of("白"), NOW);
-            var black = product.addVariant(UUID.randomUUID(), VariantCode.of("V-BK"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V-WH"), List.of("白"), NOW);
+            var black = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V-BK"), List.of("黒"), NOW);
 
             // 操作：白を販売停止にする
             product.suspendVariant(white);
@@ -492,7 +495,7 @@ class ProductVariantTest {
             var product = productWithVariant();
 
             // 操作と確認：業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> product.suspendVariant(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> product.suspendVariant(new VariantId(UUID.randomUUID())), CommonErrorCode.NOT_FOUND);
         }
 
         @Test
@@ -502,7 +505,7 @@ class ProductVariantTest {
             var product = productWithVariant();
 
             // 操作と確認：業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> product.resumeVariant(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> product.resumeVariant(new VariantId(UUID.randomUUID())), CommonErrorCode.NOT_FOUND);
         }
 
         @Test
@@ -530,7 +533,7 @@ class ProductVariantTest {
         void deletesVariantOfNeverShownProduct() {
             // 準備：非公開の商品のバリアント
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
 
             // 操作：削除する
             product.deleteVariant(white, NOW);
@@ -544,7 +547,7 @@ class ProductVariantTest {
         void registersVariantDeletedEvent() {
             // 準備：非公開の商品のバリアント（登録のイベントは捨てる）
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
             product.pullEvents();
 
             // 操作：削除する
@@ -560,8 +563,8 @@ class ProductVariantTest {
         void rejectsDeletingVariantOfShownProduct() {
             // 準備：バリアントが 2 つの、公開して表示された商品
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
-            product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
+            product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("黒"), NOW);
             product.publish(NOW);
 
             // 操作と確認：業務のエラー PRODUCT_ALREADY_SHOWN で拒否される
@@ -586,8 +589,8 @@ class ProductVariantTest {
         void deletesOneOfVariantsOfPublishedProduct() {
             // 準備：バリアントが白、黒の 2 つで、公開開始日時が明日の、公開中の商品
             var product = productWithAxes("色");
-            var white = product.addVariant(UUID.randomUUID(), VariantCode.of("V1"), List.of("白"), NOW);
-            var black = product.addVariant(UUID.randomUUID(), VariantCode.of("V2"), List.of("黒"), NOW);
+            var white = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V1"), List.of("白"), NOW);
+            var black = product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("V2"), List.of("黒"), NOW);
             product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
             product.publish(NOW);
 
@@ -605,7 +608,7 @@ class ProductVariantTest {
             var product = productWithVariant();
 
             // 操作と確認：業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> product.deleteVariant(UUID.randomUUID(), NOW), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> product.deleteVariant(new VariantId(UUID.randomUUID()), NOW), CommonErrorCode.NOT_FOUND);
         }
 
         @Test
@@ -674,7 +677,7 @@ class ProductVariantTest {
      * @param first   1 つ目に登録したバリアントの ID（集約が振るので、定数にできない）
      * @param second  2 つ目に登録したバリアントの ID（集約が振るので、定数にできない）
      */
-    private static void assertVariantRegisteredEvents(Product product, UUID first, UUID second) {
+    private static void assertVariantRegisteredEvents(Product product, VariantId first, VariantId second) {
         var events = product.pullEvents();
         assertThat(events).hasSize(2);
         assertThat(events.getFirst()).isInstanceOfSatisfying(VariantRegistered.class, event -> {
@@ -696,7 +699,7 @@ class ProductVariantTest {
      * @return 非公開の商品（バリアントなし）
      */
     private Product productWithAxes(String... axes) {
-        return factory.create(UUID.randomUUID(), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+        return factory.create(new ProductId(UUID.randomUUID()), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of(axes));
     }
 
@@ -709,7 +712,7 @@ class ProductVariantTest {
      */
     private Product productWithVariant() {
         var product = productWithAxes();
-        product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001"), List.of(), NOW);
+        product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("ABC-001"), List.of(), NOW);
         product.pullEvents();
         return product;
     }

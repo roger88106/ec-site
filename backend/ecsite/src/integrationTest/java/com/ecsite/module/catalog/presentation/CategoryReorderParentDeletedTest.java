@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.common.model.id.CategoryId;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -88,8 +89,8 @@ class CategoryReorderParentDeletedTest {
 
         // 確認（前提）：親の判定の後、兄弟のロックの前に、親は削除された
         var order = inOrder(categoryRepository);
-        order.verify(categoryRepository).findById(parent);
-        order.verify(categoryRepository).lockChildren(parent);
+        order.verify(categoryRepository).findById(new CategoryId(parent));
+        order.verify(categoryRepository).lockChildren(new CategoryId(parent));
         mockMvc.perform(get(BASE + "/" + parent)).andExpect(status().isNotFound());
 
         // 確認：兄弟と一致しない 400
@@ -117,7 +118,7 @@ class CategoryReorderParentDeletedTest {
             var found = invocation.callRealMethod();
             dsl.deleteFrom(CATEGORY).where(CATEGORY.ID.eq(parentId)).execute();
             return found;
-        }).when(categoryRepository).findById(parentId);
+        }).when(categoryRepository).findById(new CategoryId(parentId));
     }
 
     /**

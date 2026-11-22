@@ -1,15 +1,16 @@
 package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 /**
  * 商品画像のゲートウェイサービス
@@ -51,7 +52,7 @@ public class ProductImageGatewayService {
      * @throws BusinessException 形式が対象外（{@code UNSUPPORTED_IMAGE_FORMAT}）
      * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      */
-    public ImageUploadView createUpload(@NonNull UUID productId, @NonNull String contentType, long contentLength) {
+    public ImageUploadView createUpload(@NonNull ProductId productId, @NonNull String contentType, long contentLength) {
         // 枚数の確認
         queryService.verifyCanAddImage(productId);
 
@@ -74,7 +75,7 @@ public class ProductImageGatewayService {
      * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
-    public UUID addImage(@NonNull UUID productId, @NonNull UUID uploadId, long version) {
+    public ProductImageId addImage(@NonNull ProductId productId, @NonNull UploadId uploadId, long version) {
         // 加えられることの確認 ※画像の変換と保存の間に DB の接続を持たないよう、確認・用意・保存でトランザクションを分ける
         queryService.verifyCanAddImage(productId, version);
 

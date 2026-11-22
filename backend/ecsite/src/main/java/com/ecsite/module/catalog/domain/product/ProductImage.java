@@ -1,13 +1,13 @@
 package com.ecsite.module.catalog.domain.product;
 
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
-
-import java.util.UUID;
 
 /**
  * 商品画像
@@ -26,13 +26,13 @@ public final class ProductImage {
     @Identity
     @EqualsAndHashCode.Include
     @NonNull
-    private final UUID id;
+    private final ProductImageId id;
 
     /**
      * メディアモジュールのアセット ID
      */
     @NonNull
-    private final UUID assetId;
+    private final AssetId assetId;
 
     /**
      * 商品の中の表示順（先頭が代表画像）
@@ -48,7 +48,7 @@ public final class ProductImage {
      * @param assetId      メディアモジュールのアセット ID
      * @param displayOrder 商品の中の表示順
      */
-    public ProductImage(@NonNull UUID id, @NonNull UUID assetId, int displayOrder) {
+    public ProductImage(@NonNull ProductImageId id, @NonNull AssetId assetId, int displayOrder) {
         if (displayOrder < 0) {
             throw new IllegalArgumentException("表示順は 0 以上にする");
         }

@@ -15,6 +15,9 @@ import com.ecsite.api.admin.model.ReorderVariantsRequest;
 import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
 import com.ecsite.api.admin.model.SetVariantImageRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.UploadId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.catalog.application.product.ProductCommandService;
@@ -23,6 +26,7 @@ import com.ecsite.module.catalog.application.product.ProductImageGatewayService;
 import com.ecsite.module.catalog.application.product.ProductPublicationCommandService;
 import com.ecsite.module.catalog.application.product.ProductQueryService;
 import com.ecsite.module.catalog.application.product.VariantCommandService;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -106,7 +110,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ProductDetail> getProduct(UUID productId) {
-        return ResponseEntity.ok(mapper.toProductDetail(queryService.getProduct(productId)));
+        return ResponseEntity.ok(mapper.toProductDetail(queryService.getProduct(new ProductId(productId))));
     }
 
 // ============================== POST ==============================
@@ -120,10 +124,10 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<CreatedId> createProduct(CreateProductRequest request) {
         // 商品登録
-        UUID id = commandService.createProduct(mapper.toCreateProductCommand(request));
+        ProductId id = commandService.createProduct(mapper.toCreateProductCommand(request));
 
         // ロケーション：登録した商品の URL
-        return CreatedResponses.admin(id);
+        return CreatedResponses.admin(id.value());
     }
 
     /**
@@ -137,8 +141,8 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<CreatedId> addVariant(UUID productId, AddVariantRequest request) {
-        UUID id = variantCommandService.addVariant(mapper.toAddVariantCommand(productId, request));
-        return CreatedResponses.admin(id);
+        VariantId id = variantCommandService.addVariant(mapper.toAddVariantCommand(productId, request));
+        return CreatedResponses.admin(id.value());
     }
 
 // ============================== PUT ==============================
@@ -166,7 +170,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> publishProduct(UUID productId) {
-        productPublicationCommandService.publishProduct(productId);
+        productPublicationCommandService.publishProduct(new ProductId(productId));
         return ResponseEntity.noContent().build();
     }
 
@@ -180,7 +184,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> unpublishProduct(UUID productId) {
-        productPublicationCommandService.unpublishProduct(productId);
+        productPublicationCommandService.unpublishProduct(new ProductId(productId));
         return ResponseEntity.noContent().build();
     }
 
@@ -194,7 +198,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> discontinueProduct(UUID productId) {
-        productPublicationCommandService.discontinueProduct(productId);
+        productPublicationCommandService.discontinueProduct(new ProductId(productId));
         return ResponseEntity.noContent().build();
     }
 
@@ -235,7 +239,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> suspendVariant(UUID productId, UUID variantId) {
-        variantCommandService.suspendVariant(productId, variantId);
+        variantCommandService.suspendVariant(new ProductId(productId), new VariantId(variantId));
         return ResponseEntity.noContent().build();
     }
 
@@ -250,7 +254,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> resumeVariant(UUID productId, UUID variantId) {
-        variantCommandService.resumeVariant(productId, variantId);
+        variantCommandService.resumeVariant(new ProductId(productId), new VariantId(variantId));
         return ResponseEntity.noContent().build();
     }
 
@@ -265,7 +269,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ImageUpload> createImageUpload(UUID productId, CreateImageUploadRequest request) {
-        var upload = imageGatewayService.createUpload(productId, request.getContentType().getValue(), request.getContentLength());
+        var upload = imageGatewayService.createUpload(new ProductId(productId), request.getContentType().getValue(), request.getContentLength());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toImageUpload(upload));
     }
 
@@ -280,8 +284,8 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<CreatedId> addProductImage(UUID productId, AddProductImageRequest request) {
-        var id = imageGatewayService.addImage(productId, request.getUploadId(), request.getVersion());
-        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId().id(id));
+        var id = imageGatewayService.addImage(new ProductId(productId), new UploadId(request.getUploadId()), request.getVersion());
+        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId().id(id.value()));
     }
 
     /**
@@ -294,7 +298,8 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<Void> reorderProductImages(UUID productId, ReorderProductImagesRequest request) {
         // imageIds は LinkedHashSet で受け取るので、送られた順を保つ
-        imageCommandService.reorderImages(productId, List.copyOf(request.getImageIds()), request.getVersion());
+        imageCommandService.reorderImages(new ProductId(productId), request.getImageIds().stream().map(ProductImageId::new).toList(),
+                request.getVersion());
         return ResponseEntity.noContent().build();
     }
 
@@ -308,7 +313,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> deleteProductImage(UUID productId, UUID imageId, Long version) {
-        imageCommandService.deleteImage(productId, imageId, version);
+        imageCommandService.deleteImage(new ProductId(productId), new ProductImageId(imageId), version);
         return ResponseEntity.noContent().build();
     }
 
@@ -322,7 +327,9 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> setVariantImage(UUID productId, UUID variantId, SetVariantImageRequest request) {
-        imageCommandService.setVariantImage(productId, variantId, request.getImageId().orElse(null), request.getVersion());
+        var imageId = request.getImageId().orElse(null);
+        imageCommandService.setVariantImage(new ProductId(productId), new VariantId(variantId),
+                imageId == null ? null : new ProductImageId(imageId), request.getVersion());
         return ResponseEntity.noContent().build();
     }
 
@@ -337,7 +344,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> deleteProduct(UUID productId, Long version) {
-        commandService.deleteProduct(productId, version);
+        commandService.deleteProduct(new ProductId(productId), version);
         return ResponseEntity.noContent().build();
     }
 
@@ -351,7 +358,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> deleteVariant(UUID productId, UUID variantId, Long version) {
-        variantCommandService.deleteVariant(productId, variantId, version);
+        variantCommandService.deleteVariant(new ProductId(productId), new VariantId(variantId), version);
         return ResponseEntity.noContent().build();
     }
 }

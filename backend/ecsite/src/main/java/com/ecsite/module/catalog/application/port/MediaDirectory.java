@@ -1,13 +1,15 @@
 package com.ecsite.module.catalog.application.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * メディアの腐敗防止層の port
@@ -26,7 +28,7 @@ public interface MediaDirectory {
      * @throws BusinessException 形式が対象外（{@code UNSUPPORTED_IMAGE_FORMAT}）
      * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      */
-    ImageUploadView requestImageUpload(UUID productId, String contentType, long contentLength);
+    ImageUploadView requestImageUpload(ProductId productId, String contentType, long contentLength);
 
     /**
      * 受け付けた画像を用意する。
@@ -42,7 +44,7 @@ public interface MediaDirectory {
      * @throws BusinessException 中身が対象の画像でない（{@code INVALID_IMAGE_FILE}）
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
-    PreparedImage prepareImage(UUID productId, UUID uploadId);
+    PreparedImage prepareImage(ProductId productId, UploadId uploadId);
 
     /**
      * 用意した画像をアセットとして記録する。
@@ -70,7 +72,7 @@ public interface MediaDirectory {
      *
      * @param assetIds アセット ID
      */
-    void release(Collection<UUID> assetIds);
+    void release(Collection<AssetId> assetIds);
 
     /**
      * アセットの配信の URL をまとめて返す。
@@ -78,5 +80,5 @@ public interface MediaDirectory {
      * @param assetIds アセット ID
      * @return アセット ID → 配信の URL
      */
-    Map<UUID, URI> urls(Collection<UUID> assetIds);
+    Map<AssetId, URI> urls(Collection<AssetId> assetIds);
 }

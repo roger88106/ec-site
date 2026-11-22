@@ -39,7 +39,7 @@ class CatalogEventHandler {
     @EventListener
     @Transactional(propagation = Propagation.MANDATORY)
     void on(VariantRegistered event) {
-        commandService.createIfAbsent(event.variantId(), event.productId());
+        commandService.createIfAbsent(event.variantId().value(), event.productId().value());
     }
 
     /**
@@ -49,7 +49,7 @@ class CatalogEventHandler {
      */
     @ApplicationModuleListener
     void on(VariantDeleted event) {
-        commandService.deleteByVariant(event.variantId());
+        commandService.deleteByVariant(event.variantId().value());
     }
 
     /**
@@ -59,6 +59,6 @@ class CatalogEventHandler {
      */
     @ApplicationModuleListener
     void on(ProductDeleted event) {
-        commandService.deleteByProduct(event.productId());
+        commandService.deleteByProduct(event.productId().value());
     }
 }

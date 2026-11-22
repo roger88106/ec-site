@@ -2,6 +2,9 @@ package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.CategoryId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
 import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
@@ -21,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.UUID;
 
 /**
  * 商品のコマンドサービス
@@ -85,7 +87,7 @@ public class ProductCommandService {
      * @throws BusinessException バリアント軸が正しくない（{@code INVALID_VARIANT_AXES}）
      * @throws BusinessException 商品品番が重複している（{@code PRODUCT_CODE_ALREADY_EXISTS}）
      */
-    public UUID createProduct(@NonNull CreateProductCommand command) {
+    public ProductId createProduct(@NonNull CreateProductCommand command) {
         var now = clock.instant();
 
         // 税区分と所属カテゴリの確認
@@ -94,7 +96,7 @@ public class ProductCommandService {
 
         // 商品作成
         var product = productFactory.create(
-                idGenerator.generate(),
+                new ProductId(idGenerator.generate()),
                 ProductCode.of(command.productCode()),
                 command.name(),
                 command.description(),
@@ -152,7 +154,7 @@ public class ProductCommandService {
      * @throws BusinessException 取得した後に他で更新された（{@code CONCURRENT_MODIFICATION}）
      * @throws BusinessException C 側に表示されたことがある（{@code PRODUCT_ALREADY_SHOWN}）
      */
-    public void deleteProduct(@NonNull UUID productId, long version) {
+    public void deleteProduct(@NonNull ProductId productId, long version) {
         // 商品取得
         var product = productLoader.get(productId, version);
 
@@ -173,7 +175,7 @@ public class ProductCommandService {
      * @param now           現在時刻
      * @throws BusinessException 有効な税率がない（{@code TAX_CATEGORY_NOT_ASSIGNABLE}）
      */
-    private void verifyTaxCategoryAssignable(UUID taxCategoryId, Instant now) {
+    private void verifyTaxCategoryAssignable(TaxCategoryId taxCategoryId, Instant now) {
         if (!taxDirectory.hasRateAt(taxCategoryId, now)) {
             throw BusinessException.of(ProductErrorCode.TAX_CATEGORY_NOT_ASSIGNABLE);
         }
@@ -185,7 +187,7 @@ public class ProductCommandService {
      * @param categoryIds 所属カテゴリの ID
      * @throws BusinessException 存在しないカテゴリがある（{@code INVALID_CATEGORY_ID}）
      */
-    private void verifyCategoriesExist(Collection<UUID> categoryIds) {
+    private void verifyCategoriesExist(Collection<CategoryId> categoryIds) {
         // 確認の後に削除された場合は、保存のときに外部キーの違反として検出する
         if (!categoryRepository.existsAll(categoryIds)) {
             throw BusinessException.of(ProductErrorCode.INVALID_CATEGORY_ID);

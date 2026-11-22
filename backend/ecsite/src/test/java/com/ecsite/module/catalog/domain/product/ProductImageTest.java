@@ -1,9 +1,14 @@
 package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.ProductImageId;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
@@ -45,7 +50,7 @@ class ProductImageTest {
      *
      * <p>税モジュールの ID なので、存在しなくてよい。
      */
-    private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final TaxCategoryId TAX_CATEGORY_ID = new TaxCategoryId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
     /**
      * 1 商品あたりの画像の上限（枚）
@@ -55,22 +60,22 @@ class ProductImageTest {
     /**
      * 復元する 1 枚目の画像の ID
      */
-    private static final UUID FIRST_IMAGE_ID = UUID.fromString("00000000-0000-0000-0000-000000004001");
+    private static final ProductImageId FIRST_IMAGE_ID = new ProductImageId(UUID.fromString("00000000-0000-0000-0000-000000004001"));
 
     /**
      * 復元する 1 枚目の画像のアセット ID
      */
-    private static final UUID FIRST_ASSET_ID = UUID.fromString("00000000-0000-0000-0000-000000005001");
+    private static final AssetId FIRST_ASSET_ID = new AssetId(UUID.fromString("00000000-0000-0000-0000-000000005001"));
 
     /**
      * 復元する 2 枚目の画像の ID
      */
-    private static final UUID SECOND_IMAGE_ID = UUID.fromString("00000000-0000-0000-0000-000000004002");
+    private static final ProductImageId SECOND_IMAGE_ID = new ProductImageId(UUID.fromString("00000000-0000-0000-0000-000000004002"));
 
     /**
      * 復元する 2 枚目の画像のアセット ID
      */
-    private static final UUID SECOND_ASSET_ID = UUID.fromString("00000000-0000-0000-0000-000000005002");
+    private static final AssetId SECOND_ASSET_ID = new AssetId(UUID.fromString("00000000-0000-0000-0000-000000005002"));
 
     /**
      * 商品の生成
@@ -88,12 +93,12 @@ class ProductImageTest {
         void appendsToEnd() {
             // 準備：画像のない商品
             var product = productWithVariant();
-            var first = UUID.randomUUID();
-            var second = UUID.randomUUID();
+            var first = new ProductImageId(UUID.randomUUID());
+            var second = new ProductImageId(UUID.randomUUID());
 
             // 操作：2 枚加える
-            product.addImage(first, UUID.randomUUID());
-            product.addImage(second, UUID.randomUUID());
+            product.addImage(first, new AssetId(UUID.randomUUID()));
+            product.addImage(second, new AssetId(UUID.randomUUID()));
 
             // 確認：加えた順に並ぶ
             assertThat(product.images()).extracting(ProductImage::id).containsExactly(first, second);
@@ -104,12 +109,12 @@ class ProductImageTest {
         void keepsAssetIds() {
             // 準備：画像のない商品
             var product = productWithVariant();
-            var firstAsset = UUID.randomUUID();
-            var secondAsset = UUID.randomUUID();
+            var firstAsset = new AssetId(UUID.randomUUID());
+            var secondAsset = new AssetId(UUID.randomUUID());
 
             // 操作：2 枚加える
-            product.addImage(UUID.randomUUID(), firstAsset);
-            product.addImage(UUID.randomUUID(), secondAsset);
+            product.addImage(new ProductImageId(UUID.randomUUID()), firstAsset);
+            product.addImage(new ProductImageId(UUID.randomUUID()), secondAsset);
 
             // 確認：並びの順にアセット ID を持つ
             assertThat(product.images()).extracting(ProductImage::assetId).containsExactly(firstAsset, secondAsset);
@@ -120,11 +125,11 @@ class ProductImageTest {
         void firstImageIsRepresentative() {
             // 準備：画像のない商品
             var product = productWithVariant();
-            var first = UUID.randomUUID();
+            var first = new ProductImageId(UUID.randomUUID());
 
             // 操作：2 枚加える
-            product.addImage(first, UUID.randomUUID());
-            product.addImage(UUID.randomUUID(), UUID.randomUUID());
+            product.addImage(first, new AssetId(UUID.randomUUID()));
+            product.addImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID()));
 
             // 確認：先頭が最初に加えた画像
             assertThat(product.images()).first().extracting(ProductImage::id).isEqualTo(first);
@@ -157,7 +162,7 @@ class ProductImageTest {
             var product = productWithImages(imageIds(MAX_IMAGES));
 
             // 操作と確認：業務のエラー TOO_MANY_PRODUCT_IMAGES で拒否される
-            assertBusinessError(() -> product.addImage(UUID.randomUUID(), UUID.randomUUID()),
+            assertBusinessError(() -> product.addImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID())),
                     ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
         }
 
@@ -168,7 +173,7 @@ class ProductImageTest {
             var product = productWithImages(imageIds(MAX_IMAGES));
 
             // 操作と確認（前提）：21 枚目が拒否される
-            assertBusinessError(() -> product.addImage(UUID.randomUUID(), UUID.randomUUID()),
+            assertBusinessError(() -> product.addImage(new ProductImageId(UUID.randomUUID()), new AssetId(UUID.randomUUID())),
                     ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
 
             // 確認：20 枚のまま
@@ -260,7 +265,7 @@ class ProductImageTest {
             var product = productWithImages(ids);
 
             // 操作と確認：知らない ID を混ぜると、業務のエラー INVALID_IMAGE_ORDER で拒否される
-            assertBusinessError(() -> product.reorderImages(List.of(ids.getFirst(), ids.get(1), UUID.randomUUID())),
+            assertBusinessError(() -> product.reorderImages(List.of(ids.getFirst(), ids.get(1), new ProductImageId(UUID.randomUUID()))),
                     ProductErrorCode.INVALID_IMAGE_ORDER);
         }
     }
@@ -308,7 +313,7 @@ class ProductImageTest {
             var variantId = product.variants().getFirst().id();
 
             // 操作と確認：ほかの画像は、業務のエラー INVALID_VARIANT_IMAGE で拒否される
-            assertBusinessError(() -> product.setVariantImage(variantId, UUID.randomUUID()),
+            assertBusinessError(() -> product.setVariantImage(variantId, new ProductImageId(UUID.randomUUID())),
                     ProductErrorCode.INVALID_VARIANT_IMAGE);
         }
 
@@ -320,7 +325,7 @@ class ProductImageTest {
             var product = productWithImages(ids);
 
             // 操作と確認：知らないバリアントは、業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> product.setVariantImage(UUID.randomUUID(), ids.getFirst()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> product.setVariantImage(new VariantId(UUID.randomUUID()), ids.getFirst()), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -362,8 +367,8 @@ class ProductImageTest {
         void returnsReleasedAssetId() {
             // 準備：アセットを指定した画像を持つ商品
             var product = productWithVariant();
-            var imageId = UUID.randomUUID();
-            var assetId = UUID.randomUUID();
+            var imageId = new ProductImageId(UUID.randomUUID());
+            var assetId = new AssetId(UUID.randomUUID());
             product.addImage(imageId, assetId);
 
             // 操作：画像を削除する
@@ -406,7 +411,7 @@ class ProductImageTest {
             var product = productWithImages(imageIds(1));
 
             // 操作と確認：業務のエラー NOT_FOUND で拒否される
-            assertBusinessError(() -> product.deleteImage(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> product.deleteImage(new ProductImageId(UUID.randomUUID())), CommonErrorCode.NOT_FOUND);
         }
     }
 
@@ -440,8 +445,8 @@ class ProductImageTest {
      * @param count 枚数
      * @return 画像 ID（実行ごとに作る）
      */
-    private static List<UUID> imageIds(int count) {
-        return Stream.generate(UUID::randomUUID).limit(count).toList();
+    private static List<ProductImageId> imageIds(int count) {
+        return Stream.generate(() -> new ProductImageId(UUID.randomUUID())).limit(count).toList();
     }
 
     /**
@@ -452,9 +457,9 @@ class ProductImageTest {
      * @return 非公開の商品
      */
     private Product productWithVariant() {
-        var product = factory.create(UUID.randomUUID(), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
+        var product = factory.create(new ProductId(UUID.randomUUID()), ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of());
-        product.addVariant(UUID.randomUUID(), VariantCode.of("ABC-001"), List.of(), NOW);
+        product.addVariant(new VariantId(UUID.randomUUID()), VariantCode.of("ABC-001"), List.of(), NOW);
         product.pullEvents();
         return product;
     }
@@ -467,9 +472,9 @@ class ProductImageTest {
      * @param imageIds 画像 ID（並びの順）
      * @return 非公開の商品
      */
-    private Product productWithImages(List<UUID> imageIds) {
+    private Product productWithImages(List<ProductImageId> imageIds) {
         var product = productWithVariant();
-        imageIds.forEach(imageId -> product.addImage(imageId, UUID.randomUUID()));
+        imageIds.forEach(imageId -> product.addImage(imageId, new AssetId(UUID.randomUUID())));
         return product;
     }
 
@@ -480,10 +485,10 @@ class ProductImageTest {
      * @param variantImageId バリアントに指定する画像の ID
      * @return 商品のスナップショット
      */
-    private static Product.Snapshot snapshotWithImages(List<ProductImage> images, UUID variantImageId) {
-        var variant = new Variant(UUID.fromString("00000000-0000-0000-0000-000000003001"), VariantCode.of("ABC-001"), List.of(), 1,
+    private static Product.Snapshot snapshotWithImages(List<ProductImage> images, ProductImageId variantImageId) {
+        var variant = new Variant(new VariantId(UUID.fromString("00000000-0000-0000-0000-000000003001")), VariantCode.of("ABC-001"), List.of(), 1,
                 false, variantImageId);
-        return new Product.Snapshot(UUID.fromString("00000000-0000-0000-0000-000000002001"), ProductCode.of("ABC-001"), "T シャツ",
+        return new Product.Snapshot(new ProductId(UUID.fromString("00000000-0000-0000-0000-000000002001")), ProductCode.of("ABC-001"), "T シャツ",
                 "", TAX_CATEGORY_ID, PriceExclTax.of(1000), Set.of(), List.of(), PublicationStatus.UNPUBLISHED, null,
                 PublicationPeriod.UNLIMITED, images, List.of(variant), 0);
     }

@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.infrastructure.directory;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.id.AssetId;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.id.UploadId;
 import com.ecsite.module.catalog.application.model.PreparedImage;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
@@ -13,8 +14,6 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * メディアの腐敗防止層
@@ -41,9 +40,9 @@ class MediaApiDirectory implements MediaDirectory {
      * @throws BusinessException 大きさが範囲の外（{@code IMAGE_TOO_LARGE}）
      */
     @Override
-    public ImageUploadView requestImageUpload(UUID productId, String contentType, long contentLength) {
+    public ImageUploadView requestImageUpload(ProductId productId, String contentType, long contentLength) {
         var upload = mediaApi.requestImageUpload(scope(productId), contentType, contentLength);
-        return new ImageUploadView(upload.uploadId().value(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
+        return new ImageUploadView(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
     }
 
     /**
@@ -58,8 +57,8 @@ class MediaApiDirectory implements MediaDirectory {
      * @throws BusinessException 変換できない（{@code IMAGE_CONVERSION_FAILED}）
      */
     @Override
-    public PreparedImage prepareImage(UUID productId, UUID uploadId) {
-        return new PreparedImage(mediaApi.prepareImage(scope(productId), new UploadId(uploadId)).assetId().value());
+    public PreparedImage prepareImage(ProductId productId, UploadId uploadId) {
+        return new PreparedImage(mediaApi.prepareImage(scope(productId), uploadId).assetId());
     }
 
     /**
@@ -90,8 +89,8 @@ class MediaApiDirectory implements MediaDirectory {
      * @param assetIds アセット ID
      */
     @Override
-    public void release(Collection<UUID> assetIds) {
-        mediaApi.release(assetIds.stream().map(AssetId::new).toList());
+    public void release(Collection<AssetId> assetIds) {
+        mediaApi.release(assetIds);
     }
 
     /**
@@ -101,9 +100,8 @@ class MediaApiDirectory implements MediaDirectory {
      * @return アセット ID → URL
      */
     @Override
-    public Map<UUID, URI> urls(Collection<UUID> assetIds) {
-        return mediaApi.urls(assetIds.stream().map(AssetId::new).toList()).entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(entry -> entry.getKey().value(), Map.Entry::getValue));
+    public Map<AssetId, URI> urls(Collection<AssetId> assetIds) {
+        return mediaApi.urls(assetIds);
     }
 
 // ============================== プライベートメソッド ==============================
@@ -113,7 +111,7 @@ class MediaApiDirectory implements MediaDirectory {
      *
      * <p>商品 ID にする。
      */
-    private static String scope(UUID productId) {
+    private static String scope(ProductId productId) {
         return productId.toString();
     }
 
@@ -121,6 +119,6 @@ class MediaApiDirectory implements MediaDirectory {
      * 用意した画像を、メディアモジュールの型に変換する。
      */
     private static com.ecsite.module.media.api.model.PreparedImage toMedia(PreparedImage prepared) {
-        return new com.ecsite.module.media.api.model.PreparedImage(new AssetId(prepared.assetId()));
+        return new com.ecsite.module.media.api.model.PreparedImage(prepared.assetId());
     }
 }

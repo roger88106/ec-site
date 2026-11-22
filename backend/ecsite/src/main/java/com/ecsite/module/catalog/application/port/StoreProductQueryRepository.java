@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.application.port;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
@@ -10,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * C 側の商品照会のクエリリポジトリ
@@ -30,7 +31,7 @@ public interface StoreProductQueryRepository {
      * @return 商品の一覧
      */
     PageResult<StoreProductSummaryView> findVisible(StoreProductListQuery query, PageRequest request, Instant now,
-                                                Map<UUID, BigDecimal> rates);
+                                                Map<TaxCategoryId, BigDecimal> rates);
 
     /**
      * C 側の商品の詳細を取得する。
@@ -40,5 +41,5 @@ public interface StoreProductQueryRepository {
      * @param rates 税区分 ID → 表示時刻で有効な率（%）
      * @return 商品の詳細。表示されない商品なら空
      */
-    Optional<StoreProductDetailView> findVisibleDetail(UUID id, Instant now, Map<UUID, BigDecimal> rates);
+    Optional<StoreProductDetailView> findVisibleDetail(ProductId id, Instant now, Map<TaxCategoryId, BigDecimal> rates);
 }

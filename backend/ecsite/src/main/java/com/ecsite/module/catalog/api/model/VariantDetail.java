@@ -1,10 +1,12 @@
 package com.ecsite.module.catalog.api.model;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * バリアントの詳細
@@ -21,8 +23,8 @@ import java.util.UUID;
  * @param visible        商品が現在店舗に表示されるか
  * @param salesSuspended バリアントが販売停止か
  */
-public record VariantDetail(UUID variantId, UUID productId, String productCode, String variantCode,
+public record VariantDetail(VariantId variantId, ProductId productId, String productCode, String variantCode,
                                String productName, List<AxisValue> axisValues, Money priceExclTax,
-                               UUID taxCategoryId, @Nullable String imageUrl, boolean visible,
+                               TaxCategoryId taxCategoryId, @Nullable String imageUrl, boolean visible,
                                boolean salesSuspended) {
 }

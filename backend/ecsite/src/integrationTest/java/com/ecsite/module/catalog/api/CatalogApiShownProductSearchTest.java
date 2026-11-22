@@ -272,7 +272,7 @@ class CatalogApiShownProductSearchTest {
             var page = api.searchShownProducts(mark + "シャツ", PageRequest.of(2, 2));
 
             // 確認：新着順の 3、4 件目と、全体の件数・ページ数
-            assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(products.get(2).id, products.get(1).id);
+            assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(products.get(2).id, products.get(1).id);
             assertThat(page.totalItems()).isEqualTo(5);
             assertThat(page.totalPages()).isEqualTo(3);
         }
@@ -293,7 +293,7 @@ class CatalogApiShownProductSearchTest {
      */
     private void assertOnlyVisibleFound(UUID visibleId) {
         var page = api.searchShownProducts(mark + "綿", FIRST_PAGE);
-        assertThat(page.items()).extracting(ShownProductSummary::id).containsExactly(visibleId);
+        assertThat(page.items()).extracting(summary -> summary.id().value()).containsExactly(visibleId);
         assertThat(page.totalItems()).isEqualTo(1);
     }
 
@@ -319,6 +319,6 @@ class CatalogApiShownProductSearchTest {
      * @return 商品 ID（結果の並び）
      */
     private List<UUID> searchIds(String keyword) {
-        return api.searchShownProducts(keyword, FIRST_PAGE).items().stream().map(ShownProductSummary::id).toList();
+        return api.searchShownProducts(keyword, FIRST_PAGE).items().stream().map(summary -> summary.id().value()).toList();
     }
 }

@@ -1,5 +1,8 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderLineRecord;
 import com.ecsite.jooq.reporting.tables.records.SalesOrderRecord;
@@ -188,7 +191,7 @@ class ReportCollectionTest {
         orderId = UUID.randomUUID();
         variantId = UUID.randomUUID();
         productId = UUID.randomUUID();
-        when(catalogApi.findVariants(anyCollection())).thenReturn(Map.of(variantId, variantDetail()));
+        when(catalogApi.findVariants(anyCollection())).thenReturn(Map.of(new VariantId(variantId), variantDetail()));
     }
 
     // ============================== テスト ==============================
@@ -680,8 +683,8 @@ class ReportCollectionTest {
      * @return バリアントの情報
      */
     private VariantDetail variantDetail() {
-        return new VariantDetail(variantId, productId, "P-1", "P-1-W", "T シャツ", List.of(),
-                Money.of(SUBTOTAL_EXCL_TAX / QUANTITY), UUID.randomUUID(), null, true, false);
+        return new VariantDetail(new VariantId(variantId), new ProductId(productId), "P-1", "P-1-W", "T シャツ", List.of(),
+                Money.of(SUBTOTAL_EXCL_TAX / QUANTITY), new TaxCategoryId(UUID.randomUUID()), null, true, false);
     }
 
     /**

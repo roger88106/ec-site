@@ -81,6 +81,21 @@ class EventPublications {
     private static final Field<Instant> STOPPED_DATE = DSL.field(DSL.name("stopped_date"), Instant.class);
 
     /**
+     * 記録の行を、新しい ID で複製する SQL（複製する数と、元の行の ID を bind 変数で渡す）
+     *
+     * <p>リスナーが受けられる JSON を含めて、列を元の行のままにする。1 件ずつイベントを発行するより速い。
+     */
+    private static final String COPY_PUBLICATION = """
+            INSERT INTO common.event_publication
+                (id, listener_id, event_type, serialized_event, publication_date,
+                 completion_date, status, completion_attempts, last_resubmission_date)
+            SELECT gen_random_uuid(), source.listener_id, source.event_type, source.serialized_event, source.publication_date,
+                   source.completion_date, source.status, source.completion_attempts, source.last_resubmission_date
+            FROM common.event_publication source, generate_series(1, ?)
+            WHERE source.id = ?
+            """;
+
+    /**
      * イベント発行記録の表を数える DSLContext
      */
     private final DSLContext dsl;
@@ -191,6 +206,43 @@ class EventPublications {
         return registry.findIncompletePublications().stream()
                 .filter(publication -> publication.getEvent().equals(event))
                 .findFirst().orElseThrow();
+    }
+
+    /**
+     * 発行したイベントの未完了の記録を、新しい ID で指定の数だけ複製する。
+     *
+     * <p>列は元の記録と同じ（発行の日時、処理の回数、最後の再発行の日時、状態、イベントの JSON）。
+     * 同じイベントを受けるリスナー宛の、同じ状態の記録を、イベントを発行せずに多く作るときに使う。
+     *
+     * @param event 発行したイベント
+     * @param count 複製する数
+     */
+    void copyPublication(Object event, int count) {
+        dsl.execute(COPY_PUBLICATION, count, publicationOf(event).getIdentifier());
+    }
+
+    /**
+     * イベント ID を含む記録を、全て、指定の時刻に再発行して失敗した状態にする（処理の回数を 1 増やす）。
+     *
+     * @param eventId       イベントを見分ける ID
+     * @param resubmittedAt 再発行した時刻
+     */
+    void markFailedAfterResubmission(UUID eventId, Instant resubmittedAt) {
+        dsl.update(EVENT_PUBLICATION)
+                .set(LAST_RESUBMISSION_DATE, resubmittedAt)
+                .set(COMPLETION_ATTEMPTS, COMPLETION_ATTEMPTS.plus(1))
+                .set(STATUS, "FAILED")
+                .where(SERIALIZED_EVENT.contains(eventId.toString()))
+                .execute();
+    }
+
+    /**
+     * イベント ID を含む記録を、全て消す（複製した記録が、ほかのテストの再発行の枠を使わないように片付ける）。
+     *
+     * @param eventId イベントを見分ける ID
+     */
+    void deleteAll(UUID eventId) {
+        dsl.deleteFrom(EVENT_PUBLICATION).where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
     }
 
     /**

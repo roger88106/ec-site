@@ -376,6 +376,36 @@ class EventResubmissionJobTest {
         }
 
         @Test
+        @DisplayName("再発行の対象の古い失敗が 500 件以上あっても、新しく失敗したイベントを再発行する")
+        void resubmitsNewFailureAmongManyOldFailures() {
+            // 準備：失敗し続ける古いイベント 501 件（1 件を発行し、残りは記録を複製する）と、その後に 1 回目の処理に失敗した新しいイベント。
+            // 古いイベントは、新しいイベントの発行より後に再発行して失敗した状態にする（失敗し続ける古いイベントは毎回再発行されるため）
+            var old = publications.failedOnce(failingEvent("old"));
+            publications.copyPublication(old, 500);
+            clock.advance(Duration.ofMinutes(1));
+            var event = failedOnce();
+            var publicationId = publicationOf(event).getIdentifier();
+
+            try {
+                clock.advance(Duration.ofMinutes(5));
+                publications.markFailedAfterResubmission(old.id(), clock.instant());
+
+                // 操作：どちらも発行から 5 分を過ぎ、最後の試行から 1 分がたった時点で、再発行する
+                clock.advance(Duration.ofMinutes(1));
+                job.resubmit();
+
+                // 確認：新しいイベントの処理の回数が増え、2 回目の処理で成功する
+                assertThat(dsl.select(COMPLETION_ATTEMPTS).from(EVENT_PUBLICATION).where(ID.eq(publicationId))
+                        .fetchOne(COMPLETION_ATTEMPTS)).isEqualTo(2);
+                asyncEvents.awaitHandled(event::equals);
+                assertThat(listener.succeeded(event)).isTrue();
+            } finally {
+                // 後片付け：複製した記録が、ほかのテストの再発行の枠を使わないよう消す
+                publications.deleteAll(old.id());
+            }
+        }
+
+        @Test
         @Timeout(60)
         @DisplayName("3 台で動かしても、処理の回数が上限に達するまでの時間は 1 台と同じ")
         void timeToMaxAttemptsDoesNotDependOnInstanceCount() {

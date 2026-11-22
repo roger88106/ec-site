@@ -16,15 +16,4 @@ import org.jspecify.annotations.Nullable;
  */
 @ValueObject
 public record TaxRateDraft(@Nullable TaxRateId id, @Nullable TaxRateId newId, @NonNull RatePercent ratePercent, @NonNull EffectivePeriod period) {
-
-    /**
-     * 新しい税率の ID を持たない案を作る。
-     *
-     * @param id          既存の税率を残す場合はその ID。null は新しい税率
-     * @param ratePercent 率
-     * @param period      適用期間
-     */
-    public TaxRateDraft(@Nullable TaxRateId id, @NonNull RatePercent ratePercent, @NonNull EffectivePeriod period) {
-        this(id, null, ratePercent, period);
-    }
 }

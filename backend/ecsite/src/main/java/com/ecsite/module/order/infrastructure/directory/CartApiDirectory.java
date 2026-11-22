@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * カートの腐敗防止層
@@ -32,25 +31,25 @@ class CartApiDirectory implements CartDirectory {
      * カートの中身を取り、注文モジュールの型に変換する。
      */
     @Override
-    public Optional<CartSnapshot> find(UUID cartId) {
-        return cartContentsApi.find(new CartId(cartId)).map(contents -> new CartSnapshot(contents.cartId().value(),
-                contents.memberId() == null ? null : contents.memberId().value(), contents.version(),
-                contents.items().stream().map(item -> new CartSnapshot.Line(item.variantId().value(), item.quantity())).toList()));
+    public Optional<CartSnapshot> find(CartId cartId) {
+        return cartContentsApi.find(cartId).map(contents -> new CartSnapshot(contents.cartId(),
+                contents.memberId(), contents.version(),
+                contents.items().stream().map(item -> new CartSnapshot.Line(item.variantId(), item.quantity())).toList()));
     }
 
     /**
      * 会員のカートの ID を取る。
      */
     @Override
-    public Optional<UUID> findMemberCartId(UUID memberId) {
-        return cartContentsApi.findMemberCartId(new MemberId(memberId)).map(CartId::value);
+    public Optional<CartId> findMemberCartId(MemberId memberId) {
+        return cartContentsApi.findMemberCartId(memberId);
     }
 
     /**
      * 注文した品目をカートから除く。
      */
     @Override
-    public void removeItems(UUID cartId, Collection<UUID> variantIds, Instant addedUntil) {
-        cartContentsApi.removeItems(new CartId(cartId), variantIds.stream().map(VariantId::new).toList(), addedUntil);
+    public void removeItems(CartId cartId, Collection<VariantId> variantIds, Instant addedUntil) {
+        cartContentsApi.removeItems(cartId, variantIds, addedUntil);
     }
 }

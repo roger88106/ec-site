@@ -1,6 +1,7 @@
 package com.ecsite.architecture;
 
 import com.ecsite.architecture.sample.identifier.module.sample.api.ExampleApi;
+import com.ecsite.architecture.sample.identifier.module.sample.application.ExampleProperties;
 import com.ecsite.architecture.sample.identifier.module.sample.application.model.ExampleCommand;
 import com.ecsite.architecture.sample.identifier.module.sample.domain.ExampleId;
 import com.ecsite.architecture.sample.identifier.module.sample.domain.ExampleIdWithOther;
@@ -25,6 +26,7 @@ import com.tngtech.archunit.core.domain.JavaType;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ul>
  *   <li>{@link EntityId} の実装の項目 {@code value}、メソッド {@code value()}、コンストラクター</li>
  *   <li>{@link DomainEvent} の {@code newEventId()}、イベントの項目 {@code eventId}、メソッド {@code eventId()}、コンストラクターの最初の引数（イベント ID）</li>
+ *   <li>設定の型（{@link ConfigurationProperties} を付けたクラス）。環境変数の文字列から作るので、使う側で識別子の型に変換する</li>
  * </ul>
  */
 class IdentifierTypeTest {
@@ -57,7 +60,6 @@ class IdentifierTypeTest {
      */
     private static final List<String> UNCONVERTED_PACKAGES = List.of(
             "com.ecsite.module.notification",
-            "com.ecsite.module.order",
             "com.ecsite.module.reporting",
             "com.ecsite.module.storefront");
 
@@ -103,10 +105,11 @@ class IdentifierTypeTest {
     @Test
     @DisplayName("規則は、検査の対象のクラスの UUID を使う項目・引数・戻り値・型引数だけに当たる")
     void ruleMatchesUuidInCheckedClasses() {
-        // 準備：違反の例と、規則に合う例（識別子の型、イベント ID、対象外の infrastructure）
+        // 準備：違反の例と、規則に合う例（識別子の型、イベント ID、設定の型、対象外の infrastructure）
         JavaClasses examples = new ClassFileImporter().importClasses(
                 UuidField.class, UuidMethod.class, UuidConstructor.class, UuidTypeArguments.class,
-                ExampleId.class, ExampleIdWithOther.class, ExampleEvent.class, ExampleCommand.class, ExampleApi.class, UsesUuid.class);
+                ExampleId.class, ExampleIdWithOther.class, ExampleEvent.class, ExampleCommand.class, ExampleApi.class,
+                ExampleProperties.class, UsesUuid.class);
 
         // 操作と確認：違反の例の UUID だけが違反になる
         assertThat(violations(examples, List.of()).keySet()).containsExactlyInAnyOrder(
@@ -150,6 +153,7 @@ class IdentifierTypeTest {
     private static List<JavaClass> checkedClasses(JavaClasses classes, List<String> excluded) {
         return classes.stream()
                 .filter(CHECKED_PACKAGE)
+                .filter(javaClass -> !javaClass.isAnnotatedWith(ConfigurationProperties.class))
                 .filter(javaClass -> excluded.stream().noneMatch(root -> ProductionClasses.isInPackage(javaClass.getPackageName(), root)))
                 .toList();
     }

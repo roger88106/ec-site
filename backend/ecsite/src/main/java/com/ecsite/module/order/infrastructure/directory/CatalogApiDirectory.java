@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 商品カタログの腐敗防止層
@@ -32,10 +31,9 @@ class CatalogApiDirectory implements CatalogDirectory {
      * バリアントの情報を、商品カタログの API から取って変換する。
      */
     @Override
-    public Map<UUID, VariantInfo> findVariants(Collection<UUID> variantIds) {
-        var result = new LinkedHashMap<UUID, VariantInfo>();
-        catalogApi.findVariants(variantIds.stream().map(VariantId::new).toList())
-                .forEach((variantId, variant) -> result.put(variantId.value(), toInfo(variant)));
+    public Map<VariantId, VariantInfo> findVariants(Collection<VariantId> variantIds) {
+        var result = new LinkedHashMap<VariantId, VariantInfo>();
+        catalogApi.findVariants(variantIds).forEach((variantId, variant) -> result.put(variantId, toInfo(variant)));
         return result;
     }
 
@@ -44,14 +42,14 @@ class CatalogApiDirectory implements CatalogDirectory {
      */
     private static VariantInfo toInfo(VariantDetail variant) {
         return new VariantInfo(
-                variant.variantId().value(),
-                variant.productId().value(),
+                variant.variantId(),
+                variant.productId(),
                 variant.productCode(),
                 variant.variantCode(),
                 variant.productName(),
                 variant.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
                 variant.priceExclTax(),
-                variant.taxCategoryId().value(),
+                variant.taxCategoryId(),
                 variant.imageUrl(),
                 variant.visible(),
                 variant.salesSuspended());

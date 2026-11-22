@@ -1,6 +1,7 @@
 package com.ecsite.module.order.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.OrderId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
@@ -19,7 +20,7 @@ import java.util.UUID;
  * @param cancellationKind キャンセルの種類。後の状態がキャンセルでなければ null
  * @param restocked        在庫に戻したか。後の状態がキャンセルでなければ null
  */
-public record OrderStatusChanged(UUID eventId, Instant occurredAt, UUID orderId, @Nullable Status from, Status to,
+public record OrderStatusChanged(UUID eventId, Instant occurredAt, OrderId orderId, @Nullable Status from, Status to,
                                  @Nullable CancellationKind cancellationKind, @Nullable Boolean restocked)
         implements DomainEvent {
 
@@ -34,7 +35,7 @@ public record OrderStatusChanged(UUID eventId, Instant occurredAt, UUID orderId,
      * @param restocked        在庫に戻したか。キャンセルでなければ null
      * @return イベント
      */
-    public static OrderStatusChanged of(Instant occurredAt, UUID orderId, @Nullable Status from, Status to,
+    public static OrderStatusChanged of(Instant occurredAt, OrderId orderId, @Nullable Status from, Status to,
                                         @Nullable CancellationKind cancellationKind, @Nullable Boolean restocked) {
         return new OrderStatusChanged(DomainEvent.newEventId(), occurredAt, orderId, from, to, cancellationKind, restocked);
     }

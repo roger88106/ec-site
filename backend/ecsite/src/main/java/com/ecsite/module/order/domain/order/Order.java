@@ -2,10 +2,13 @@ package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationKind;
@@ -29,7 +32,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -69,7 +71,7 @@ public class Order extends AggregateRoot {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final OrderId id;
 
     /**
      * 注文番号
@@ -79,12 +81,12 @@ public class Order extends AggregateRoot {
     /**
      * 注文手続き ID（注文手続き 1 つにつき注文は 1 つ）
      */
-    private final UUID checkoutId;
+    private final CheckoutId checkoutId;
 
     /**
      * 会員 ID（注文した会員）
      */
-    private final UUID memberId;
+    private final MemberId memberId;
 
     /**
      * 注文日時（価格と税率を判定した時点）
@@ -176,7 +178,7 @@ public class Order extends AggregateRoot {
      * @param version             バージョン
      * @throws BusinessException メールアドレスの形が違う（{@code INVALID_EMAIL}）
      */
-    private Order(@NonNull UUID id, @NonNull OrderNumber orderNumber, @NonNull UUID checkoutId, @NonNull UUID memberId,
+    private Order(@NonNull OrderId id, @NonNull OrderNumber orderNumber, @NonNull CheckoutId checkoutId, @NonNull MemberId memberId,
                   @NonNull Instant orderedAt, @NonNull OrderStatus status, @NonNull List<OrderLine> lines,
                   @NonNull Amounts amounts, @Nullable Money shippingTax, @Nullable String email,
                   @NonNull ShippingAddress shippingAddress,
@@ -221,7 +223,7 @@ public class Order extends AggregateRoot {
      * @return 注文
      * @throws BusinessException メールアドレスの形が違う（{@code INVALID_EMAIL}）
      */
-    public static Order place(UUID id, OrderNumber orderNumber, UUID checkoutId, UUID memberId, Instant orderedAt,
+    public static Order place(OrderId id, OrderNumber orderNumber, CheckoutId checkoutId, MemberId memberId, Instant orderedAt,
                               @NonNull Quote quote,
                               @Nullable String email, ShippingAddress shippingAddress, BuyerProfile buyerProfile) {
         if (!quote.orderable()) {
@@ -616,7 +618,7 @@ public class Order extends AggregateRoot {
      * @param cancellation        キャンセル
      * @param version             バージョン
      */
-    public record Snapshot(UUID id, OrderNumber orderNumber, UUID checkoutId, UUID memberId, Instant orderedAt, OrderStatus status,
+    public record Snapshot(OrderId id, OrderNumber orderNumber, CheckoutId checkoutId, MemberId memberId, Instant orderedAt, OrderStatus status,
                            List<OrderLine> lines, Amounts amounts, @Nullable Money shippingTax, String email,
                            ShippingAddress shippingAddress,
                            BuyerProfile buyerProfile, @Nullable CancellationRequest cancellationRequest, @Nullable Cancellation cancellation,

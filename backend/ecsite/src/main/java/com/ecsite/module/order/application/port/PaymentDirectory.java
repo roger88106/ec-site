@@ -1,6 +1,7 @@
 package com.ecsite.module.order.application.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.model.PaymentAmountRange;
 import com.ecsite.module.order.application.model.PaymentAuthorization;
@@ -11,7 +12,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 決済の腐敗防止層の port
@@ -27,7 +27,7 @@ public interface PaymentDirectory {
      * @param amount    金額（総額）
      * @param orderedAt 注文日時（支払の期限の起点）
      */
-    void create(UUID orderId, Money amount, Instant orderedAt);
+    void create(OrderId orderId, Money amount, Instant orderedAt);
 
     /**
      * 決済サービスを呼んで、支払画面の URL を返す。
@@ -35,7 +35,7 @@ public interface PaymentDirectory {
      * @param orderId 注文 ID
      * @return 支払画面の URL。支払えなければ空
      */
-    Optional<String> pageUrl(UUID orderId);
+    Optional<String> pageUrl(OrderId orderId);
 
     /**
      * 売上確定済みでなければ決済サービスを呼んで、注文の支払の売上を確定する。
@@ -46,7 +46,7 @@ public interface PaymentDirectory {
      * @throws BusinessException 与信の期限が切れている（{@code AUTHORIZATION_EXPIRED}）
      * @throws BusinessException 売上を確定できる状態でない（{@code PAYMENT_NOT_CAPTURABLE}）
      */
-    void capture(UUID orderId);
+    void capture(OrderId orderId);
 
     /**
      * 注文の支払を取り消す。
@@ -55,7 +55,7 @@ public interface PaymentDirectory {
      *
      * @param orderId 注文 ID
      */
-    void cancel(UUID orderId);
+    void cancel(OrderId orderId);
 
     /**
      * 注文の支払をまとめて返す。
@@ -63,7 +63,7 @@ public interface PaymentDirectory {
      * @param orderIds 注文 ID
      * @return 注文 ID → 支払。支払のない注文（決済を入れる前の注文）は含まない
      */
-    Map<UUID, PaymentSnapshot> find(Collection<UUID> orderIds);
+    Map<OrderId, PaymentSnapshot> find(Collection<OrderId> orderIds);
 
     /**
      * 注文の与信期限と、期限が近いかをまとめて返す。
@@ -71,7 +71,7 @@ public interface PaymentDirectory {
      * @param orderIds 注文 ID
      * @return 注文 ID → 与信期限。与信を受けていない注文は含まない
      */
-    Map<UUID, PaymentAuthorization> findAuthorizations(Collection<UUID> orderIds);
+    Map<OrderId, PaymentAuthorization> findAuthorizations(Collection<OrderId> orderIds);
 
     /**
      * 与信期限が近い注文 ID を返す。
@@ -80,7 +80,7 @@ public interface PaymentDirectory {
      *
      * @return 注文 ID
      */
-    List<UUID> findExpiringOrderIds();
+    List<OrderId> findExpiringOrderIds();
 
     /**
      * 決済が 1 回の支払で受け付ける金額の範囲を返す。

@@ -1,6 +1,8 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.order.api.OrderQuoteApi;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.CartQuote;
@@ -32,7 +34,7 @@ class OrderApiDirectory implements OrderDirectory {
      */
     @Override
     public Optional<CartView> findCart(UUID cartId, @Nullable UUID requester) {
-        return orderQuoteApi.quoteCart(cartId, requester).map(OrderApiDirectory::toView);
+        return orderQuoteApi.quoteCart(new CartId(cartId), requester == null ? null : new MemberId(requester)).map(OrderApiDirectory::toView);
     }
 
     /**
@@ -40,7 +42,7 @@ class OrderApiDirectory implements OrderDirectory {
      */
     private static CartView toView(CartQuote quote) {
         return new CartView(
-                quote.cartId(),
+                quote.cartId().value(),
                 quote.items().stream().map(OrderApiDirectory::toItem).toList(),
                 toAmounts(quote.amounts()),
                 quote.orderable());
@@ -51,8 +53,8 @@ class OrderApiDirectory implements OrderDirectory {
      */
     private static CartView.Item toItem(CartQuote.Item item) {
         return new CartView.Item(
-                item.variantId(),
-                item.productId(),
+                item.variantId().value(),
+                item.productId().value(),
                 item.productName(),
                 item.axisValues().stream().map(axis -> new CartView.AxisValue(axis.name(), axis.value())).toList(),
                 item.imageUrl(),

@@ -2,6 +2,7 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.payment.OrderPayments;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -333,7 +334,7 @@ class PlaceOrderPendingLimitApiTest {
      * @return 確認した注文の ID
      */
     private UUID anyAcknowledged(UUID checkoutId) {
-        return checkoutRepository.findById(checkoutId).orElseThrow().acknowledgedOrderIds().iterator().next();
+        return checkoutRepository.findById(new CheckoutId(checkoutId)).orElseThrow().acknowledgedOrderIds().iterator().next().value();
     }
 
     /**
@@ -343,7 +344,7 @@ class PlaceOrderPendingLimitApiTest {
      * @return 支払待ちの注文の件数
      */
     private int pendingOrderCount(UUID checkoutId) {
-        return OrderTestData.pendingOrderCount(fixture.dsl, checkoutRepository.findById(checkoutId).orElseThrow().memberId());
+        return OrderTestData.pendingOrderCount(fixture.dsl, checkoutRepository.findById(new CheckoutId(checkoutId)).orElseThrow().memberId().value());
     }
 
     /**

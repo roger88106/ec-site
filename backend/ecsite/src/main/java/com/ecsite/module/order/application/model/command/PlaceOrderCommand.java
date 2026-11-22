@@ -1,10 +1,10 @@
 package com.ecsite.module.order.application.model.command;
 
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * 注文のコマンド
@@ -23,7 +23,7 @@ import java.util.UUID;
  * @param birthdate        生年月日（会員の token のもの。なければ null）
  * @param gender           性別（会員の token のもの。なければ null）
  */
-public record PlaceOrderCommand(@NonNull UUID checkoutId, @NonNull UUID memberId, @Nullable String email, boolean emailVerified,
+public record PlaceOrderCommand(@NonNull CheckoutId checkoutId, @NonNull MemberId memberId, @Nullable String email, boolean emailVerified,
                                 @NonNull String name, @NonNull String postalCode, @NonNull String prefectureCode,
                                 @NonNull String municipalityCode, @NonNull String address, @NonNull String phone,
                                 @NonNull Money expectedTotal,

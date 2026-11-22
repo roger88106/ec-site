@@ -1,6 +1,8 @@
 package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.checkout.Checkout;
@@ -9,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 支払待ちの注文の判定
@@ -39,7 +40,7 @@ class PendingOrderGuard {
      * @throws BusinessException 確認していない支払待ちの注文がある（{@code PENDING_ORDER_CONFIRMATION_REQUIRED}）
      * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      */
-    Set<UUID> verifyAcknowledged(UUID memberId, Set<UUID> acknowledgedOrderIds) {
+    Set<OrderId> verifyAcknowledged(MemberId memberId, Set<OrderId> acknowledgedOrderIds) {
         // 確認の判定の後に、上限の判定を行う。両方の判定で、同じ支払待ちの注文の ID を使う
         var pendingOrderIds = pendingOrderIds(memberId);
         requireAcknowledged(acknowledgedOrderIds.containsAll(pendingOrderIds));
@@ -70,7 +71,7 @@ class PendingOrderGuard {
      * @param memberId 会員 ID
      * @return 今の支払待ちの注文の ID
      */
-    private Set<UUID> pendingOrderIds(UUID memberId) {
+    private Set<OrderId> pendingOrderIds(MemberId memberId) {
         return Set.copyOf(orderRepository.findPendingIdsByMemberId(memberId));
     }
 
@@ -92,7 +93,7 @@ class PendingOrderGuard {
      * @param pendingOrderIds 今の支払待ちの注文の ID
      * @throws BusinessException 支払待ちの注文が上限に達している（{@code PENDING_ORDER_LIMIT_EXCEEDED}）
      */
-    private void requireBelowLimit(Set<UUID> pendingOrderIds) {
+    private void requireBelowLimit(Set<OrderId> pendingOrderIds) {
         if (pendingOrderIds.size() >= properties.pendingOrderLimit()) {
             throw BusinessException.of(OrderErrorCode.PENDING_ORDER_LIMIT_EXCEEDED);
         }

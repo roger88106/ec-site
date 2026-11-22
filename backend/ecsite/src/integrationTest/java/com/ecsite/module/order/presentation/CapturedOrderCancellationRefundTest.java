@@ -265,7 +265,7 @@ class CapturedOrderCancellationRefundTest {
     private void awaitRefunded() throws Exception {
         await().atMost(TIMEOUT).until(() -> "REFUNDED".equals(adminOrder("$.payment.status")));
         asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
-                && changed.orderId().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
+                && changed.orderId().value().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
     }
 

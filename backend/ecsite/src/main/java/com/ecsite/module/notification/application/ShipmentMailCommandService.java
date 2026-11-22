@@ -60,9 +60,9 @@ class ShipmentMailCommandService {
      */
     void send(OrderShipped event) {
         // 宛先 ※注文が見つからなければ例外で、記録も送信もしない
-        var email = orderDirectory.email(event.orderId());
+        var email = orderDirectory.email(event.orderId().value());
         // 送信記録 ※記録済みなら送らない
-        if (!sentMails.recordIfAbsent(event.orderId(), SentMailRepository.Kind.SHIPMENT, email, clock.instant())) {
+        if (!sentMails.recordIfAbsent(event.orderId().value(), SentMailRepository.Kind.SHIPMENT, email, clock.instant())) {
             return;
         }
         // メール送信

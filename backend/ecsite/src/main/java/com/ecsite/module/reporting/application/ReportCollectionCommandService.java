@@ -60,7 +60,7 @@ class ReportCollectionCommandService {
      * @param event 注文の状態の変化
      */
     public void record(@NonNull OrderStatusChanged event) {
-        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.ORDER_STATUS,
+        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId().value(), HistoryKind.ORDER_STATUS,
                 event.from() == null ? null : toOrderStatus(event.from()), toOrderStatus(event.to()),
                 event.occurredAt(),
                 event.cancellationKind() == null ? null : toCancellationKind(event.cancellationKind()),

@@ -6,6 +6,7 @@ import com.ecsite.api.store.model.OrderSummaryPage;
 import com.ecsite.api.store.model.PaymentPage;
 import com.ecsite.api.store.model.PendingOrderList;
 import com.ecsite.api.store.model.RequestOrderCancellationRequest;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.OrderCancellationCommandService;
@@ -60,7 +61,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Order> getOrder(UUID orderId) {
-        return ResponseEntity.ok(mapper.toOrder(orderQueryService.getForMember(orderId, currentMemberIds.require().value())));
+        return ResponseEntity.ok(mapper.toOrder(orderQueryService.getForMember(new OrderId(orderId), currentMemberIds.require())));
     }
 
     /**
@@ -72,7 +73,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<PendingOrderList> listMemberPendingOrders() {
-        return ResponseEntity.ok(mapper.toPendingOrderList(orderQueryService.listPendingForMember(currentMemberIds.require().value())));
+        return ResponseEntity.ok(mapper.toPendingOrderList(orderQueryService.listPendingForMember(currentMemberIds.require())));
     }
 
     /**
@@ -86,7 +87,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> requestOrderCancellation(UUID orderId, RequestOrderCancellationRequest request) {
-        orderCancellationCommandService.request(orderId, currentMemberIds.require().value(), request.getReason().orElse(null));
+        orderCancellationCommandService.request(new OrderId(orderId), currentMemberIds.require(), request.getReason().orElse(null));
         return ResponseEntity.noContent().build();
     }
 
@@ -100,7 +101,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<PaymentPage> openOrderPaymentPage(UUID orderId) {
-        var url = paymentGatewayService.pageUrl(orderId, currentMemberIds.require().value());
+        var url = paymentGatewayService.pageUrl(new OrderId(orderId), currentMemberIds.require());
         return ResponseEntity.ok(new PaymentPage().url(URI.create(url)));
     }
 
@@ -115,7 +116,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<OrderSummaryPage> listMemberOrders(Integer page, Integer size) {
-        var result = orderQueryService.listForMember(currentMemberIds.require().value(), PageRequest.of(page, size));
+        var result = orderQueryService.listForMember(currentMemberIds.require(), PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toOrderSummaryPage(result));
     }
 }

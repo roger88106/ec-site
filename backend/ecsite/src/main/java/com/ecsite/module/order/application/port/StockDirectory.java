@@ -1,12 +1,14 @@
 package com.ecsite.module.order.application.port;
 
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 在庫の腐敗防止層の port
@@ -24,7 +26,7 @@ public interface StockDirectory {
      * @param excludedHolderId 数えない引当の持ち主（自分の注文手続き）。なければ null
      * @return バリアント ID → 販売可能数
      */
-    Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId);
+    Map<VariantId, Integer> sellableQuantities(Collection<VariantId> variantIds, @Nullable CheckoutId excludedHolderId);
 
     /**
      * 全品目を引き当てる。
@@ -36,7 +38,7 @@ public interface StockDirectory {
      * @param expiresAt  期限
      * @return 足りないバリアントの ID。引き当てたら空
      */
-    Set<UUID> reserve(UUID holderId, Map<UUID, Integer> quantities, Instant expiresAt);
+    Set<VariantId> reserve(CheckoutId holderId, Map<VariantId, Integer> quantities, Instant expiresAt);
 
     /**
      * 持ち主の引当をまとめて解く。
@@ -45,7 +47,7 @@ public interface StockDirectory {
      *
      * @param holderIds 持ち主 ID（注文手続き）
      */
-    void release(Collection<UUID> holderIds);
+    void release(Collection<CheckoutId> holderIds);
 
     /**
      * 引当を在庫数の減算に置き換える。
@@ -58,7 +60,7 @@ public interface StockDirectory {
      * @param orderNumber 注文番号
      * @return 足りないバリアントの ID。減算したら空
      */
-    Set<UUID> commit(UUID holderId, Map<UUID, Integer> quantities, UUID orderId, String orderNumber);
+    Set<VariantId> commit(CheckoutId holderId, Map<VariantId, Integer> quantities, OrderId orderId, String orderNumber);
 
     /**
      * キャンセルした注文の数量を在庫数に戻す。
@@ -67,5 +69,5 @@ public interface StockDirectory {
      * @param orderId     注文 ID
      * @param orderNumber 注文番号
      */
-    void restore(Map<UUID, Integer> quantities, UUID orderId, String orderNumber);
+    void restore(Map<VariantId, Integer> quantities, OrderId orderId, String orderNumber);
 }

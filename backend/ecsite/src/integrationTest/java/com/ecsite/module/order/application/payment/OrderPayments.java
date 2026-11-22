@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.payment;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.OrderCancellationCommandService;
 import com.ecsite.module.order.application.OrderCartCommandService;
 import com.ecsite.module.order.domain.order.OrderStatus;
@@ -43,20 +44,21 @@ public final class OrderPayments {
      * @param orderId 注文 ID
      */
     public static void accept(ApplicationContext context, UUID orderId) {
+        var id = new OrderId(orderId);
         var orders = context.getBean(OrderRepository.class);
-        var wasPending = orders.findById(orderId).filter(order -> order.status() == OrderStatus.PENDING_PAYMENT).isPresent();
-        context.getBean(OrderPaymentCommandService.class).accept(orderId);
+        var wasPending = orders.findById(id).filter(order -> order.status() == OrderStatus.PENDING_PAYMENT).isPresent();
+        context.getBean(OrderPaymentCommandService.class).accept(id);
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             if (wasPending) {
-                context.getBean(OrderCartCommandService.class).removeOrderedItems(orderId, context.getBean(Clock.class).instant());
+                context.getBean(OrderCartCommandService.class).removeOrderedItems(id, context.getBean(Clock.class).instant());
             }
             return;
         }
         // 受付のコミットまで待つ（与信の成功のリスナーが先に受付にしていることがある）
-        await().atMost(AsyncEvents.TIMEOUT).until(() -> orders.findById(orderId)
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> orders.findById(id)
                 .filter(order -> order.status() == OrderStatus.PENDING_PAYMENT).isEmpty());
         context.getBean(AsyncEvents.class).awaitHandled(event ->
-                event instanceof OrderStatusChanged changed && changed.orderId().equals(orderId));
+                event instanceof OrderStatusChanged changed && changed.orderId().equals(id));
     }
 
     /**
@@ -68,6 +70,6 @@ public final class OrderPayments {
      * @param orderId 注文 ID
      */
     public static void expire(ApplicationContext context, UUID orderId) {
-        context.getBean(OrderCancellationCommandService.class).expirePayment(orderId);
+        context.getBean(OrderCancellationCommandService.class).expirePayment(new OrderId(orderId));
     }
 }

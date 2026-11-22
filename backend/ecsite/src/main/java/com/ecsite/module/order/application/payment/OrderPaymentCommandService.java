@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.payment;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -7,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.UUID;
 
 /**
  * 注文の支払の結果のサービス
@@ -37,7 +37,7 @@ class OrderPaymentCommandService {
      *
      * @param orderId 注文 ID
      */
-    public void accept(@NonNull UUID orderId) {
+    public void accept(@NonNull OrderId orderId) {
         var now = clock.instant();
         var found = orderRepository.lockById(orderId);
         if (found.isEmpty()) {

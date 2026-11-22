@@ -1,8 +1,7 @@
 package com.ecsite.module.order.application.model.view;
 
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.module.order.domain.quote.Quote;
-
-import java.util.UUID;
 
 /**
  * カートの見積もりの表示
@@ -10,5 +9,5 @@ import java.util.UUID;
  * @param cartId カート ID
  * @param quote  見積もり結果
  */
-public record CartQuoteView(UUID cartId, Quote quote) {
+public record CartQuoteView(CartId cartId, Quote quote) {
 }

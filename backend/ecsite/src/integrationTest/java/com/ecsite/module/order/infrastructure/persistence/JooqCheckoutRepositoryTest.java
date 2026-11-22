@@ -1,6 +1,9 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.order.domain.checkout.Checkout;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
@@ -67,7 +70,7 @@ class JooqCheckoutRepositoryTest {
         @DisplayName("注文手続きを保存すると、カートのバージョンと期限を含めて ID から再構築できる")
         void savesAndRestoresCheckout() {
             // 準備：カートのバージョン 7 の注文手続き
-            var checkout = Checkout.start(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), CART_VERSION, STARTED_AT, TTL, Set.of());
+            var checkout = Checkout.start(new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), new CartId(UUID.randomUUID()), CART_VERSION, STARTED_AT, TTL, Set.of());
 
             // 操作：保存する
             repository.insert(checkout);
@@ -81,8 +84,8 @@ class JooqCheckoutRepositoryTest {
         @DisplayName("ない ID には空を返す")
         void returnsEmptyForUnknownId() {
             // 操作と確認：読むときも、ロックして読むときも空
-            assertThat(repository.findById(UUID.randomUUID())).isEmpty();
-            assertThat(repository.lockById(UUID.randomUUID())).isEmpty();
+            assertThat(repository.findById(new CheckoutId(UUID.randomUUID()))).isEmpty();
+            assertThat(repository.lockById(new CheckoutId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -94,23 +97,23 @@ class JooqCheckoutRepositoryTest {
         @DisplayName("カートの注文手続きの ID を全て引け、ほかのカートの注文手続きは含まない")
         void findsIdsByCart() {
             // 準備：同じカートの 2 つと、ほかのカートの 1 つ
-            var cartId = UUID.randomUUID();
+            var cartId = new CartId(UUID.randomUUID());
             var first = checkout(cartId, STARTED_AT);
             var second = checkout(cartId, STARTED_AT.plusSeconds(60));
             repository.insert(first);
             repository.insert(second);
-            repository.insert(checkout(UUID.randomUUID(), STARTED_AT));
+            repository.insert(checkout(new CartId(UUID.randomUUID()), STARTED_AT));
 
             // 操作と確認：同じカートの 2 つだけを引け、注文手続きのないカートは空
             assertThat(repository.findIdsByCartId(cartId)).containsExactlyInAnyOrder(first.id(), second.id());
-            assertThat(repository.findIdsByCartId(UUID.randomUUID())).isEmpty();
+            assertThat(repository.findIdsByCartId(new CartId(UUID.randomUUID()))).isEmpty();
         }
 
         @Test
         @DisplayName("カートの最新の注文手続きの ID は、作成が最も新しいもの")
         void findsLatestIdByCart() {
             // 準備：同じカートの 2 つを、新しい方から保存する
-            var cartId = UUID.randomUUID();
+            var cartId = new CartId(UUID.randomUUID());
             var older = checkout(cartId, STARTED_AT);
             var newer = checkout(cartId, STARTED_AT.plusSeconds(60));
             repository.insert(newer);
@@ -124,7 +127,7 @@ class JooqCheckoutRepositoryTest {
         @DisplayName("注文手続きのないカートの最新の注文手続きの ID は空")
         void findsNoLatestIdForCartWithoutCheckout() {
             // 操作と確認：空
-            assertThat(repository.findLatestIdByCartId(UUID.randomUUID())).isEmpty();
+            assertThat(repository.findLatestIdByCartId(new CartId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -136,9 +139,9 @@ class JooqCheckoutRepositoryTest {
         @DisplayName("期限が指定した時刻より前の注文手続きだけを消す。ちょうどの時刻のものは残る")
         void deletesOnlyCheckoutsExpiredBefore() {
             // 準備：期限が、指定する時刻の前、ちょうど、後の 3 つ
-            var expired = checkout(UUID.randomUUID(), OLD_STARTED_AT);
-            var onBoundary = checkout(UUID.randomUUID(), OLD_STARTED_AT.plusSeconds(60));
-            var alive = checkout(UUID.randomUUID(), OLD_STARTED_AT.plusSeconds(120));
+            var expired = checkout(new CartId(UUID.randomUUID()), OLD_STARTED_AT);
+            var onBoundary = checkout(new CartId(UUID.randomUUID()), OLD_STARTED_AT.plusSeconds(60));
+            var alive = checkout(new CartId(UUID.randomUUID()), OLD_STARTED_AT.plusSeconds(120));
             repository.insert(expired);
             repository.insert(onBoundary);
             repository.insert(alive);
@@ -158,7 +161,7 @@ class JooqCheckoutRepositoryTest {
         void deletesUpToLimit() {
             // 準備：期限切れの 3 つ
             for (int i = 0; i < 3; i++) {
-                repository.insert(checkout(UUID.randomUUID(), OLD_STARTED_AT.plusSeconds(i)));
+                repository.insert(checkout(new CartId(UUID.randomUUID()), OLD_STARTED_AT.plusSeconds(i)));
             }
             var cutoff = OLD_STARTED_AT.plus(TTL).plusSeconds(10);
 
@@ -178,7 +181,7 @@ class JooqCheckoutRepositoryTest {
      * @param startedAt 始めた時刻
      * @return 注文手続き（保存しない）
      */
-    private static Checkout checkout(UUID cartId, Instant startedAt) {
-        return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), cartId, 1, startedAt, TTL, Set.of());
+    private static Checkout checkout(CartId cartId, Instant startedAt) {
+        return Checkout.start(new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), cartId, 1, startedAt, TTL, Set.of());
     }
 }

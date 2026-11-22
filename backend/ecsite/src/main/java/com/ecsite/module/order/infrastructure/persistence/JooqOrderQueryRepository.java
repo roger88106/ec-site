@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -45,7 +46,7 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
                 .orderBy(SALES_ORDER.ORDERED_AT.desc(), SALES_ORDER.ID)
                 .limit(request.size())
                 .offset(request.offset())
-                .fetch(row -> new OrderSummaryView(row.get(SALES_ORDER.ID), row.get(SALES_ORDER.ORDER_NUMBER),
+                .fetch(row -> new OrderSummaryView(new OrderId(row.get(SALES_ORDER.ID)), row.get(SALES_ORDER.ORDER_NUMBER),
                         row.get(SALES_ORDER.ORDERED_AT), row.get(SALES_ORDER.RECIPIENT_NAME),
                         Money.of(row.get(SALES_ORDER.TOTAL_AMOUNT)),
                         RestoreGuard.restore("order", () -> OrderStatus.valueOf(row.get(SALES_ORDER.STATUS)))));
@@ -60,7 +61,7 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
     private static Condition where(Filter filter) {
         var where = DSL.noCondition();
         if (filter.memberId() != null) {
-            where = where.and(SALES_ORDER.MEMBER_ID.eq(filter.memberId()));
+            where = where.and(SALES_ORDER.MEMBER_ID.eq(filter.memberId().value()));
         }
         if (filter.orderNumberPrefix() != null) {
             where = where.and(SALES_ORDER.ORDER_NUMBER.startsWith(filter.orderNumberPrefix()));
@@ -75,7 +76,7 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
             where = where.and(SALES_ORDER.ORDERED_AT.lt(filter.orderedUntil()));
         }
         if (filter.orderIds() != null) {
-            where = where.and(filter.orderIds().isEmpty() ? DSL.falseCondition() : SALES_ORDER.ID.in(filter.orderIds()));
+            where = where.and(filter.orderIds().isEmpty() ? DSL.falseCondition() : SALES_ORDER.ID.in(filter.orderIds().stream().map(OrderId::value).toList()));
         }
         return where;
     }

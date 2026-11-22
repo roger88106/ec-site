@@ -5,12 +5,15 @@ import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.PlaceOrderRequest;
 import com.ecsite.api.store.model.StartCheckoutRequest;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.checkout.CheckoutCommandService;
 import com.ecsite.module.order.application.checkout.CheckoutQueryService;
 import com.ecsite.module.order.application.checkout.OrderPlacementCommandService;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
@@ -68,9 +71,9 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<CreatedId> startCheckout(UUID cartId, @Nullable StartCheckoutRequest request) {
-        var id = checkoutCommandService.start(cartId, currentMemberIds.require().value(), acknowledgedOrderIds(request));
+        var id = checkoutCommandService.start(new CartId(cartId), currentMemberIds.require(), acknowledgedOrderIds(request));
         // ロケーション：作った注文手続きの URL
-        return CreatedResponses.storeAt("/api/store/checkouts/{id}", id);
+        return CreatedResponses.storeAt("/api/store/checkouts/{id}", id.value());
     }
 
     /**
@@ -81,12 +84,18 @@ class StoreCheckoutController implements CheckoutApi {
      * @param request 開始のリクエスト
      * @return 確認した注文の ID
      */
-    private static Set<UUID> acknowledgedOrderIds(@Nullable StartCheckoutRequest request) {
+    private static Set<OrderId> acknowledgedOrderIds(@Nullable StartCheckoutRequest request) {
         if (request == null || request.getAcknowledgedOrderIds() == null) {
             return Set.of();
         }
-        // 契約は一覧の要素の null を許す（nullable）ので、null を持てる集合にする（どの注文とも一致しない）
-        return new HashSet<>(request.getAcknowledgedOrderIds());
+        // 契約は一覧の要素の null を許す（nullable）。null はどの注文とも一致しないので、除いてから識別子にする
+        var orderIds = new HashSet<OrderId>();
+        for (var orderId : request.getAcknowledgedOrderIds()) {
+            if (orderId != null) {
+                orderIds.add(new OrderId(orderId));
+            }
+        }
+        return orderIds;
     }
 
     /**
@@ -97,7 +106,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<Checkout> getCheckout(UUID checkoutId) {
-        return ResponseEntity.ok(mapper.toCheckout(checkoutQueryService.get(checkoutId, currentMemberIds.require().value())));
+        return ResponseEntity.ok(mapper.toCheckout(checkoutQueryService.get(new CheckoutId(checkoutId), currentMemberIds.require())));
     }
 
     /**
@@ -113,11 +122,11 @@ class StoreCheckoutController implements CheckoutApi {
     public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
         var member = currentMember.require();
         var result = orderPlacementCommandService.place(mapper.toPlaceOrderCommand(checkoutId, request,
-                currentMemberIds.require().value(), member));
+                currentMemberIds.require(), member));
         if (!result.created()) {
-            return ResponseEntity.ok(CreatedResponses.storeId(result.orderId()));
+            return ResponseEntity.ok(CreatedResponses.storeId(result.orderId().value()));
         }
         // ロケーション：作った注文の URL
-        return CreatedResponses.storeAt("/api/store/orders/{id}", result.orderId());
+        return CreatedResponses.storeAt("/api/store/orders/{id}", result.orderId().value());
     }
 }

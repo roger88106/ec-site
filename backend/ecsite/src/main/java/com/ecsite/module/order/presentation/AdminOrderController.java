@@ -7,6 +7,7 @@ import com.ecsite.api.admin.model.OrderStatus;
 import com.ecsite.api.admin.model.OrderSummaryPage;
 import com.ecsite.api.admin.model.ShipOrderRequest;
 import com.ecsite.api.admin.model.Shipment;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationCommandService;
@@ -90,7 +91,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<OrderDetail> getOrder(UUID orderId) {
-        return ResponseEntity.ok(mapper.toOrderDetail(orderQueryService.get(orderId)));
+        return ResponseEntity.ok(mapper.toOrderDetail(orderQueryService.get(new OrderId(orderId))));
     }
 
     /**
@@ -102,7 +103,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Shipment> shipOrder(UUID orderId, ShipOrderRequest request) {
-        var shipment = paymentGatewayService.ship(orderId, mapper.toDomainCarrier(request.getCarrier()),
+        var shipment = paymentGatewayService.ship(new OrderId(orderId), mapper.toDomainCarrier(request.getCarrier()),
                 request.getTrackingNumber());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toShipment(shipment));
     }
@@ -117,7 +118,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> approveOrderCancellation(UUID orderId) {
-        orderCancellationCommandService.approve(orderId, currentOperator.require());
+        orderCancellationCommandService.approve(new OrderId(orderId), currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 
@@ -129,7 +130,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> rejectOrderCancellation(UUID orderId) {
-        orderCancellationCommandService.reject(orderId, currentOperator.require());
+        orderCancellationCommandService.reject(new OrderId(orderId), currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 
@@ -144,7 +145,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> cancelOrder(UUID orderId, CancelOrderRequest request) {
-        orderCancellationCommandService.cancel(orderId, request.getReason(), request.getRestock(), currentOperator.require());
+        orderCancellationCommandService.cancel(new OrderId(orderId), request.getReason(), request.getRestock(), currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 }

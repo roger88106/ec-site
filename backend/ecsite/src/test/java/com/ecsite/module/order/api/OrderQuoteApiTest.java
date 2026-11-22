@@ -1,5 +1,9 @@
 package com.ecsite.module.order.api;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.api.model.CartQuote;
 import com.ecsite.module.order.application.model.view.CartQuoteView;
@@ -100,12 +104,12 @@ class OrderQuoteApiTest {
         @DisplayName("AC-277 見積もりの全ての項目（品目、軸の値、金額、税額）を、公開する型の同じ値に写す")
         void mapsEveryField() {
             // 準備：購入できる品目と在庫切れの品目の見積もり
-            var cartId = UUID.randomUUID();
-            var variantId = UUID.randomUUID();
-            var productId = UUID.randomUUID();
+            var cartId = new CartId(UUID.randomUUID());
+            var variantId = new VariantId(UUID.randomUUID());
+            var productId = new ProductId(UUID.randomUUID());
             var variant = new VariantInfo(variantId, productId, "P-1", "V-1", PRODUCT_NAME,
                     List.of(new AxisValue("色", "赤"), new AxisValue("サイズ", "M")), PRICE_EXCL_TAX,
-                    UUID.randomUUID(), IMAGE_URL, true, false);
+                    new TaxCategoryId(UUID.randomUUID()), IMAGE_URL, true, false);
             var purchasable = new QuoteItem(variant, 2, RATE, PRICE_INCL_TAX, new Money(2200), null);
             var unpurchasable = new QuoteItem(variant, 1, RATE, PRICE_INCL_TAX, new Money(1100), UnpurchasableReason.OUT_OF_STOCK);
             var amounts = new Amounts(ITEMS_TOTAL, SHIPPING_FEE, TOTAL, List.of(new TaxAmount(RATE, TOTAL, TAX)));
@@ -127,7 +131,7 @@ class OrderQuoteApiTest {
         @DisplayName("画像のない品目は、画像の URL をなしで写す")
         void mapsNullImage() {
             // 操作：画像のない品目の見積もりを変換する
-            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(UUID.randomUUID(), minimalQuote()));
+            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(new CartId(UUID.randomUUID()), minimalQuote()));
 
             // 確認：画像の URL がない
             assertThat(actual.items()).singleElement().satisfies(item -> assertThat(item.imageUrl()).isNull());
@@ -137,7 +141,7 @@ class OrderQuoteApiTest {
         @DisplayName("軸の値のない品目は、軸の値を空の一覧で写す")
         void mapsEmptyAxisValues() {
             // 操作：軸の値のない品目の見積もりを変換する
-            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(UUID.randomUUID(), minimalQuote()));
+            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(new CartId(UUID.randomUUID()), minimalQuote()));
 
             // 確認：軸の値が空
             assertThat(actual.items()).singleElement().satisfies(item -> assertThat(item.axisValues()).isEmpty());
@@ -147,7 +151,7 @@ class OrderQuoteApiTest {
         @DisplayName("購入できる品目は、購入できない理由をなしで写す")
         void mapsNullReason() {
             // 操作：購入できる品目の見積もりを変換する
-            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(UUID.randomUUID(), minimalQuote()));
+            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(new CartId(UUID.randomUUID()), minimalQuote()));
 
             // 確認：購入できない理由がない
             assertThat(actual.items()).singleElement().satisfies(item -> assertThat(item.unpurchasableReason()).isNull());
@@ -157,7 +161,7 @@ class OrderQuoteApiTest {
         @DisplayName("消費税額のない見積もりは、消費税額を空の一覧で写す")
         void mapsEmptyTaxes() {
             // 操作：消費税額のない見積もりを変換する
-            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(UUID.randomUUID(), minimalQuote()));
+            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(new CartId(UUID.randomUUID()), minimalQuote()));
 
             // 確認：消費税額が空
             assertThat(actual.amounts().taxes()).isEmpty();
@@ -167,7 +171,7 @@ class OrderQuoteApiTest {
         @DisplayName("注文できる見積もりは、注文できるとして写す")
         void mapsOrderable() {
             // 操作：注文できる見積もりを変換する
-            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(UUID.randomUUID(), minimalQuote()));
+            var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(new CartId(UUID.randomUUID()), minimalQuote()));
 
             // 確認：注文できる
             assertThat(actual.orderable()).isTrue();
@@ -184,7 +188,7 @@ class OrderQuoteApiTest {
      * @param productId 商品 ID（実行ごとに作るので、定数にできない）
      * @return 期待する公開する型の見積もり
      */
-    private static CartQuote expectedCartQuote(UUID cartId, UUID variantId, UUID productId) {
+    private static CartQuote expectedCartQuote(CartId cartId, VariantId variantId, ProductId productId) {
         var expectedAxes = List.of(new com.ecsite.module.order.api.model.AxisValue("色", "赤"), new com.ecsite.module.order.api.model.AxisValue("サイズ", "M"));
         return new CartQuote(cartId,
                 List.of(new CartQuote.Item(variantId, productId, PRODUCT_NAME, expectedAxes, IMAGE_URL, PRICE_EXCL_TAX,
@@ -203,8 +207,8 @@ class OrderQuoteApiTest {
      * @return 見積もり
      */
     private static Quote minimalQuote() {
-        var variant = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "P-2", "V-2", "靴",
-                List.of(), new Money(3000), UUID.randomUUID(), null, true, false);
+        var variant = new VariantInfo(new VariantId(UUID.randomUUID()), new ProductId(UUID.randomUUID()), "P-2", "V-2", "靴",
+                List.of(), new Money(3000), new TaxCategoryId(UUID.randomUUID()), null, true, false);
         var item = new QuoteItem(variant, 1, new BigDecimal("8"), new Money(3240), new Money(3240), null);
         return new Quote(List.of(item), new Amounts(new Money(3240), Money.ZERO, new Money(3240), List.of()), Money.ZERO, true);
     }

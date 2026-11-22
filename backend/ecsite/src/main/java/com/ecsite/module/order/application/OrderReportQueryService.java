@@ -1,6 +1,8 @@
 package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.model.view.OrderReportView;
 import com.ecsite.module.order.domain.order.Order;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の写しの参照のサービス
@@ -44,7 +45,7 @@ public class OrderReportQueryService {
      * @param orderId 注文 ID
      * @return 注文と送料の消費税。注文がなければ空
      */
-    public Optional<OrderReportView> find(@NonNull UUID orderId) {
+    public Optional<OrderReportView> find(@NonNull OrderId orderId) {
         return orderRepository.findById(orderId).map(this::toView);
     }
 
@@ -73,7 +74,7 @@ public class OrderReportQueryService {
         }
         // 送料の消費税を保存する前に成立した注文のための計算。税率は、設定にある今の送料の税区分から、注文日時のものを使う
         // ※税区分の設定や税率のマスターを変えると、値が変わる
-        var rate = taxDirectory.rateAt(properties.shippingTaxCategoryId(), order.orderedAt())
+        var rate = taxDirectory.rateAt(new TaxCategoryId(properties.shippingTaxCategoryId()), order.orderedAt())
                 .orElseThrow(() -> SystemException.of("送料の税区分に、注文日時の税率がありません: " + order.id(), null));
         return Quote.shippingTaxOf(fee, rate, taxDirectory);
     }

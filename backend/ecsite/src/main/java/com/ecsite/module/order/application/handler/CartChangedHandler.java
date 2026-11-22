@@ -33,9 +33,9 @@ class CartChangedHandler {
         var cartVersion = event.cartVersion();
         if (cartVersion == null) {
             // 変更の前に発行されたイベント ※開始の前後を区別できないので、すべて解く
-            checkoutCommandService.releaseReservations(event.cartId().value());
+            checkoutCommandService.releaseReservations(event.cartId());
             return;
         }
-        checkoutCommandService.releaseReservationsStartedBefore(event.cartId().value(), cartVersion);
+        checkoutCommandService.releaseReservationsStartedBefore(event.cartId(), cartVersion);
     }
 }

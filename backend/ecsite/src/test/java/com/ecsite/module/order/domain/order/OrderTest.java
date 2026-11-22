@@ -1,9 +1,15 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.common.model.id.OperatorId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationKind;
@@ -274,7 +280,7 @@ class OrderTest {
         @DisplayName("AC-86 メールアドレスの形が違えば拒否される")
         void rejectsInvalidEmail(String email) {
             // 操作と確認：業務のエラー INVALID_EMAIL で拒否される
-            assertBusinessError(() -> Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
+            assertBusinessError(() -> Order.place(new OrderId(UUID.randomUUID()), OrderNumber.of("20261008-000001"), new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()),
                     ORDERED_AT, quote(), email, ADDRESS, BuyerProfile.UNKNOWN), OrderErrorCode.INVALID_EMAIL);
         }
 
@@ -374,7 +380,7 @@ class OrderTest {
          * @return 注文
          */
         private Order placeWithEmail(@Nullable String email) {
-            return Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
+            return Order.place(new OrderId(UUID.randomUUID()), OrderNumber.of("20261008-000001"), new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()),
                     ORDERED_AT, quote(), email, ADDRESS, BuyerProfile.UNKNOWN);
         }
 
@@ -658,7 +664,7 @@ class OrderTest {
      * @param line      確認する明細
      * @param variantId 見積もりの品目のバリアント ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertLineCopiedFromQuote(OrderLine line, UUID variantId) {
+    private static void assertLineCopiedFromQuote(OrderLine line, VariantId variantId) {
         assertThat(line.lineNo()).isEqualTo(1);
         assertThat(line.variantId()).isEqualTo(variantId);
         assertThat(line.productCode()).isEqualTo(PRODUCT_CODE);
@@ -681,7 +687,7 @@ class OrderTest {
      * @return 注文
      */
     private static Order place(Quote quote) {
-        return Order.place(UUID.randomUUID(), OrderNumber.of("20261008-482915"), UUID.randomUUID(), UUID.randomUUID(), ORDERED_AT,
+        return Order.place(new OrderId(UUID.randomUUID()), OrderNumber.of("20261008-482915"), new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()), ORDERED_AT,
                 quote, EMAIL, ADDRESS, BuyerProfile.UNKNOWN);
     }
 
@@ -709,8 +715,8 @@ class OrderTest {
      */
     private static Quote quoteOf(List<String> variantCodes) {
         var items = variantCodes.stream()
-                .map(code -> QuoteItem.of(new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), PRODUCT_CODE, code, PRODUCT_NAME,
-                        AXIS_VALUES, UNIT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false), 1, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX))
+                .map(code -> QuoteItem.of(new VariantInfo(new VariantId(UUID.randomUUID()), new ProductId(UUID.randomUUID()), PRODUCT_CODE, code, PRODUCT_NAME,
+                        AXIS_VALUES, UNIT_PRICE_EXCL_TAX, new TaxCategoryId(UUID.randomUUID()), null, true, false), 1, 10, RATE_PERCENT, UNIT_PRICE_INCL_TAX))
                 .toList();
         return new Quote(items, quote().amounts(), quote().shippingTax(), true);
     }
@@ -733,7 +739,7 @@ class OrderTest {
      * @return バリアント
      */
     private static VariantInfo tShirt() {
-        return new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), PRODUCT_CODE, VARIANT_CODE, PRODUCT_NAME,
-                AXIS_VALUES, UNIT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
+        return new VariantInfo(new VariantId(UUID.randomUUID()), new ProductId(UUID.randomUUID()), PRODUCT_CODE, VARIANT_CODE, PRODUCT_NAME,
+                AXIS_VALUES, UNIT_PRICE_EXCL_TAX, new TaxCategoryId(UUID.randomUUID()), null, true, false);
     }
 }

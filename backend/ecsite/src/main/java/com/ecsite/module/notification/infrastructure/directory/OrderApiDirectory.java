@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.infrastructure.directory;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.api.OrderApi;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ class OrderApiDirectory implements OrderDirectory {
      */
     @Override
     public String email(UUID orderId) {
-        return orderApi.findEmail(orderId)
+        return orderApi.findEmail(new OrderId(orderId))
                 .orElseThrow(() -> new IllegalStateException("注文が見つかりません: " + orderId));
     }
 }

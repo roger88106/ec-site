@@ -1,10 +1,10 @@
 package com.ecsite.module.order.application.model.view;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.order.OrderStatus;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 注文一覧の 1 件
@@ -16,6 +16,6 @@ import java.util.UUID;
  * @param total        総額
  * @param status       状態
  */
-public record OrderSummaryView(UUID id, String orderNumber, Instant orderedAt, String customerName, Money total,
+public record OrderSummaryView(OrderId id, String orderNumber, Instant orderedAt, String customerName, Money total,
                                OrderStatus status) {
 }

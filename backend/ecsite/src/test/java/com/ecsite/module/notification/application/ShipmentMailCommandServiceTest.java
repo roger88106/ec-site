@@ -1,6 +1,7 @@
 package com.ecsite.module.notification.application;
 
 import com.ecsite.common.message.MessageResolver;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.notification.application.port.OrderDirectory;
 import com.ecsite.module.order.event.OrderShipped;
@@ -205,7 +206,7 @@ class ShipmentMailCommandServiceTest {
      * @return 注文の出荷のイベント
      */
     private static OrderShipped shipment(OrderShipped.Carrier carrier) {
-        return OrderShipped.of(SHIPPED_AT, ORDER_ID, ORDER_NUMBER, carrier, TRACKING_NUMBER);
+        return OrderShipped.of(SHIPPED_AT, new OrderId(ORDER_ID), ORDER_NUMBER, carrier, TRACKING_NUMBER);
     }
 
     /**

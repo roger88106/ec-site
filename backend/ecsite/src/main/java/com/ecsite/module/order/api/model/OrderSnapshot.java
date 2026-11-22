@@ -1,5 +1,8 @@
 package com.ecsite.module.order.api.model;
 
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import org.jspecify.annotations.Nullable;
@@ -7,7 +10,6 @@ import org.jspecify.annotations.Nullable;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 注文の今の値
@@ -28,7 +30,7 @@ import java.util.UUID;
  * @param shippingTax    送料の消費税
  * @param lines          明細（行番号の順）
  */
-public record OrderSnapshot(UUID orderId, String orderNumber, UUID memberId, Instant orderedAt,
+public record OrderSnapshot(OrderId orderId, String orderNumber, MemberId memberId, Instant orderedAt,
                             OrderStatusChanged.Status status, @Nullable Cancellation cancellation, String postalCode,
                             String prefectureCode, @Nullable Integer buyerAge, @Nullable Gender buyerGender,
                             Amounts amounts, Money shippingTax, List<Line> lines) {
@@ -57,7 +59,7 @@ public record OrderSnapshot(UUID orderId, String orderNumber, UUID memberId, Ins
      * @param unitPriceExclTax  税抜単価
      * @param subtotalInclTax   税込小計
      */
-    public record Line(int lineNo, UUID variantId, String productCode, String variantCode, String productName,
+    public record Line(int lineNo, VariantId variantId, String productCode, String variantCode, String productName,
                        List<AxisValue> axisValues, int quantity, BigDecimal ratePercent, Money unitPriceExclTax,
                        Money subtotalInclTax) {
     }

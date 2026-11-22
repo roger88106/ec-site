@@ -1,5 +1,7 @@
 package com.ecsite.module.order.application.model.view;
 
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
@@ -12,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 注文の写しの表示
@@ -29,7 +30,7 @@ import java.util.UUID;
  * @param shippingTax     送料の消費税
  * @param lines           明細
  */
-public record OrderReportView(UUID id, OrderNumber orderNumber, UUID memberId, Instant orderedAt, OrderStatus status,
+public record OrderReportView(OrderId id, OrderNumber orderNumber, MemberId memberId, Instant orderedAt, OrderStatus status,
                               @Nullable Cancellation cancellation, ShippingAddress shippingAddress,
                               BuyerProfile buyerProfile, Amounts amounts, Money shippingTax, List<OrderLine> lines) {
 }

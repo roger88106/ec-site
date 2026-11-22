@@ -1,13 +1,15 @@
 package com.ecsite.module.order.domain.order.port;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文のリポジトリ
@@ -43,7 +45,7 @@ public interface OrderRepository {
      * @param id 注文 ID
      * @return 注文。なければ空
      */
-    Optional<Order> lockById(UUID id);
+    Optional<Order> lockById(OrderId id);
 
     /**
      * 注文を取得する。
@@ -51,7 +53,7 @@ public interface OrderRepository {
      * @param id 注文 ID
      * @return 注文。なければ空
      */
-    Optional<Order> findById(UUID id);
+    Optional<Order> findById(OrderId id);
 
     /**
      * 注文手続きの注文 ID を取得する。
@@ -59,7 +61,7 @@ public interface OrderRepository {
      * @param checkoutId 注文手続き ID
      * @return 注文 ID。まだ注文がなければ空
      */
-    Optional<UUID> findIdByCheckoutId(UUID checkoutId);
+    Optional<OrderId> findIdByCheckoutId(CheckoutId checkoutId);
 
     /**
      * 会員の支払待ちの注文の ID を、注文日時の新しい順に取得する。
@@ -69,7 +71,7 @@ public interface OrderRepository {
      * @param memberId 会員 ID
      * @return 注文 ID。支払待ちの注文がなければ空
      */
-    List<UUID> findPendingIdsByMemberId(UUID memberId);
+    List<OrderId> findPendingIdsByMemberId(MemberId memberId);
 
     /**
      * 会員ごとのロックを、トランザクションの終わりまで取る。
@@ -78,7 +80,7 @@ public interface OrderRepository {
      *
      * @param memberId 会員 ID
      */
-    void lockForMember(UUID memberId);
+    void lockForMember(MemberId memberId);
 
     /**
      * 注文番号が使われているか。

@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.application.model.command.PlaceOrderCommand;
 import com.ecsite.module.order.application.model.view.PlacementResult;
 import com.ecsite.module.order.application.port.CartDirectory;
@@ -164,7 +165,7 @@ public class OrderPlacementCommandService {
         // 注文作成 ※メールアドレスは、会員の token のもの（確認済み）を写す
         var address = ShippingAddress.of(command.name(), command.postalCode(),
                 addressArea(command.prefectureCode(), command.municipalityCode()), command.address(), command.phone());
-        var order = Order.place(idGenerator.generate(), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
+        var order = Order.place(new OrderId(idGenerator.generate()), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
                 command.email(),
                 address,
                 BuyerProfile.of(command.birthdate(), command.gender(), now));

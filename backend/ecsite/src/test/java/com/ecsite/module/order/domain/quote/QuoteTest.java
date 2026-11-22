@@ -1,5 +1,8 @@
 package com.ecsite.module.order.domain.quote;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import org.junit.jupiter.api.DisplayName;
@@ -50,12 +53,12 @@ class QuoteTest {
     private static final TaxDirectory TAX = new TaxDirectory() {
 
         @Override
-        public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
+        public Optional<BigDecimal> rateAt(TaxCategoryId taxCategoryId, Instant instant) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant) {
+        public Map<TaxCategoryId, BigDecimal> ratesAt(Collection<TaxCategoryId> taxCategoryIds, Instant instant) {
             throw new UnsupportedOperationException();
         }
 
@@ -448,8 +451,8 @@ class QuoteTest {
      * @return バリアント
      */
     private static VariantInfo variant(long priceExclTax, boolean visible, boolean salesSuspended) {
-        return new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(),
-                Money.of(priceExclTax), UUID.randomUUID(), null, visible, salesSuspended);
+        return new VariantInfo(new VariantId(UUID.randomUUID()), new ProductId(UUID.randomUUID()), "P-1", "P-1-1", "商品", List.of(),
+                Money.of(priceExclTax), new TaxCategoryId(UUID.randomUUID()), null, visible, salesSuspended);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.infrastructure.directory;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.api.OrderApi;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,7 @@ class OrderApiDirectoryTest {
      */
     private static OrderApi orderApiReturning(Optional<String> email) {
         var api = mock(OrderApi.class);
-        when(api.findEmail(ORDER_ID)).thenReturn(email);
+        when(api.findEmail(new OrderId(ORDER_ID))).thenReturn(email);
         return api;
     }
 }

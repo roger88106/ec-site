@@ -1,12 +1,13 @@
 package com.ecsite.module.order.domain.checkout.port;
 
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.module.order.domain.checkout.Checkout;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文手続きのリポジトリ
@@ -27,7 +28,7 @@ public interface CheckoutRepository {
      * @param id 注文手続き ID
      * @return 注文手続き。なければ空
      */
-    Optional<Checkout> findById(UUID id);
+    Optional<Checkout> findById(CheckoutId id);
 
     /**
      * 注文手続きを行ロックして取得する。
@@ -37,7 +38,7 @@ public interface CheckoutRepository {
      * @param id 注文手続き ID
      * @return 注文手続き。なければ空
      */
-    Optional<Checkout> lockById(UUID id);
+    Optional<Checkout> lockById(CheckoutId id);
 
     /**
      * カートの注文手続きの ID を返す。
@@ -45,7 +46,7 @@ public interface CheckoutRepository {
      * @param cartId カート ID
      * @return 注文手続き ID
      */
-    List<UUID> findIdsByCartId(UUID cartId);
+    List<CheckoutId> findIdsByCartId(CartId cartId);
 
     /**
      * カートの注文手続きのうち、指定したバージョンより古いカートのバージョンで始めたものの ID を返す。
@@ -54,7 +55,7 @@ public interface CheckoutRepository {
      * @param cartVersion このバージョンより古いカートのバージョンで始めたものを返す
      * @return 注文手続き ID
      */
-    List<UUID> findIdsByCartIdStartedBefore(UUID cartId, long cartVersion);
+    List<CheckoutId> findIdsByCartIdStartedBefore(CartId cartId, long cartVersion);
 
     /**
      * カートの最新の注文手続きの ID を返す。
@@ -62,7 +63,7 @@ public interface CheckoutRepository {
      * @param cartId カート ID
      * @return 注文手続き ID。なければ空
      */
-    Optional<UUID> findLatestIdByCartId(UUID cartId);
+    Optional<CheckoutId> findLatestIdByCartId(CartId cartId);
 
     /**
      * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。

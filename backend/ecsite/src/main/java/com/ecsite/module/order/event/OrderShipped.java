@@ -1,6 +1,7 @@
 package com.ecsite.module.order.event;
 
 import com.ecsite.common.model.base.DomainEvent;
+import com.ecsite.common.model.id.OrderId;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,7 +19,7 @@ import java.util.UUID;
  * @param carrier        配送業者
  * @param trackingNumber 送り状番号（ハイフンを除いた数字）
  */
-public record OrderShipped(UUID eventId, Instant occurredAt, UUID orderId, String orderNumber,
+public record OrderShipped(UUID eventId, Instant occurredAt, OrderId orderId, String orderNumber,
                            Carrier carrier, String trackingNumber) implements DomainEvent {
 
     /**
@@ -31,7 +32,7 @@ public record OrderShipped(UUID eventId, Instant occurredAt, UUID orderId, Strin
      * @param trackingNumber 送り状番号
      * @return イベント
      */
-    public static OrderShipped of(Instant occurredAt, UUID orderId, String orderNumber, Carrier carrier,
+    public static OrderShipped of(Instant occurredAt, OrderId orderId, String orderNumber, Carrier carrier,
                                   String trackingNumber) {
         return new OrderShipped(DomainEvent.newEventId(), occurredAt, orderId, orderNumber, carrier, trackingNumber);
     }

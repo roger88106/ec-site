@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.quote.port;
 
+import com.ecsite.common.model.id.TaxCategoryId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 
@@ -9,7 +10,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 税の腐敗防止層の port
@@ -25,7 +25,7 @@ public interface TaxDirectory {
      * @param instant       時点
      * @return 率（%）。税区分がない、またはその時点の税率がなければ空
      */
-    Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant);
+    Optional<BigDecimal> rateAt(TaxCategoryId taxCategoryId, Instant instant);
 
     /**
      * 指定した時点の率を、税区分ごとにまとめて返す。
@@ -36,7 +36,7 @@ public interface TaxDirectory {
      * @param instant        時点
      * @return 税区分 ID → 率（%）。変更できない
      */
-    Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant);
+    Map<TaxCategoryId, BigDecimal> ratesAt(Collection<TaxCategoryId> taxCategoryIds, Instant instant);
 
     /**
      * 税込価格を計算する。

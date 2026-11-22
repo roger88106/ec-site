@@ -1,6 +1,12 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
@@ -38,12 +44,12 @@ public final class TestOrders {
      * @return 支払待ちの注文
      */
     public static Order pending(Instant orderedAt) {
-        var variant = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(),
-                Money.of(1000), UUID.randomUUID(), null, true, false);
+        var variant = new VariantInfo(new VariantId(UUID.randomUUID()), new ProductId(UUID.randomUUID()), "P-1", "P-1-1", "商品", List.of(),
+                Money.of(1000), new TaxCategoryId(UUID.randomUUID()), null, true, false);
         var amounts = new Amounts(Money.of(1100), Money.of(1000), Money.of(2100),
                 List.of(new TaxAmount(BigDecimal.TEN, Money.of(2100), Money.of(190))));
         var quote = new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, Money.of(90), true);
-        var order = Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
+        var order = Order.place(new OrderId(UUID.randomUUID()), OrderNumber.of("20261008-000001"), new CheckoutId(UUID.randomUUID()), new MemberId(UUID.randomUUID()),
                 orderedAt, quote, "taro@example.com",
                 ShippingAddress.of("山田 太郎", "1000001", TestAreas.CHIYODA, "千代田 1-1", "0312345678"), BuyerProfile.UNKNOWN);
         order.pullEvents();

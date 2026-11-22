@@ -1,6 +1,11 @@
 package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
@@ -13,6 +18,7 @@ import com.ecsite.module.order.application.port.RegionDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.checkout.Checkout;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -149,7 +155,7 @@ class OrderPlacementCommandServiceTest {
     /**
      * カートの品目のバリアント ID
      */
-    private UUID variantId;
+    private VariantId variantId;
 
     /**
      * カートの品目
@@ -166,10 +172,10 @@ class OrderPlacementCommandServiceTest {
      */
     @BeforeEach
     void setUp() {
-        var memberId = UUID.randomUUID();
-        var cartId = UUID.randomUUID();
-        variantId = UUID.randomUUID();
-        checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, 1, NOW.minus(Duration.ofMinutes(5)), Duration.ofMinutes(15),
+        var memberId = new MemberId(UUID.randomUUID());
+        var cartId = new CartId(UUID.randomUUID());
+        variantId = new VariantId(UUID.randomUUID());
+        checkout = Checkout.start(new CheckoutId(UUID.randomUUID()), memberId, cartId, 1, NOW.minus(Duration.ofMinutes(5)), Duration.ofMinutes(15),
                 Set.of());
 
         var checkoutRepository = mock(CheckoutRepository.class);
@@ -297,7 +303,7 @@ class OrderPlacementCommandServiceTest {
      * @param variantId バリアント ID
      * @return 見積もり
      */
-    private static Quote orderableQuote(UUID variantId) {
+    private static Quote orderableQuote(VariantId variantId) {
         return quote(variantId, TOTAL);
     }
 
@@ -318,9 +324,9 @@ class OrderPlacementCommandServiceTest {
      * @param total     総額
      * @return 見積もり
      */
-    private static Quote quote(UUID variantId, Money total) {
-        var variant = new VariantInfo(variantId, UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(), Money.of(1000),
-                UUID.randomUUID(), null, true, false);
+    private static Quote quote(VariantId variantId, Money total) {
+        var variant = new VariantInfo(variantId, new ProductId(UUID.randomUUID()), "P-1", "P-1-1", "商品", List.of(), Money.of(1000),
+                new TaxCategoryId(UUID.randomUUID()), null, true, false);
         var amounts = new Amounts(Money.of(1100), Money.of(total.yen() - 1100), total,
                 List.of(new TaxAmount(BigDecimal.TEN, total, Money.of(190))));
         return new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts,

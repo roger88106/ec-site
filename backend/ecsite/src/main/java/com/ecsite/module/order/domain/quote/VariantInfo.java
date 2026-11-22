@@ -1,11 +1,13 @@
 package com.ecsite.module.order.domain.quote;
 
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * バリアントの情報
@@ -23,7 +25,7 @@ import java.util.UUID;
  * @param salesSuspended 販売停止か
  */
 @ValueObject
-public record VariantInfo(UUID variantId, UUID productId, String productCode, String variantCode, String productName,
-                          List<AxisValue> axisValues, Money priceExclTax, UUID taxCategoryId,
+public record VariantInfo(VariantId variantId, ProductId productId, String productCode, String variantCode, String productName,
+                          List<AxisValue> axisValues, Money priceExclTax, TaxCategoryId taxCategoryId,
                           @Nullable String imageUrl, boolean visible, boolean salesSuspended) {
 }

@@ -15,8 +15,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * 税の腐敗防止層
@@ -36,17 +34,16 @@ class TaxApiDirectory implements TaxDirectory {
      * 指定した時点の税率を返す。
      */
     @Override
-    public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
-        return taxRateApi.rateAt(new TaxCategoryId(taxCategoryId), instant);
+    public Optional<BigDecimal> rateAt(TaxCategoryId taxCategoryId, Instant instant) {
+        return taxRateApi.rateAt(taxCategoryId, instant);
     }
 
     /**
      * 指定した時点の税率を、税区分ごとにまとめて返す。
      */
     @Override
-    public Map<UUID, BigDecimal> ratesAt(Collection<UUID> taxCategoryIds, Instant instant) {
-        return taxRateApi.ratesAt(taxCategoryIds.stream().map(TaxCategoryId::new).toList(), instant).entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(entry -> entry.getKey().value(), Map.Entry::getValue));
+    public Map<TaxCategoryId, BigDecimal> ratesAt(Collection<TaxCategoryId> taxCategoryIds, Instant instant) {
+        return taxRateApi.ratesAt(taxCategoryIds, instant);
     }
 
     /**

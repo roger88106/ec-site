@@ -1,11 +1,14 @@
 package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.model.CartSnapshot;
 import com.ecsite.module.order.application.port.CatalogDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.Shipping;
@@ -22,7 +25,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -63,17 +65,17 @@ class QuoteQueryService {
      * @param holderId 販売可能数から除く引当の持ち主（自分の注文手続き）。なければ null
      * @return 見積もり。存在しなくなったバリアントは品目に含めず、注文できないものとする
      */
-    public Quote quote(@NonNull List<CartSnapshot.Line> lines, @NonNull Instant at, @Nullable UUID holderId) {
+    public Quote quote(@NonNull List<CartSnapshot.Line> lines, @NonNull Instant at, @Nullable CheckoutId holderId) {
         // バリアントの情報と販売可能数の取得
         var variantIds = lines.stream().map(CartSnapshot.Line::variantId).toList();
-        var variants = variantIds.isEmpty() ? Map.<UUID, VariantInfo>of()
+        var variants = variantIds.isEmpty() ? Map.<VariantId, VariantInfo>of()
                 : catalogDirectory.findVariants(variantIds);
-        var sellable = variantIds.isEmpty() ? Map.<UUID, Integer>of()
+        var sellable = variantIds.isEmpty() ? Map.<VariantId, Integer>of()
                 : stockDirectory.sellableQuantities(variantIds, holderId);
 
         // 税区分ごとの率の取得 ※同じ税区分の品目が多くても、税区分を重複なく集めて、税モジュールには 1 回だけ問い合わせる
         var taxCategoryIds = variants.values().stream().map(VariantInfo::taxCategoryId).collect(Collectors.toSet());
-        var rates = taxCategoryIds.isEmpty() ? Map.<UUID, BigDecimal>of() : taxDirectory.ratesAt(taxCategoryIds, at);
+        var rates = taxCategoryIds.isEmpty() ? Map.<TaxCategoryId, BigDecimal>of() : taxDirectory.ratesAt(taxCategoryIds, at);
 
         // 品目の組み立て
         var items = new ArrayList<QuoteItem>();
@@ -98,7 +100,7 @@ class QuoteQueryService {
      */
     private Shipping shipping(Instant at) {
         // 送料の税区分に有効な税率がなければ、設定の誤りなのでシステムのエラーにする
-        var rate = taxDirectory.rateAt(properties.shippingTaxCategoryId(), at).orElseThrow(() -> SystemException.of(
+        var rate = taxDirectory.rateAt(new TaxCategoryId(properties.shippingTaxCategoryId()), at).orElseThrow(() -> SystemException.of(
                 "送料の税区分に有効な税率がありません: " + properties.shippingTaxCategoryId(), null));
         return new Shipping(Money.of(properties.shippingFee()), rate);
     }

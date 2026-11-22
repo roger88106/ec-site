@@ -1,6 +1,7 @@
 package com.ecsite.module.order.api;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.api.model.Amounts;
 import com.ecsite.module.order.api.model.AxisValue;
 import com.ecsite.module.order.api.model.OrderSnapshot;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の API
@@ -41,7 +41,7 @@ public class OrderApi {
      * @param orderId 注文 ID
      * @return 注文の今の値。注文がなければ空
      */
-    public Optional<OrderSnapshot> find(@NonNull UUID orderId) {
+    public Optional<OrderSnapshot> find(@NonNull OrderId orderId) {
         return orderReportQueryService.find(orderId).map(OrderApi::toSnapshot);
     }
 
@@ -53,7 +53,7 @@ public class OrderApi {
      * @param orderId 注文 ID
      * @return 注文のメールアドレス。注文がなければ空
      */
-    public Optional<String> findEmail(@NonNull UUID orderId) {
+    public Optional<String> findEmail(@NonNull OrderId orderId) {
         return orderRepository.findById(orderId).map(Order::email);
     }
 

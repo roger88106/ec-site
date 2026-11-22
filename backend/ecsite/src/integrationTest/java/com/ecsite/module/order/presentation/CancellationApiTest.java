@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -196,13 +197,13 @@ class CancellationApiTest {
         void keepsVersionOnRepeatedRequest() throws Exception {
             // 準備：申請して、そのときの注文のバージョンを読む
             request("最初").andExpect(status().isNoContent());
-            var versionAfterFirst = orderRepository.findById(orderId).orElseThrow().version();
+            var versionAfterFirst = orderRepository.findById(new OrderId(orderId)).orElseThrow().version();
 
             // 操作：もう一度申請する
             request("次").andExpect(status().isNoContent());
 
             // 確認：リポジトリから再取得した注文のバージョンが同じ
-            assertThat(orderRepository.findById(orderId).orElseThrow().version()).isEqualTo(versionAfterFirst);
+            assertThat(orderRepository.findById(new OrderId(orderId)).orElseThrow().version()).isEqualTo(versionAfterFirst);
         }
 
         @Test

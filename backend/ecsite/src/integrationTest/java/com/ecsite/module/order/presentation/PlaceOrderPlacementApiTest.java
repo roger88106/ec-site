@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.order.event.OrderStatusChanged;
@@ -123,7 +124,7 @@ class PlaceOrderPlacementApiTest {
             var orderId = fixture.placeOrder();
 
             // 確認：状態の変更のイベントは、この注文の 1 件だけ
-            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(orderId);
+            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(new OrderId(orderId));
         }
 
         @Test

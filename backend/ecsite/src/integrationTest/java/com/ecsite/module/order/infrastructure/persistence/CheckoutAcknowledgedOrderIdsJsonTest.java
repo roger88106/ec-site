@@ -1,6 +1,10 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.order.domain.checkout.Checkout;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.support.config.IntegrationTest;
 import org.jooq.DSLContext;
@@ -60,7 +64,7 @@ class CheckoutAcknowledgedOrderIdsJsonTest {
     @DisplayName("確認した注文の ID は、UUID の文字列の配列として列に書く")
     void writesOrderIdsAsUuidStringArray() {
         // 準備：確認した注文が 1 件の注文手続き
-        var checkout = checkout(Set.of(ORDER_ID));
+        var checkout = checkout(Set.of(new OrderId(ORDER_ID)));
 
         // 操作：保存する
         repository.insert(checkout);
@@ -88,11 +92,11 @@ class CheckoutAcknowledgedOrderIdsJsonTest {
                 "[\"33333333-3333-4333-8333-333333333333\"]", CHECKOUT_ID);
 
         // 操作：読む
-        var restored = repository.findById(CHECKOUT_ID).orElseThrow();
+        var restored = repository.findById(new CheckoutId(CHECKOUT_ID)).orElseThrow();
 
         // 確認：確認した注文の ID が復元される（その注文だけが確認済みで、ほかの注文は確認していない）
-        assertThat(restored.acknowledges(Set.of(ORDER_ID))).isTrue();
-        assertThat(restored.acknowledges(Set.of(ORDER_ID, UUID.randomUUID()))).isFalse();
+        assertThat(restored.acknowledges(Set.of(new OrderId(ORDER_ID)))).isTrue();
+        assertThat(restored.acknowledges(Set.of(new OrderId(ORDER_ID), new OrderId(UUID.randomUUID())))).isFalse();
     }
 
     // ============================== 準備の補助 ==============================
@@ -103,8 +107,8 @@ class CheckoutAcknowledgedOrderIdsJsonTest {
      * @param acknowledgedOrderIds 確認した注文の ID
      * @return 注文手続き
      */
-    private static Checkout checkout(Set<UUID> acknowledgedOrderIds) {
-        return Checkout.start(CHECKOUT_ID, UUID.randomUUID(), UUID.randomUUID(), 1, Instant.parse("2026-10-07T15:30:00Z"),
+    private static Checkout checkout(Set<OrderId> acknowledgedOrderIds) {
+        return Checkout.start(new CheckoutId(CHECKOUT_ID), new MemberId(UUID.randomUUID()), new CartId(UUID.randomUUID()), 1, Instant.parse("2026-10-07T15:30:00Z"),
                 Duration.ofMinutes(30), acknowledgedOrderIds);
     }
 }

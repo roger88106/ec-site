@@ -14,7 +14,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -35,25 +34,25 @@ class ShippingApiDirectory implements ShippingDirectory {
      * {@inheritDoc}
      */
     @Override
-    public OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
-        return toShipment(shippingApi.create(new OrderId(orderId), toShippingCarrier(carrier), trackingNumber, shippedAt));
+    public OrderShipment create(OrderId orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
+        return toShipment(shippingApi.create(orderId, toShippingCarrier(carrier), trackingNumber, shippedAt));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Map<UUID, OrderShipment> find(Collection<UUID> orderIds) {
-        return shippingApi.find(orderIds.stream().map(OrderId::new).toList()).stream()
-                .collect(Collectors.toMap(summary -> summary.orderId().value(), ShippingApiDirectory::toShipment));
+    public Map<OrderId, OrderShipment> find(Collection<OrderId> orderIds) {
+        return shippingApi.find(orderIds).stream()
+                .collect(Collectors.toMap(ShipmentSummary::orderId, ShippingApiDirectory::toShipment));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<UUID> returnedOrderIds() {
-        return shippingApi.returnedOrderIds().stream().map(OrderId::value).toList();
+    public List<OrderId> returnedOrderIds() {
+        return shippingApi.returnedOrderIds();
     }
 
     /**

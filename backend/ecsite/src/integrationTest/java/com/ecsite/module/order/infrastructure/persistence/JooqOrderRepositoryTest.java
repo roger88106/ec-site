@@ -1,11 +1,17 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.common.model.id.OperatorId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.TaxCategoryId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
 import com.ecsite.common.persistence.AdvisoryLocks;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.TestAreas;
@@ -109,17 +115,17 @@ class JooqOrderRepositoryTest {
     /**
      * 注文した会員の ID（実行ごとに作るが、実行の中では同じ）
      */
-    private static final UUID MEMBER_ID = UUID.randomUUID();
+    private static final MemberId MEMBER_ID = new MemberId(UUID.randomUUID());
 
     /**
      * T シャツのバリアント ID
      */
-    private static final UUID SHIRT_VARIANT_ID = UUID.randomUUID();
+    private static final VariantId SHIRT_VARIANT_ID = new VariantId(UUID.randomUUID());
 
     /**
      * お茶のバリアント ID
      */
-    private static final UUID TEA_VARIANT_ID = UUID.randomUUID();
+    private static final VariantId TEA_VARIANT_ID = new VariantId(UUID.randomUUID());
 
     /**
      * 標準の税率（%）
@@ -300,7 +306,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を保存し、明細・金額・お届け先・注文時の年齢と性別を含めて再構築できる")
         void savesAndRestoresOrder() {
             // 準備：2 つの税率の品目を持つ注文
-            var checkoutId = UUID.randomUUID();
+            var checkoutId = new CheckoutId(UUID.randomUUID());
             var orderNumber = orderNumber();
             var order = order(checkoutId, orderNumber);
 
@@ -316,9 +322,9 @@ class JooqOrderRepositoryTest {
         @DisplayName("DC-484-4 送料の消費税が保存されていない注文（列の追加の前に成立した注文）は、null のまま読み直せる")
         void restoresNullShippingTax() {
             // 準備：注文を保存し、送料の消費税の列を null にする（列の追加の前に成立した注文の状態）
-            var order = order(UUID.randomUUID(), orderNumber());
+            var order = order(new CheckoutId(UUID.randomUUID()), orderNumber());
             repository.insert(order);
-            dsl.update(SALES_ORDER).setNull(SALES_ORDER.SHIPPING_TAX).where(SALES_ORDER.ID.eq(order.id())).execute();
+            dsl.update(SALES_ORDER).setNull(SALES_ORDER.SHIPPING_TAX).where(SALES_ORDER.ID.eq(order.id().value())).execute();
 
             // 操作：読み直す
             var restored = repository.findById(order.id()).orElseThrow();
@@ -331,7 +337,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("DC-484-3 送料の消費税が 0 円の注文は、0 円のまま読み直せる（null にならない）")
         void restoresZeroShippingTax() {
             // 準備：送料の消費税が 0 円の注文を保存する
-            var order = order(UUID.randomUUID(), orderNumber(), Money.ZERO);
+            var order = order(new CheckoutId(UUID.randomUUID()), orderNumber(), Money.ZERO);
             repository.insert(order);
 
             // 操作：読み直す
@@ -345,7 +351,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を保存すると、注文の状態の変化（支払待ち）のイベントが発行される")
         void publishesPlacedEvent() {
             // 準備：注文
-            var order = order(UUID.randomUUID(), orderNumber());
+            var order = order(new CheckoutId(UUID.randomUUID()), orderNumber());
 
             // 操作：保存する
             repository.insert(order);
@@ -364,8 +370,8 @@ class JooqOrderRepositoryTest {
         void returnsFalseForDuplicateOrderNumber() {
             // 準備：同じ番号の注文を先に保存する
             var number = orderNumber();
-            repository.insert(order(UUID.randomUUID(), number));
-            var duplicate = order(UUID.randomUUID(), number);
+            repository.insert(order(new CheckoutId(UUID.randomUUID()), number));
+            var duplicate = order(new CheckoutId(UUID.randomUUID()), number);
 
             // 操作と確認：false を返す
             assertThat(repository.insert(duplicate)).isFalse();
@@ -379,10 +385,10 @@ class JooqOrderRepositoryTest {
         void doesNotPublishForDuplicateOrderNumber() {
             // 準備：同じ番号の注文を先に保存する
             var number = orderNumber();
-            repository.insert(order(UUID.randomUUID(), number));
+            repository.insert(order(new CheckoutId(UUID.randomUUID()), number));
 
             // 操作：同じ番号の注文を保存する
-            repository.insert(order(UUID.randomUUID(), number));
+            repository.insert(order(new CheckoutId(UUID.randomUUID()), number));
 
             // 確認：イベントは先に保存した注文の 1 件だけ
             assertThat(events.stream(OrderStatusChanged.class)).hasSize(1);
@@ -393,7 +399,7 @@ class JooqOrderRepositoryTest {
         void checksOrderNumberExistence() {
             // 準備：注文を保存する
             var number = orderNumber();
-            repository.insert(order(UUID.randomUUID(), number));
+            repository.insert(order(new CheckoutId(UUID.randomUUID()), number));
 
             // 操作と確認：保存した番号は true、別の番号は false
             assertThat(repository.existsByOrderNumber(OrderNumber.of(number))).isTrue();
@@ -409,20 +415,20 @@ class JooqOrderRepositoryTest {
         @DisplayName("AC-91 注文手続きの注文を引ける。注文のない注文手続きは空")
         void findsOrderByCheckout() {
             // 準備：注文手続きの注文を保存する
-            var checkoutId = UUID.randomUUID();
+            var checkoutId = new CheckoutId(UUID.randomUUID());
             var order = order(checkoutId, orderNumber());
             repository.insert(order);
 
             // 操作と確認：その注文手続きでは注文 ID、別の注文手続きでは空
             assertThat(repository.findIdByCheckoutId(checkoutId)).contains(order.id());
-            assertThat(repository.findIdByCheckoutId(UUID.randomUUID())).isEmpty();
+            assertThat(repository.findIdByCheckoutId(new CheckoutId(UUID.randomUUID()))).isEmpty();
         }
 
         @Test
         @DisplayName("AC-91 注文手続き 1 つにつき、注文は 1 つしか保存できない")
         void rejectsSecondOrderForCheckout() {
             // 準備：注文手続きの注文を保存する
-            var checkoutId = UUID.randomUUID();
+            var checkoutId = new CheckoutId(UUID.randomUUID());
             repository.insert(order(checkoutId, orderNumber()));
 
             // 操作と確認：同じ注文手続きの、別の番号の注文は一意性の違反
@@ -438,7 +444,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を受付に変えて更新すると、状態が受付になり、バージョンが 1 上がり、他の項目は変わらない")
         void updatesStatusAndVersion() {
             // 準備：保存した注文を読み、受付にする
-            var checkoutId = UUID.randomUUID();
+            var checkoutId = new CheckoutId(UUID.randomUUID());
             var orderNumber = orderNumber();
             var order = order(checkoutId, orderNumber);
             repository.insert(order);
@@ -456,7 +462,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を受付に変えて更新すると、状態の変化のイベントが発行される")
         void publishesAcceptedEvent() {
             // 準備：保存した注文を読み、受付にする
-            var order = order(UUID.randomUUID(), orderNumber());
+            var order = order(new CheckoutId(UUID.randomUUID()), orderNumber());
             repository.insert(order);
             var loaded = repository.findById(order.id()).orElseThrow();
             loaded.acceptPayment(ACCEPTED_AT);
@@ -508,7 +514,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("同じバージョンを読んだ注文を 2 回更新すると、2 回目は同時の更新のエラーで、状態とイベントを変えない")
         void rejectsStaleVersion() {
             // 準備：保存した注文を 2 つの写しで読み、どちらも受付にして、1 つ目を更新する
-            var order = order(UUID.randomUUID(), orderNumber());
+            var order = order(new CheckoutId(UUID.randomUUID()), orderNumber());
             repository.insert(order);
             var first = repository.findById(order.id()).orElseThrow();
             var stale = repository.findById(order.id()).orElseThrow();
@@ -533,7 +539,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("domain の上限の値（氏名・住所・メールアドレス・年齢・数量・単価）の注文を、そのまま保存して再構築できる")
         void savesMaxValues() {
             // 準備：各項目が domain の上限の注文
-            var checkoutId = UUID.randomUUID();
+            var checkoutId = new CheckoutId(UUID.randomUUID());
             var orderNumber = orderNumber();
             var order = maxOrder(checkoutId, orderNumber);
 
@@ -550,7 +556,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("上限の 500 文字の申請と運営者のキャンセルの理由と、255 文字の運営者名を、そのまま更新して再構築できる")
         void updatesMaxReasons() {
             // 準備：上限の注文を受付にし、500 文字の理由で申請し、500 文字の理由と 255 文字の名前の運営者がキャンセルする
-            var checkoutId = UUID.randomUUID();
+            var checkoutId = new CheckoutId(UUID.randomUUID());
             var orderNumber = orderNumber();
             var order = maxOrder(checkoutId, orderNumber);
             repository.insert(order);
@@ -586,7 +592,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を行ロックして取得すると、保存した注文を再構築して返す")
         void locksOrderById() {
             // 準備：注文を保存する
-            var checkoutId = UUID.randomUUID();
+            var checkoutId = new CheckoutId(UUID.randomUUID());
             var orderNumber = orderNumber();
             var order = order(checkoutId, orderNumber);
             repository.insert(order);
@@ -599,7 +605,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("ない注文を行ロックして取得すると、空を返す")
         void returnsEmptyForUnknownOrder() {
             // 操作と確認：ない注文 ID には空
-            assertThat(repository.lockById(UUID.randomUUID())).isEmpty();
+            assertThat(repository.lockById(new OrderId(UUID.randomUUID()))).isEmpty();
         }
 
         @Test
@@ -607,7 +613,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("注文を行ロックして取得している間は、別のトランザクションが同じ注文の行をロックできない")
         void blocksOtherTransactionWhileLocked() {
             // 準備：ロールバックしないので、このテストで作った注文の行だけを使う
-            var order = order(UUID.randomUUID(), orderNumber());
+            var order = order(new CheckoutId(UUID.randomUUID()), orderNumber());
             transactionTemplate.executeWithoutResult(status -> repository.insert(order));
             var executor = Executors.newSingleThreadExecutor();
             try {
@@ -615,7 +621,7 @@ class JooqOrderRepositoryTest {
                     // 操作：行ロックしたまま、別のトランザクションで同じ行を待たずにロックする
                     assertThat(repository.lockById(order.id())).isPresent();
                     var other = executor.submit(() -> transactionTemplate.executeWithoutResult(inner ->
-                            dsl.selectFrom(SALES_ORDER).where(SALES_ORDER.ID.eq(order.id())).forUpdate().noWait().fetch()));
+                            dsl.selectFrom(SALES_ORDER).where(SALES_ORDER.ID.eq(order.id().value())).forUpdate().noWait().fetch()));
 
                     // 確認：ロックを取れずに失敗する
                     assertThatThrownBy(() -> other.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS))
@@ -637,7 +643,7 @@ class JooqOrderRepositoryTest {
         @DisplayName("AC-406-14 会員のロックを取っている間は、別のトランザクションが同じ会員のロックを取れず、別の会員のロックは取れる")
         void blocksOtherTransactionWhileMemberLocked() {
             // 準備：ロックはトランザクションの終わりで外れ、行を作らないので、ロールバックは必要ない
-            var memberId = UUID.randomUUID();
+            var memberId = new MemberId(UUID.randomUUID());
             var executor = Executors.newSingleThreadExecutor();
             try {
                 transactionTemplate.executeWithoutResult(status -> {
@@ -645,12 +651,12 @@ class JooqOrderRepositoryTest {
                     repository.lockForMember(memberId);
 
                     // 確認：別のトランザクションは、同じ会員のロックを取れず、別の会員のロックは取れる
-                    assertThat(tryLockInOtherTransaction(executor, memberId)).isFalse();
+                    assertThat(tryLockInOtherTransaction(executor, memberId.value())).isFalse();
                     assertThat(tryLockInOtherTransaction(executor, UUID.randomUUID())).isTrue();
                 });
 
                 // 確認：トランザクションが終わると、同じ会員のロックを取れる
-                assertThat(tryLockInOtherTransaction(executor, memberId)).isTrue();
+                assertThat(tryLockInOtherTransaction(executor, memberId.value())).isTrue();
             } finally {
                 executor.shutdownNow();
             }
@@ -675,7 +681,7 @@ class JooqOrderRepositoryTest {
      * @param checkoutId  注文手続き ID
      * @param orderNumber 注文番号
      */
-    private static void assertAcceptedUpdate(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+    private static void assertAcceptedUpdate(Order.Snapshot restored, OrderId orderId, CheckoutId checkoutId, String orderNumber) {
         assertThat(restored.status()).isEqualTo(OrderStatus.ACCEPTED);
         assertThat(restored.version()).isEqualTo(1);
         assertStandardContent(restored, orderId, checkoutId, orderNumber);
@@ -698,7 +704,7 @@ class JooqOrderRepositoryTest {
      * @param checkoutId  注文手続き ID
      * @param orderNumber 注文番号
      */
-    private static void assertPlacedStandardOrder(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+    private static void assertPlacedStandardOrder(Order.Snapshot restored, OrderId orderId, CheckoutId checkoutId, String orderNumber) {
         assertThat(restored.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         assertThat(restored.version()).isZero();
         assertStandardContent(restored, orderId, checkoutId, orderNumber);
@@ -723,7 +729,7 @@ class JooqOrderRepositoryTest {
      * @param checkoutId  注文手続き ID
      * @param orderNumber 注文番号
      */
-    private static void assertStandardContent(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+    private static void assertStandardContent(Order.Snapshot restored, OrderId orderId, CheckoutId checkoutId, String orderNumber) {
         assertOrderIdentity(restored, orderId, checkoutId, orderNumber);
         assertThat(restored.lines()).containsExactlyElementsOf(LINES);
         assertThat(restored.amounts()).isEqualTo(AMOUNTS);
@@ -750,7 +756,7 @@ class JooqOrderRepositoryTest {
      * @param checkoutId  注文手続き ID
      * @param orderNumber 注文番号
      */
-    private static void assertMaxContent(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+    private static void assertMaxContent(Order.Snapshot restored, OrderId orderId, CheckoutId checkoutId, String orderNumber) {
         assertOrderIdentity(restored, orderId, checkoutId, orderNumber);
         assertThat(restored.lines()).containsExactly(MAX_LINE);
         assertThat(restored.amounts()).isEqualTo(MAX_AMOUNTS);
@@ -768,7 +774,7 @@ class JooqOrderRepositoryTest {
      * @param checkoutId  注文手続き ID
      * @param orderNumber 注文番号
      */
-    private static void assertOrderIdentity(Order.Snapshot restored, UUID orderId, UUID checkoutId, String orderNumber) {
+    private static void assertOrderIdentity(Order.Snapshot restored, OrderId orderId, CheckoutId checkoutId, String orderNumber) {
         assertThat(restored.id()).isEqualTo(orderId);
         assertThat(restored.orderNumber()).isEqualTo(OrderNumber.of(orderNumber));
         assertThat(restored.checkoutId()).isEqualTo(checkoutId);
@@ -806,8 +812,8 @@ class JooqOrderRepositoryTest {
      *
      * @return 注文 ID
      */
-    private UUID acceptedOrder() {
-        var order = order(UUID.randomUUID(), orderNumber());
+    private OrderId acceptedOrder() {
+        var order = order(new CheckoutId(UUID.randomUUID()), orderNumber());
         repository.insert(order);
         var accepted = repository.findById(order.id()).orElseThrow();
         accepted.acceptPayment(ACCEPTED_AT);
@@ -861,7 +867,7 @@ class JooqOrderRepositoryTest {
      * @param orderNumber 注文番号
      * @return 注文（支払待ち）
      */
-    private static Order order(UUID checkoutId, String orderNumber) {
+    private static Order order(CheckoutId checkoutId, String orderNumber) {
         return order(checkoutId, orderNumber, SHIPPING_TAX);
     }
 
@@ -873,15 +879,15 @@ class JooqOrderRepositoryTest {
      * @param shippingTax 送料の消費税
      * @return 注文（支払待ち）
      */
-    private static Order order(UUID checkoutId, String orderNumber, Money shippingTax) {
-        var shirt = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), SHIRT_PRODUCT_CODE, SHIRT_VARIANT_CODE, SHIRT_NAME,
-                SHIRT_AXES, SHIRT_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
-        var tea = new VariantInfo(TEA_VARIANT_ID, UUID.randomUUID(), TEA_CODE, TEA_CODE, TEA_NAME, List.of(),
-                TEA_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
+    private static Order order(CheckoutId checkoutId, String orderNumber, Money shippingTax) {
+        var shirt = new VariantInfo(SHIRT_VARIANT_ID, new ProductId(UUID.randomUUID()), SHIRT_PRODUCT_CODE, SHIRT_VARIANT_CODE, SHIRT_NAME,
+                SHIRT_AXES, SHIRT_PRICE_EXCL_TAX, new TaxCategoryId(UUID.randomUUID()), null, true, false);
+        var tea = new VariantInfo(TEA_VARIANT_ID, new ProductId(UUID.randomUUID()), TEA_CODE, TEA_CODE, TEA_NAME, List.of(),
+                TEA_PRICE_EXCL_TAX, new TaxCategoryId(UUID.randomUUID()), null, true, false);
         var items = List.of(
                 QuoteItem.of(shirt, 1, 10, STANDARD_RATE, SHIRT_PRICE_INCL_TAX),
                 QuoteItem.of(tea, 1, 10, REDUCED_RATE, TEA_PRICE_INCL_TAX));
-        return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
+        return Order.place(new OrderId(UUID.randomUUID()), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
                 new Quote(items, AMOUNTS, shippingTax, true), EMAIL, ADDRESS, BUYER_PROFILE);
     }
 
@@ -894,11 +900,11 @@ class JooqOrderRepositoryTest {
      * @param orderNumber 注文番号
      * @return 注文（支払待ち）
      */
-    private static Order maxOrder(UUID checkoutId, String orderNumber) {
-        var variant = new VariantInfo(SHIRT_VARIANT_ID, UUID.randomUUID(), MAX_CODE, MAX_CODE, MAX_NAME, List.of(),
-                MAX_PRICE_EXCL_TAX, UUID.randomUUID(), null, true, false);
+    private static Order maxOrder(CheckoutId checkoutId, String orderNumber) {
+        var variant = new VariantInfo(SHIRT_VARIANT_ID, new ProductId(UUID.randomUUID()), MAX_CODE, MAX_CODE, MAX_NAME, List.of(),
+                MAX_PRICE_EXCL_TAX, new TaxCategoryId(UUID.randomUUID()), null, true, false);
         var item = QuoteItem.of(variant, MAX_QUANTITY, MAX_QUANTITY, STANDARD_RATE, MAX_PRICE_INCL_TAX);
-        return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
+        return Order.place(new OrderId(UUID.randomUUID()), OrderNumber.of(orderNumber), checkoutId, MEMBER_ID, ORDERED_AT,
                 new Quote(List.of(item), MAX_AMOUNTS, SHIPPING_TAX, true), MAX_EMAIL, MAX_ADDRESS, MAX_BUYER_PROFILE);
     }
 }

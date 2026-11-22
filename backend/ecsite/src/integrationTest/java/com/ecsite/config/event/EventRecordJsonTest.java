@@ -102,7 +102,7 @@ class EventRecordJsonTest {
                         COMMON + "\"cartId\":" + targetId + ",\"cartVersion\":7}"),
                 row("ProductPriceChanged", new ProductPriceChanged(EVENT_ID, OCCURRED_AT, new ProductId(TARGET_ID), Money.of(1000)),
                         COMMON + "\"productId\":" + targetId + ",\"priceExclTax\":{\"yen\":1000}}"),
-                row("OrderStatusChanged", new OrderStatusChanged(EVENT_ID, OCCURRED_AT, TARGET_ID, null,
+                row("OrderStatusChanged", new OrderStatusChanged(EVENT_ID, OCCURRED_AT, new OrderId(TARGET_ID), null,
                                 OrderStatusChanged.Status.ACCEPTED, null, null),
                         COMMON + "\"orderId\":" + targetId + ",\"from\":null,\"to\":\"ACCEPTED\",\"cancellationKind\":null,\"restocked\":null}"),
                 row("PaymentAuthorized", new PaymentAuthorized(EVENT_ID, OCCURRED_AT, new OrderId(TARGET_ID)),

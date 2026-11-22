@@ -1,6 +1,7 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.api.OrderApi;
 import com.ecsite.module.order.api.model.OrderSnapshot;
@@ -41,7 +42,7 @@ class OrderApiDirectory implements OrderDirectory {
      */
     @Override
     public Optional<ReportOrder> find(UUID orderId) {
-        return orderApi.find(orderId).map(OrderApiDirectory::toReportOrder);
+        return orderApi.find(new OrderId(orderId)).map(OrderApiDirectory::toReportOrder);
     }
 
     /**
@@ -50,9 +51,9 @@ class OrderApiDirectory implements OrderDirectory {
     static ReportOrder toReportOrder(OrderSnapshot snapshot) {
         var cancellation = snapshot.cancellation();
         return new ReportOrder(
-                snapshot.orderId(),
+                snapshot.orderId().value(),
                 snapshot.orderNumber(),
-                snapshot.memberId(),
+                snapshot.memberId().value(),
                 snapshot.orderedAt(),
                 toStatus(snapshot.status()),
                 null,
@@ -72,7 +73,7 @@ class OrderApiDirectory implements OrderDirectory {
                 snapshot.lines().stream().map(line -> new ReportOrder.Line(
                         line.lineNo(),
                         null,
-                        line.variantId(),
+                        line.variantId().value(),
                         line.productCode(),
                         line.variantCode(),
                         line.productName(),

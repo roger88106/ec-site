@@ -2,10 +2,13 @@ package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
 import com.ecsite.module.order.application.model.CartSnapshot;
 import com.ecsite.module.order.application.model.view.CartQuoteView;
 import com.ecsite.module.order.application.model.view.CheckoutView;
 import com.ecsite.module.order.application.port.CartDirectory;
+import com.ecsite.module.order.domain.checkout.CheckoutId;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.NonNull;
@@ -17,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文手続きの参照のサービス
@@ -63,7 +65,7 @@ public class CheckoutQueryService {
      * @throws BusinessException 注文手続きがない（{@code NOT_FOUND}）
      * @throws BusinessException 注文手続きを始めた会員でない（{@code NOT_FOUND}）
      */
-    public CheckoutView get(@NonNull UUID checkoutId, @NonNull UUID memberId) {
+    public CheckoutView get(@NonNull CheckoutId checkoutId, @NonNull MemberId memberId) {
         var now = clock.instant();
         // 注文手続き取得 ※始めた会員だけが参照できる
         var checkout = checkoutRepository.findById(checkoutId)
@@ -86,7 +88,7 @@ public class CheckoutQueryService {
      * @param requester リクエストした会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
-    public Optional<CartQuoteView> quoteCart(@NonNull UUID cartId, @Nullable UUID requester) {
+    public Optional<CartQuoteView> quoteCart(@NonNull CartId cartId, @Nullable MemberId requester) {
         var now = clock.instant();
         var holderId = checkoutRepository.findLatestIdByCartId(cartId).orElse(null);
         // 持ち主でなければ、カートがないときと同じく空にする

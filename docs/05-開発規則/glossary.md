@@ -43,6 +43,8 @@
 | jest-dom | `@testing-library/jest-dom` | DOM の要素の状態を確認する照合の関数（`toBeDisabled`、`toHaveAttribute`、`toHaveAccessibleName` など）を Vitest に加えるライブラリ |
 | テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストに加えた変更が、本番のクラスの移動と改名に伴うものだけであることを確認する script |
 | 共通の値の型 | `common/model/value/` | 2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つ値の型（金額、文字の長さの上限など） |
+| 識別子の型 | `EntityId`、`common/model/id/` | 集約と entity の識別子を種類ごとに表す、UUID を 1 つ持つ型（[バックエンドの書き方](backend-coding.md)の「識別子の型」） |
+| 識別子の生成 | `IdGenerator` | 識別子の値（UUID）を作る、注入して使う interface |
 | メッセージのキー | `ecsite.<モジュール>.<名前>` | エラーの文を `messages.properties` から取得するためのキー。エラーの定義（enum の定数）の名前から決まる |
 | 共有パッケージ | `frontend/shared`（`@ec-site/shared`） | 店舗画面と管理画面の両方で使う、UI のコンポーネント・関数・文言を置くパッケージ（[フロントの書き方](frontend-coding.md)の「入れるもの・入れないもの」） |
 | 共有の文言 | `common.*` | 共有パッケージの文言。2 つの画面で同じ役割の文を置き、各画面の文言と、最上位のキーの単位で合わせて使う（[フロントの書き方](frontend-coding.md)の「表示の文言は文言ファイルに置く」） |

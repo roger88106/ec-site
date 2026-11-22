@@ -34,6 +34,7 @@
 - 決定 3（UUID を使ってよい場所）：domain・application・`api/`・`event/`・共通のモデル（`common/model/`）の項目・引数・戻り値には、識別子の型を使い、UUID を使わない。UUID を使うのは、presentation（生成した API の型との変換）、infrastructure（jOOQ との変換）、共通のクラス（`AdvisoryLocks`、`CreatedResponses`）、イベント ID だけにする。共通のクラスは UUID のまま使い、呼び出し側が `id.value()` を渡す。自動の検査（ArchUnit）で確認する。
   - 例外：在庫の引当の行 ID と送信したメールの行 ID は、ドメインの型を持たない行の ID なので、infrastructure の中で UUID のまま扱う。
   - 例外：設定の型（`@ConfigurationProperties` を付けた record。例：注文の設定の送料の税区分 ID）は UUID のまま持ち、使う側で識別子の型に変換する。理由：設定の値は環境変数の文字列から作り、presentation と同じく外から入る値の境界であるため。文字列から識別子の型に変換する仕組み（Converter）を加えないのは、使う所が少なく、加える型と設定が増えるため。
+  - 例外：受け取ったイベントの ID の写しを持つ記録（項目 `eventId` を持つクラス。例：レポートの状態の履歴）は、イベント ID の写しを UUID のまま持つ。理由：写しはイベント ID そのものの値で、イベント ID は UUID のままであるため（Non-goals の「イベント ID の型と注入」）。
 - 決定 4（在庫の引当の持ち主）：在庫の引当の持ち主（今の `holderId`。実体はチェックアウトか注文）は、持ち主の型（`ReservationHolderId`）にし、`common/model/id/` に置く。注文のモジュールは、腐敗防止層でチェックアウトや注文の識別子から変換する。
   - 理由：在庫は持ち主の種類を区別せず、注文のモジュールに依存しないため。在庫と注文の 2 つのモジュールが使うので、置き場所は決定 2 に従う。`inventory.api` に置かないのは、層の依存の規則で、同じモジュールの application と domain が `api` に依存できないため。
 - 決定 5（変換）：
@@ -54,6 +55,8 @@
 - 決定 9（文書）：
   - バックエンドの書き方の規則：識別子の型（決定 1〜5）と、識別子・乱数の注入（決定 6、7）の節を加える。「共通の型」に、識別子の型を置く例外（決定 2）を書く。
   - バックエンドの構成の設計：永続化の表の「識別子 | UUID」に、コードでは種類ごとの型にすることを書く。
+  - 設計の文書：共通コードの一覧に、識別子の生成（`common/id/`）、モジュールをまたぐ識別子の型（`common/model/id/`）、識別子の型の interface、識別子の型の JSON の変換（`config/json/`）、乱数の Bean を加える。モジュールの設計書（在庫、税、商品、注文、決済、出荷）のパッケージ構成に、識別子の型を置く場所を加える。
+  - 用語集：開発の用語集に識別子の型と識別子の生成を、業務の用語集の語「持ち主」の識別子の列に持ち主の型を加える。
 
 決定に出るコードの名前は、次の表のとおり。
 
@@ -93,11 +96,13 @@
 
 | まとまり | ファイル |
 |----------|----------|
-| 共通のクラス（common） | `common/model/base/`（`EntityId`）、`common/model/id/`（モジュールをまたぐ識別子の型）、`common/id/`（`IdGenerator` とその実装） |
+| 共通のクラス（common） | `common/model/base/`（`EntityId`）、`common/model/id/`（モジュールをまたぐ識別子の型）、`common/id/`（`IdGenerator` とその実装）、`common/error/handler/`（`TraceIdResolver`）、`common/model/value/`（`Operator`）、`common/security/`（`CurrentOperator`） |
 | 設定（config） | `config/`（Jackson のモジュール、`RandomGenerator` の Bean） |
 | モジュール | `module/` の全てのモジュールの domain・application・api・event・infrastructure・presentation |
 | テスト | `backend/ecsite/src/test/`、`src/integrationTest/`、`src/testFixtures/` の、識別子を使うテスト。`src/test/java/com/ecsite/architecture/` に自動の検査を加える |
-| 文書 | `docs/05-開発規則/backend-coding.md`、`docs/02-設計/backend-architecture.md` |
+| ビルド | `backend/ecsite/build.gradle.kts`（testFixtures の依存に jmolecules-ddd を加えた） |
+| 規則と用語集 | `docs/05-開発規則/backend-coding.md`、`docs/05-開発規則/comments.md`、`docs/05-開発規則/glossary.md`、`docs/03-機能仕様/glossary.md` |
+| 設計の文書 | `docs/02-設計/backend-architecture.md`、`docs/02-設計/common.md`、`docs/02-設計/inventory.md`、`docs/02-設計/tax.md`、`docs/02-設計/catalog.md`、`docs/02-設計/order.md`、`docs/02-設計/payment.md`、`docs/02-設計/shipping.md` |
 
 ## 非機能要件
 
@@ -214,10 +219,21 @@
     差分（約 2.6 万行）を、注文・決済・カート・出荷・在庫の本番のコード、その他の本番のコードと文書、単体テスト、統合テストの 4 つに分けた。検証役（高性能、58372 token、36s）は 2 件とも真と判定し、級を軽微とした。
     修正したもの：識別子の型の検査の例に、共通のモデルの例（`UuidInCommonModel`）を加えた。検査の対象から共通のモデルが漏れたときに、テストが失敗する。コメントの書き方の Javadoc の例（`CartService.changeQuantity`）の引数を、識別子の型にした。あわせて、DC-554-1 の対象に、決定 3 と同じく共通のモデルを加えた。
     参考（推奨。この時点では修正に回さない）：null を許す列の変換で、補助のメソッドと三項演算子が混ざる。文字列の連結で `.value()` を付ける所と付けない所がある。T554-02-10 で扱いを決める。
-- [ ] **T554-02-10** spec の最後のレビュー。指摘を修正する。
+- [x] **T554-02-10** spec の最後のレビュー。指摘を修正する。
   - 依存：T554-02-09
   - 範囲：spec と変えたコード・文書
   - 確認方法：skill `review` の spec の最後のレビュー
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | spec との一致 | 高性能 | 1 | 119740 | 3m54s | 0 | 2 | 1 | 3 |
+    | spec の最後 | 段階をまたぐ影響・ファイルをまたぐ影響 | 高性能 | 1 | 139563 | 3m46s | 0 | 2 | 1 | 3 |
+    | spec の最後 | 重複を除く | — | 1 | — | — | 0 | 4 | 2 | 6 |
+
+    文を削る差分ではないので、削った文の行き先の観点は加えなかった。検証役（高性能、75751 token、1m00s）は 6 件とも真と判定した。
+    修正したもの：識別子の型の検査で、設定の型の例外を、項目、アクセサー、コンストラクターだけにした。spec の「変える範囲」の表に、変えたが表になかったファイル（ビルド、共通のクラス 3 つ、文書）を加え、決定 9 に設計の文書と用語集を加えた。設計の文書（共通のコードと各モジュール）では、パッケージの説明に識別子の型と、識別子を作るクラスを加えた。開発の用語集に識別子の型と識別子の生成を、業務の用語集の、持ち主の行に `ReservationHolderId` を加えた。受け取ったイベントの ID の写しを持つ記録の例外を、決定 3 とバックエンドの書き方に書いた（推奨）。「識別子と乱数は注入する」の節を、識別子の型で包んで渡す形にした（推奨）。
+    残したもの：なし。推奨は 2 件とも修正したので、pull request の「推奨の指摘の扱い」は、段階 2 のレビューの参考の 2 件（null を許す列の変換の書き方、文字列の連結の `.value()`）だけになる。どちらも振る舞いに関わらない書き方のぶれなので、直さない。
 - [ ] **T554-02-11** pull request の前のレビューと `./gradlew check`（DC-554-8）。
   - 依存：T554-02-10
   - 範囲：差分の全体

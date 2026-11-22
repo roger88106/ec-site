@@ -126,6 +126,7 @@
 | 対象 | 扱い |
 |------|------|
 | イベント ID（`eventId`） | UUID のまま |
+| 受け取ったイベントの ID の写しを持つ記録（項目 `eventId` を持つクラス。例：レポートの状態の履歴） | イベント ID の写しを UUID のまま持つ |
 | 設定の型（`@ConfigurationProperties` を付けた record） | UUID のまま持ち、使う側で識別子の型に変換する |
 | ドメインの型を持たない DB の行の ID（在庫の引当の行、送信したメールの行） | 識別子の型を作らず、infrastructure の中で UUID のまま扱う |
 
@@ -340,7 +341,7 @@ DB の競合（PostgreSQL のデッドロック、ロック取得の失敗）は
 
 ### 識別子と乱数は注入する
 
-- 識別子（UUID）は、注入した `IdGenerator`（`common.id`）で作り、`UUID.randomUUID()` を直接呼ばない。domain には識別子を引数で渡す（時刻の `Instant` と同じ）。`UUID.randomUUID()` を呼んでよいのは、`IdGenerator` の実装（`RandomIdGenerator`）と、イベント ID を作る `DomainEvent` の静的メソッドだけ。
+- 識別子の値（UUID）は、注入した `IdGenerator`（`common.id`）で作り、識別子の型で包んで渡す（`new XxxId(idGenerator.generate())`。「識別子の型」）。`UUID.randomUUID()` を直接呼ばない。domain には識別子を引数で渡す（時刻の `Instant` と同じ）。`UUID.randomUUID()` を呼んでよいのは、`IdGenerator` の実装（`RandomIdGenerator`）と、イベント ID を作る `DomainEvent` の static メソッドだけ。
 - 乱数は、注入した `RandomGenerator` の Bean（`RandomConfig` が `SecureRandom` で作る）を使い、`new SecureRandom()`・`new Random()` を直接書かない。
 
 理由：テストで識別子と乱数を固定し、乱数に左右される処理（注文番号の衝突など）を、固定した値で確認するため。

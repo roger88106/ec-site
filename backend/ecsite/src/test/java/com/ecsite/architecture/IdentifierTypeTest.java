@@ -47,7 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>{@link EntityId} の実装の項目 {@code value}、メソッド {@code value()}、コンストラクター</li>
  *   <li>イベント ID：{@link DomainEvent} の {@code newEventId()}、項目 {@code eventId}、メソッド {@code eventId()}。
  *       項目 {@code eventId} を持つクラス（イベントと、受け取ったイベントの ID の写しを持つ記録）では、コンストラクターの最初の引数</li>
- *   <li>設定の型（{@link ConfigurationProperties} を付けたクラス）。環境変数の文字列から作るので、使う側で識別子の型に変換する</li>
+ *   <li>設定の型（{@link ConfigurationProperties} を付けた record）の項目、項目と同じ名前の引数のない アクセサー、コンストラクター。
+ *       環境変数の文字列から作るので、使う側で識別子の型に変換する。他のメソッドの引数と戻り値の UUID は違反にする</li>
  * </ul>
  */
 class IdentifierTypeTest {
@@ -102,7 +103,8 @@ class IdentifierTypeTest {
                 ExampleApi.class.getName() + ".memberId",
                 UuidInCommonModel.class.getName() + ".ownerId",
                 UuidInCommonModel.class.getName() + ".ownerId()",
-                UuidInCommonModel.class.getName() + ".<init>(java.util.UUID)");
+                UuidInCommonModel.class.getName() + ".<init>(java.util.UUID)",
+                ExampleProperties.class.getName() + ".pathOf(java.util.UUID)");
     }
 
     // ============================== 補助 ==============================
@@ -111,12 +113,11 @@ class IdentifierTypeTest {
      * 検査の対象のクラスを返す。
      *
      * @param classes 調べるクラス
-     * @return 対象のパッケージのクラスのうち、設定の型でないもの
+     * @return 対象のパッケージのクラス
      */
     private static List<JavaClass> checkedClasses(JavaClasses classes) {
         return classes.stream()
                 .filter(CHECKED_PACKAGE)
-                .filter(javaClass -> !javaClass.isAnnotatedWith(ConfigurationProperties.class))
                 .toList();
     }
 
@@ -177,18 +178,20 @@ class IdentifierTypeTest {
     }
 
     /**
-     * 例外の項目か（識別子の型の {@code value}、イベント ID の {@code eventId}）を返す。
+     * 例外の項目か（識別子の型の {@code value}、イベント ID の {@code eventId}、設定の型の項目）を返す。
      *
      * @param owner 項目を持つクラス
      * @param field 項目
      * @return 例外なら true
      */
     private static boolean isException(JavaClass owner, JavaField field) {
-        return isExceptionName(owner, field.getName());
+        boolean propertiesField = isProperties(owner) && !field.getModifiers().contains(JavaModifier.STATIC);
+        return propertiesField || isExceptionName(owner, field.getName());
     }
 
     /**
-     * 例外のメソッドか（識別子の型の {@code value()}、イベント ID の {@code eventId()}、{@code DomainEvent.newEventId()}）を返す。
+     * 例外のメソッドか（識別子の型の {@code value()}、イベント ID の {@code eventId()}、{@code DomainEvent.newEventId()}、
+     * 設定の型の アクセサー）を返す。
      *
      * @param owner  メソッドを持つクラス
      * @param method メソッド
@@ -196,7 +199,32 @@ class IdentifierTypeTest {
      */
     private static boolean isException(JavaClass owner, JavaMethod method) {
         boolean newEventId = owner.isEquivalentTo(DomainEvent.class) && method.getName().equals("newEventId");
-        return newEventId || (method.getRawParameterTypes().isEmpty() && isExceptionName(owner, method.getName()));
+        boolean accessor = method.getRawParameterTypes().isEmpty()
+                && (isExceptionName(owner, method.getName()) || isPropertiesAccessor(owner, method.getName()));
+        return newEventId || accessor;
+    }
+
+    /**
+     * 設定の型（{@link ConfigurationProperties} を付けたクラス）かを返す。
+     *
+     * @param owner クラス
+     * @return 設定の型なら true
+     */
+    private static boolean isProperties(JavaClass owner) {
+        return owner.isAnnotatedWith(ConfigurationProperties.class);
+    }
+
+    /**
+     * 名前が、設定の型の アクセサー の名前（static でない項目と同じ名前）かを返す。
+     *
+     * @param owner クラス
+     * @param name  メソッドの名前
+     * @return 設定の型で、同じ名前の static でない項目があれば true
+     */
+    private static boolean isPropertiesAccessor(JavaClass owner, String name) {
+        return isProperties(owner) && owner.tryGetField(name)
+                .filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))
+                .isPresent();
     }
 
     /**
@@ -224,14 +252,14 @@ class IdentifierTypeTest {
     /**
      * コンストラクターが違反でないかを返す。
      *
-     * <p>識別子の型は、UUID を受け取ってよい。イベント ID を持つクラスは、最初の引数がイベント ID なので除き、2 つ目以降に UUID があれば違反にする。
+     * <p>識別子の型と設定の型は、UUID を受け取ってよい。イベント ID を持つクラスは、最初の引数がイベント ID なので、その引数を検査から除き、2 つ目以降に UUID があれば違反にする。
      *
      * @param owner       コンストラクターを持つクラス
      * @param constructor コンストラクター
      * @return 違反でなければ true
      */
     private static boolean isAllowed(JavaClass owner, JavaConstructor constructor) {
-        if (owner.isAssignableTo(EntityId.class)) {
+        if (owner.isAssignableTo(EntityId.class) || isProperties(owner)) {
             return true;
         }
         List<? extends JavaType> parameters = constructor.getParameterTypes();

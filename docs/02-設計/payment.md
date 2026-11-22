@@ -317,7 +317,7 @@ payment/
 │   ├── port/               # 決済サービス、通知の受信、参照
 │   └── job/                # 支払の期限切れのジョブ
 ├── domain/                 # エラーの定義
-│   └── payment/        # 支払（集約）、状態、依頼
+│   └── payment/        # 支払（集約）、識別子、状態、依頼
 │       └── port/       # 支払のリポジトリ
 └── infrastructure/
     ├── persistence/        # リポジトリの実装

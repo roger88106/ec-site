@@ -18,7 +18,9 @@
 |------------|----------|
 | `common/error/` | エラーの定義の基底と、例外から Problem Details への変換（`error/exception/`、`error/handler/`） |
 | `common/message/` | メッセージのコードとパラメータから日本語の文を作るクラス |
-| `common/model/base/` | 集約とドメインイベントの基底と、集約の登録したイベントを送り出す部品 |
+| `common/id/` | 識別子の値（UUID）を作る interface（`IdGenerator`）とその実装 |
+| `common/model/base/` | 集約とドメインイベントの基底、識別子の型の interface（`EntityId`）と、集約が登録したイベントを発行するクラス |
+| `common/model/id/` | 2 つ以上のモジュールが使う識別子の型（会員、商品、注文など） |
 | `common/model/value/` | 規則を持つ共通の値（金額、文字の項目、業務の日付、操作した運営者）。業務の日付の時間帯（日本時間）は 1 か所で決める |
 | `common/paging/` | ページ指定と一覧の結果 |
 | `common/event/` | 外部サービスを呼ぶイベントのリスナーのアノテーション |
@@ -33,9 +35,10 @@
 
 | パッケージ | 役割 |
 |------------|------|
-| `config/`（直下） | 時刻（`Clock`）、API のパスのプレフィックス、Bean Validation、OpenAPI の列挙型の変換、定期ジョブの起動と分散ロックの設定、DB の接続のタイムアウトの設定、マイグレーションの接続の設定 |
+| `config/`（直下） | 時刻（`Clock`）、乱数（`RandomGenerator`）、API のパスのプレフィックス、Bean Validation、OpenAPI の列挙型の変換、定期ジョブの起動と分散ロックの設定、DB の接続のタイムアウトの設定、マイグレーションの接続の設定 |
 | `config/async/` | 外部サービスを呼ぶリスナーのスレッドプール |
 | `config/event/` | イベントの再発行と片付け |
+| `config/json/` | 識別子の型と JSON（UUID の文字列）の変換 |
 | `config/security/` | 認証・認可の設定。管理 API の権限と店舗 API の token の要否を、契約の操作ごとに適用する |
 
 - イベント・ジョブ・分散ロックの動きと設定の値は [バックエンドのアーキテクチャ](backend-architecture.md)の「水平スケール」に書く。

@@ -113,7 +113,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 調整理由 | `reason` | 入荷（`ARRIVAL`）、棚卸差異（`STOCKTAKE`）、破損・紛失（`DAMAGE_OR_LOSS`）、その他（`OTHER`）。注文に由来する、注文（`ORDER`）、注文のキャンセル（`ORDER_CANCELLATION`）は運営者が選べない |
 | 連番 | `sequence_no` | 同じ日時の在庫調整の順序を決める番号 |
 | 引当 | `stock_reservation`（`StockReservationRepository`） | 注文手続きの間、在庫を期限付きで確保したもの。在庫数は変えない |
-| 持ち主 | `holderId` / `holder_id` | 引当を持つ注文手続き |
+| 持ち主 | `holderId` / `holder_id`（`ReservationHolderId`） | 引当を持つ注文手続き |
 | 販売可能数 | `sellableQuantity` | 在庫数から、有効な引当の数量を引いた数 |
 | 調整後の在庫数 | `quantity_after` | 履歴に残す、調整した直後の在庫数 |
 

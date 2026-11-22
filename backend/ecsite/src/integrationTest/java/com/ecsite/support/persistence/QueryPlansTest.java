@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,6 +37,12 @@ class QueryPlansTest {
             var autoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
+                // 準備：強制する前の設定の値
+                var before = new HashMap<String, String>();
+                for (var setting : QueryPlans.RESCAN_DISABLED_SETTINGS) {
+                    before.put(setting, setting(connection, setting));
+                }
+
                 // 操作：計画を強制する
                 var transaction = DSL.using(connection, dsl.dialect());
                 QueryPlans.forceSubqueryRescan(transaction);
@@ -48,9 +55,9 @@ class QueryPlansTest {
                 // 操作：コミットする
                 connection.commit();
 
-                // 確認：同じ接続で、全ての設定が元（有効）に戻る
+                // 確認：同じ接続で、全ての設定が強制する前の値に戻る
                 for (var setting : QueryPlans.RESCAN_DISABLED_SETTINGS) {
-                    assertThat(setting(connection, setting)).as(setting).isEqualTo("on");
+                    assertThat(setting(connection, setting)).as(setting).isEqualTo(before.get(setting));
                 }
             } finally {
                 connection.rollback();

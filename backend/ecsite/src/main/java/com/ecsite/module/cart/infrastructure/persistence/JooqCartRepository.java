@@ -17,6 +17,7 @@ import org.springframework.stereotype.Repository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.cart.Tables.CART_ITEM;
@@ -149,13 +150,17 @@ class JooqCartRepository implements CartRepository {
     @Override
     public int deleteUpdatedBefore(Instant updatedBefore, int limit) {
         // 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行は飛ばし、次の回で消す
-        return dsl.deleteFrom(CART_)
-                .where(CART_.ID.in(dsl.select(CART_.ID)
-                        .from(CART_)
-                        .where(CART_.UPDATED_AT.lt(updatedBefore))
-                        .limit(limit)
-                        .forUpdate()
-                        .skipLocked()))
+        // ※選ぶ行は MATERIALIZED の CTE で 1 回だけ確定させる。IN の副問い合わせに直接書くと、実行計画によっては
+        //   外側の行ごとに再評価され、前の評価で消した行を飛ばして次の行を選ぶので、件数の上限より多く消しうる
+        var targets = DSL.name("targets").fields("id").asMaterialized(DSL.select(CART_.ID)
+                .from(CART_)
+                .where(CART_.UPDATED_AT.lt(updatedBefore))
+                .limit(limit)
+                .forUpdate()
+                .skipLocked());
+        return dsl.with(targets)
+                .delete(CART_)
+                .where(CART_.ID.in(DSL.select(targets.field("id", UUID.class)).from(targets)))
                 .execute();
     }
 

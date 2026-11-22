@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
@@ -128,13 +129,17 @@ class JooqStockReservationRepository implements StockReservationRepository {
     @Override
     public int deleteExpiredBefore(Instant expiredBefore, int limit) {
         // 選ぶのと消すのを 1 文にし、他のトランザクションがロックしている行は飛ばす（次の回で消す）
-        return dsl.deleteFrom(STOCK_RESERVATION)
-                .where(STOCK_RESERVATION.ID.in(dsl.select(STOCK_RESERVATION.ID)
-                        .from(STOCK_RESERVATION)
-                        .where(STOCK_RESERVATION.EXPIRES_AT.lt(expiredBefore))
-                        .limit(limit)
-                        .forUpdate()
-                        .skipLocked()))
+        // ※選ぶ行は MATERIALIZED の CTE で 1 回だけ確定させる。IN の副問い合わせに直接書くと、実行計画によっては
+        //   外側の行ごとに再評価され、前の評価で消した行を飛ばして次の行を選ぶので、件数の上限より多く消しうる
+        var targets = DSL.name("targets").fields("id").asMaterialized(DSL.select(STOCK_RESERVATION.ID)
+                .from(STOCK_RESERVATION)
+                .where(STOCK_RESERVATION.EXPIRES_AT.lt(expiredBefore))
+                .limit(limit)
+                .forUpdate()
+                .skipLocked());
+        return dsl.with(targets)
+                .delete(STOCK_RESERVATION)
+                .where(STOCK_RESERVATION.ID.in(DSL.select(targets.field("id", UUID.class)).from(targets)))
                 .execute();
     }
 }

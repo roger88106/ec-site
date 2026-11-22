@@ -2,6 +2,9 @@ package com.ecsite.module.storefront.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.CartId;
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.storefront.application.model.CartView;
@@ -24,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
@@ -87,7 +89,7 @@ public class StorefrontQueryService {
      * @throws BusinessException 商品がない（{@code NOT_FOUND}）
      * @throws BusinessException 商品が C 側に表示されない（{@code NOT_FOUND}）
      */
-    public ProductDetailView getProduct(@NonNull UUID productId) {
+    public ProductDetailView getProduct(@NonNull ProductId productId) {
         // 商品と在庫の取得
         var detail = catalogDirectory.findProduct(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
@@ -111,7 +113,7 @@ public class StorefrontQueryService {
      * @throws BusinessException カートがない（{@code NOT_FOUND}）
      * @throws BusinessException 会員のカートで持ち主でない（{@code NOT_FOUND}）
      */
-    public CartView getCart(@NonNull UUID cartId, @Nullable UUID requester) {
+    public CartView getCart(@NonNull CartId cartId, @Nullable MemberId requester) {
         return orderDirectory.findCart(cartId, requester).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 

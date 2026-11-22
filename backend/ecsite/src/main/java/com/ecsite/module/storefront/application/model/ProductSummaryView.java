@@ -1,9 +1,8 @@
 package com.ecsite.module.storefront.application.model;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * C 側の商品一覧の 1 件
@@ -15,6 +14,6 @@ import java.util.UUID;
  * @param inStock      販売中のいずれかのバリアントに在庫がある
  * @param imageUrl     代表画像の URL。なければ null
  */
-public record ProductSummaryView(UUID id, String name, Money priceInclTax, Money priceExclTax, boolean inStock,
+public record ProductSummaryView(ProductId id, String name, Money priceInclTax, Money priceExclTax, boolean inStock,
                                  @Nullable String imageUrl) {
 }

@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.application.port;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.storefront.application.model.CatalogCategory;
@@ -9,7 +10,6 @@ import com.ecsite.module.storefront.application.model.ProductCondition;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 商品カタログの腐敗防止層の port
@@ -42,7 +42,7 @@ public interface CatalogDirectory {
      * @param productId 商品 ID
      * @return 商品の詳細。表示されない商品なら空
      */
-    Optional<CatalogProductDetail> findProduct(UUID productId);
+    Optional<CatalogProductDetail> findProduct(ProductId productId);
 
     /**
      * カテゴリの木を取得する。

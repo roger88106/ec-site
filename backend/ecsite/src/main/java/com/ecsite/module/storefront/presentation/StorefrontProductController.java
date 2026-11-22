@@ -4,6 +4,7 @@ import com.ecsite.api.store.ProductApi;
 import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummaryPage;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.storefront.application.StorefrontQueryService;
 import lombok.RequiredArgsConstructor;
@@ -73,6 +74,6 @@ class StorefrontProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ProductDetail> getProduct(UUID productId) {
-        return ResponseEntity.ok(mapper.toProductDetail(storefrontQueryService.getProduct(productId)));
+        return ResponseEntity.ok(mapper.toProductDetail(storefrontQueryService.getProduct(new ProductId(productId))));
     }
 }

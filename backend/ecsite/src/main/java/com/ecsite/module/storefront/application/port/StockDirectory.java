@@ -1,8 +1,9 @@
 package com.ecsite.module.storefront.application.port;
 
+import com.ecsite.common.model.id.VariantId;
+
 import java.util.Collection;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 在庫の腐敗防止層の port
@@ -19,5 +20,5 @@ public interface StockDirectory {
      * @param variantIds バリアント ID
      * @return 指定したうち、在庫のあるバリアントの ID
      */
-    Set<UUID> inStock(Collection<UUID> variantIds);
+    Set<VariantId> inStock(Collection<VariantId> variantIds);
 }

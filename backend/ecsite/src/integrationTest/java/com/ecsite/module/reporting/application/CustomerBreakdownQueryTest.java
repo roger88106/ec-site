@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuery;
 import com.ecsite.module.reporting.application.model.view.AgeGroupSales;
@@ -208,7 +209,7 @@ class CustomerBreakdownQueryTest {
         @DisplayName("BR-26 商品を選ぶと、送料を除く指定が true でも false でも、売上額は同じで、送料を除いたことを示す")
         void ignoresShippingSettingForProduct() {
             // 操作：商品 A を選び、送料を除く指定を true と false にして集計する
-            var excluded = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productA, false, true)));
+            var excluded = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(new ProductId(productA), false, true)));
             var included = service.breakdown(query(productA));
 
             // 確認：売上額が同じで、どちらも送料を除いたことを示す
@@ -231,7 +232,7 @@ class CustomerBreakdownQueryTest {
         @DisplayName("BR-26 商品を選んで消費税を除くと、その商品の明細の税抜小計だけを数える")
         void selectsProductExcludingTax() {
             // 操作：商品 A を選び、消費税を除いて集計する
-            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productA, true, false)));
+            var report = service.breakdown(new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(new ProductId(productA), true, false)));
 
             // 確認：都道府県・年齢層・性別のどれも、商品 A の明細の税抜小計だけ（商品 B と送料は含めない）
             assertThat(report.prefectures()).filteredOn(row -> "01".equals(row.prefectureCode()))
@@ -266,6 +267,6 @@ class CustomerBreakdownQueryTest {
      * @return 問い合わせ
      */
     private static CustomerBreakdownQuery query(UUID productId) {
-        return new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productId, false, false));
+        return new CustomerBreakdownQuery(PERIOD, Basis.ORDER, new SalesScope(productId == null ? null : new ProductId(productId), false, false));
     }
 }

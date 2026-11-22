@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
+import com.ecsite.common.model.id.OrderId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,7 @@ class StatusHistoryEntryTest {
         @DisplayName("AC-277、278 注文の状態の出来事は、前と後が注文の状態なら作れる")
         void acceptsOrderStatuses() {
             // 操作：前と後が注文の状態の行を作る
-            var entry = new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+            var entry = new StatusHistoryEntry(UUID.randomUUID(), new OrderId(UUID.randomUUID()), HistoryKind.ORDER_STATUS,
                     ReportOrderStatus.PENDING_PAYMENT, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null);
 
             // 確認：作れる
@@ -91,7 +92,7 @@ class StatusHistoryEntryTest {
         @DisplayName("AC-277、278 配送状態の出来事は、前と後が配送状態なら作れる")
         void acceptsDeliveryStatuses() {
             // 操作：前と後が配送状態の行を作る
-            var entry = new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.DELIVERY_STATUS,
+            var entry = new StatusHistoryEntry(UUID.randomUUID(), new OrderId(UUID.randomUUID()), HistoryKind.DELIVERY_STATUS,
                     DeliveryStatus.SHIPPED, DeliveryStatus.IN_TRANSIT, Instant.EPOCH, null, null);
 
             // 確認：作れる
@@ -128,7 +129,7 @@ class StatusHistoryEntryTest {
         @DisplayName("AC-277、278 前の状態が出来事に合わない型だと作れない")
         void rejectsMismatchedFrom() {
             // 操作と確認：前だけが配送状態の、注文の状態の出来事は、プログラムの誤りとして拒否される
-            assertThatThrownBy(() -> new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+            assertThatThrownBy(() -> new StatusHistoryEntry(UUID.randomUUID(), new OrderId(UUID.randomUUID()), HistoryKind.ORDER_STATUS,
                     DeliveryStatus.SHIPPED, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
@@ -144,6 +145,6 @@ class StatusHistoryEntryTest {
      * @return 履歴の 1 行
      */
     private static StatusHistoryEntry entry(HistoryKind kind, HistoryStatus to) {
-        return new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), kind, null, to, Instant.EPOCH, null, null);
+        return new StatusHistoryEntry(UUID.randomUUID(), new OrderId(UUID.randomUUID()), kind, null, to, Instant.EPOCH, null, null);
     }
 }

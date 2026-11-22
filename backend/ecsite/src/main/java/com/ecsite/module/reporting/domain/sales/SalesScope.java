@@ -1,9 +1,8 @@
 package com.ecsite.module.reporting.domain.sales;
 
+import com.ecsite.common.model.id.ProductId;
 import lombok.NonNull;
 import org.jspecify.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * 集計の範囲
@@ -14,7 +13,7 @@ import java.util.UUID;
  * @param excludeTax      消費税を除くか
  * @param excludeShipping 送料を除く指定（商品を選んだときは使わず、いつも除く）
  */
-public record SalesScope(@Nullable UUID productId, boolean excludeTax, boolean excludeShipping) {
+public record SalesScope(@Nullable ProductId productId, boolean excludeTax, boolean excludeShipping) {
 
     /**
      * 商品を選んだ範囲を作る。
@@ -25,7 +24,7 @@ public record SalesScope(@Nullable UUID productId, boolean excludeTax, boolean e
      * @param excludeTax 消費税を除くか
      * @return 商品を選んだ範囲
      */
-    public static SalesScope ofProduct(@NonNull UUID productId, boolean excludeTax) {
+    public static SalesScope ofProduct(@NonNull ProductId productId, boolean excludeTax) {
         return new SalesScope(productId, excludeTax, true);
     }
 

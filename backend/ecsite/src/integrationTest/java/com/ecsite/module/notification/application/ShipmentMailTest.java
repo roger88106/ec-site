@@ -184,7 +184,7 @@ class ShipmentMailTest {
         void leavesEventIncompleteWhenOrderNotFound() {
             // 準備：注文の腐敗防止層が、注文を見つけない
             var event = shipped();
-            when(orderDirectory.email(event.orderId().value())).thenThrow(new IllegalStateException("注文が見つかりません"));
+            when(orderDirectory.email(event.orderId())).thenThrow(new IllegalStateException("注文が見つかりません"));
 
             // 操作：注文の出荷のイベントを発行する
             publish(event);
@@ -246,7 +246,7 @@ class ShipmentMailTest {
     private OrderShipped shipped() {
         var event = OrderShipped.of(clock.instant(), new OrderId(UUID.randomUUID()), ORDER_NUMBER, OrderShipped.Carrier.YAMATO,
                 TRACKING_NUMBER);
-        when(orderDirectory.email(event.orderId().value())).thenReturn(email);
+        when(orderDirectory.email(event.orderId())).thenReturn(email);
         return event;
     }
 

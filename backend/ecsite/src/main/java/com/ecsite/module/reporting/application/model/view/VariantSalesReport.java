@@ -1,7 +1,8 @@
 package com.ecsite.module.reporting.application.model.view;
 
+import com.ecsite.common.model.id.ProductId;
+
 import java.util.List;
-import java.util.UUID;
 
 /**
  * バリアントの売れ行き
@@ -11,5 +12,5 @@ import java.util.UUID;
  * @param variants         バリアントごとの売れ行き（販売数量の多い順、同じなら商品カタログの並びの順）
  * @param shippingExcluded 送料を除いたか（バリアントの売れ行きは、いつも除く）
  */
-public record VariantSalesReport(UUID productId, String productName, List<VariantSales> variants, boolean shippingExcluded) {
+public record VariantSalesReport(ProductId productId, String productName, List<VariantSales> variants, boolean shippingExcluded) {
 }

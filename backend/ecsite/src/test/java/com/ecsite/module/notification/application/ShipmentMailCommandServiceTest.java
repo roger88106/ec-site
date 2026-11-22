@@ -44,7 +44,7 @@ class ShipmentMailCommandServiceTest {
     /**
      * 注文 ID
      */
-    private static final UUID ORDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000572");
+    private static final OrderId ORDER_ID = new OrderId(UUID.fromString("00000000-0000-0000-0000-000000000572"));
 
     /**
      * 注文番号
@@ -71,12 +71,12 @@ class ShipmentMailCommandServiceTest {
     /**
      * 送ったメールとして記録した注文 ID と宛先
      */
-    private final Map<UUID, String> recorded = new HashMap<>();
+    private final Map<OrderId, String> recorded = new HashMap<>();
 
     /**
      * 注文の腐敗防止層が宛先を返す注文（注文 ID と宛先）
      */
-    private final Map<UUID, String> emails = new HashMap<>();
+    private final Map<OrderId, String> emails = new HashMap<>();
 
     /**
      * 出荷通知メールのサービス
@@ -206,7 +206,7 @@ class ShipmentMailCommandServiceTest {
      * @return 注文の出荷のイベント
      */
     private static OrderShipped shipment(OrderShipped.Carrier carrier) {
-        return OrderShipped.of(SHIPPED_AT, new OrderId(ORDER_ID), ORDER_NUMBER, carrier, TRACKING_NUMBER);
+        return OrderShipped.of(SHIPPED_AT, ORDER_ID, ORDER_NUMBER, carrier, TRACKING_NUMBER);
     }
 
     /**

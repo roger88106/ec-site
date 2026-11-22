@@ -1,5 +1,9 @@
 package com.ecsite.module.reporting.domain.snapshot;
 
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;
 
@@ -7,7 +11,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 注文の写し
@@ -34,7 +37,7 @@ import java.util.UUID;
  * @param shippingTax      送料の消費税
  * @param lines            明細
  */
-public record ReportOrder(UUID orderId, String orderNumber, UUID memberId, Instant orderedAt, ReportOrderStatus status,
+public record ReportOrder(OrderId orderId, String orderNumber, MemberId memberId, Instant orderedAt, ReportOrderStatus status,
                           @Nullable Instant shippedAt, @Nullable DeliveryStatus deliveryStatus,
                           @Nullable Instant cancelledAt, @Nullable ReportCancellationKind cancellationKind,
                           @Nullable Boolean restocked,
@@ -61,7 +64,7 @@ public record ReportOrder(UUID orderId, String orderNumber, UUID memberId, Insta
      * @param productIds 行番号 → 商品 ID。ない行は null
      * @return 写し
      */
-    public ReportOrder withProductIds(Map<Integer, UUID> productIds) {
+    public ReportOrder withProductIds(Map<Integer, ProductId> productIds) {
         var replaced = lines.stream().map(line -> new Line(line.lineNo(), productIds.get(line.lineNo()), line.variantId(),
                 line.productCode(), line.variantCode(), line.productName(), line.axisValues(), line.quantity(),
                 line.ratePercent(), line.subtotalInclTax(), line.subtotalExclTax())).toList();
@@ -85,7 +88,7 @@ public record ReportOrder(UUID orderId, String orderNumber, UUID memberId, Insta
      * @param subtotalInclTax 税込小計
      * @param subtotalExclTax 税抜小計
      */
-    public record Line(int lineNo, @Nullable UUID productId, UUID variantId, String productCode, String variantCode,
+    public record Line(int lineNo, @Nullable ProductId productId, VariantId variantId, String productCode, String variantCode,
                        String productName, List<AxisValue> axisValues, int quantity, BigDecimal ratePercent,
                        Money subtotalInclTax, Money subtotalExclTax) {
     }

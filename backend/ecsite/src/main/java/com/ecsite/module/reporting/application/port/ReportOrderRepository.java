@@ -1,11 +1,12 @@
 package com.ecsite.module.reporting.application.port;
 
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.reporting.domain.snapshot.ReportOrder;
 import com.ecsite.module.reporting.domain.snapshot.StatusHistoryEntry;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 注文の写しと状態の履歴のリポジトリ
@@ -20,7 +21,7 @@ public interface ReportOrderRepository {
      *
      * @param orderId 注文 ID
      */
-    void lock(UUID orderId);
+    void lock(OrderId orderId);
 
     /**
      * 状態の履歴に 1 行追加する。
@@ -38,7 +39,7 @@ public interface ReportOrderRepository {
      * @param orderId 注文 ID
      * @return 履歴
      */
-    List<StatusHistoryEntry> history(UUID orderId);
+    List<StatusHistoryEntry> history(OrderId orderId);
 
     /**
      * 写しの明細の商品 ID を読む。
@@ -46,7 +47,7 @@ public interface ReportOrderRepository {
      * @param orderId 注文 ID
      * @return 行番号 → 商品 ID。写しがない、または商品 ID がない行は含めない
      */
-    Map<Integer, UUID> productIds(UUID orderId);
+    Map<Integer, ProductId> productIds(OrderId orderId);
 
     /**
      * 写しを上書きする。

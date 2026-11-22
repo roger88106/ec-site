@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.application.model.query;
 
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
 import com.ecsite.module.reporting.domain.sales.SalesScope;
@@ -26,7 +27,7 @@ class VariantSalesQueryTest {
     @DisplayName("商品を選んだ範囲なら、条件を作れる")
     void acceptsScopeWithProduct() {
         // 準備：商品を選んだ範囲
-        var scope = SalesScope.ofProduct(UUID.randomUUID(), false);
+        var scope = SalesScope.ofProduct(new ProductId(UUID.randomUUID()), false);
 
         // 操作：条件を作る
         var query = new VariantSalesQuery(PERIOD, Basis.ORDER, scope);

@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -30,11 +29,11 @@ class StockApiDirectory implements StockDirectory {
      * {@inheritDoc}
      */
     @Override
-    public Set<UUID> inStock(Collection<UUID> variantIds) {
+    public Set<VariantId> inStock(Collection<VariantId> variantIds) {
         // 在庫があるバリアントの ID だけを残す
-        return stockAvailabilityApi.availabilityOf(variantIds.stream().map(VariantId::new).toList()).entrySet().stream()
+        return stockAvailabilityApi.availabilityOf(variantIds).entrySet().stream()
                 .filter(Map.Entry::getValue)
-                .map(entry -> entry.getKey().value())
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toUnmodifiableSet());
     }
 }

@@ -13,7 +13,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の腐敗防止層
@@ -33,8 +32,8 @@ class OrderApiDirectory implements OrderDirectory {
      * {@inheritDoc}
      */
     @Override
-    public Optional<CartView> findCart(UUID cartId, @Nullable UUID requester) {
-        return orderQuoteApi.quoteCart(new CartId(cartId), requester == null ? null : new MemberId(requester)).map(OrderApiDirectory::toView);
+    public Optional<CartView> findCart(CartId cartId, @Nullable MemberId requester) {
+        return orderQuoteApi.quoteCart(cartId, requester).map(OrderApiDirectory::toView);
     }
 
     /**
@@ -42,7 +41,7 @@ class OrderApiDirectory implements OrderDirectory {
      */
     private static CartView toView(CartQuote quote) {
         return new CartView(
-                quote.cartId().value(),
+                quote.cartId(),
                 quote.items().stream().map(OrderApiDirectory::toItem).toList(),
                 toAmounts(quote.amounts()),
                 quote.orderable());
@@ -53,8 +52,8 @@ class OrderApiDirectory implements OrderDirectory {
      */
     private static CartView.Item toItem(CartQuote.Item item) {
         return new CartView.Item(
-                item.variantId().value(),
-                item.productId().value(),
+                item.variantId(),
+                item.productId(),
                 item.productName(),
                 item.axisValues().stream().map(axis -> new CartView.AxisValue(axis.name(), axis.value())).toList(),
                 item.imageUrl(),

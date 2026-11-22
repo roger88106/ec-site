@@ -1,6 +1,8 @@
 package com.ecsite.module.reporting.application;
 
 import com.ecsite.common.conversion.EnumConversion;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.reporting.application.port.CatalogDirectory;
 import com.ecsite.module.reporting.application.port.OrderDirectory;
@@ -24,7 +26,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 写しと状態の履歴を集めるサービス
@@ -60,7 +61,7 @@ class ReportCollectionCommandService {
      * @param event 注文の状態の変化
      */
     public void record(@NonNull OrderStatusChanged event) {
-        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId().value(), HistoryKind.ORDER_STATUS,
+        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.ORDER_STATUS,
                 event.from() == null ? null : toOrderStatus(event.from()), toOrderStatus(event.to()),
                 event.occurredAt(),
                 event.cancellationKind() == null ? null : toCancellationKind(event.cancellationKind()),
@@ -75,7 +76,7 @@ class ReportCollectionCommandService {
      * @param event 配送状態の変化
      */
     public void record(@NonNull DeliveryStatusChanged event) {
-        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId().value(), HistoryKind.DELIVERY_STATUS,
+        recordEntry(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.DELIVERY_STATUS,
                 event.from() == null ? null : toDeliveryStatus(event.from()), toDeliveryStatus(event.to()),
                 event.occurredAt(), null, null));
     }
@@ -127,7 +128,7 @@ class ReportCollectionCommandService {
     /**
      * 注文の写しを再作成する。
      */
-    private void refresh(UUID orderId) {
+    private void refresh(OrderId orderId) {
         // 注文の写しの取得
         var found = orderDirectory.find(orderId);
         if (found.isEmpty()) {
@@ -146,7 +147,7 @@ class ReportCollectionCommandService {
      *
      * <p>求められなければ、前の写しの商品 ID を残す。
      */
-    private Map<Integer, UUID> productIds(ReportOrder order) {
+    private Map<Integer, ProductId> productIds(ReportOrder order) {
         var byVariant = catalogDirectory.productIdsOf(order.lines().stream().map(ReportOrder.Line::variantId).toList());
         var result = new HashMap<>(repository.productIds(order.orderId()));
         order.lines().forEach(line -> {

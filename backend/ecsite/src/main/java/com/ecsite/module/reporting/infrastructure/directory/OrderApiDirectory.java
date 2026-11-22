@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 注文の腐敗防止層
@@ -41,8 +40,8 @@ class OrderApiDirectory implements OrderDirectory {
      * @return 写し。注文がなければ空
      */
     @Override
-    public Optional<ReportOrder> find(UUID orderId) {
-        return orderApi.find(new OrderId(orderId)).map(OrderApiDirectory::toReportOrder);
+    public Optional<ReportOrder> find(OrderId orderId) {
+        return orderApi.find(orderId).map(OrderApiDirectory::toReportOrder);
     }
 
     /**
@@ -51,9 +50,9 @@ class OrderApiDirectory implements OrderDirectory {
     static ReportOrder toReportOrder(OrderSnapshot snapshot) {
         var cancellation = snapshot.cancellation();
         return new ReportOrder(
-                snapshot.orderId().value(),
+                snapshot.orderId(),
                 snapshot.orderNumber(),
-                snapshot.memberId().value(),
+                snapshot.memberId(),
                 snapshot.orderedAt(),
                 toStatus(snapshot.status()),
                 null,
@@ -73,7 +72,7 @@ class OrderApiDirectory implements OrderDirectory {
                 snapshot.lines().stream().map(line -> new ReportOrder.Line(
                         line.lineNo(),
                         null,
-                        line.variantId().value(),
+                        line.variantId(),
                         line.productCode(),
                         line.variantCode(),
                         line.productName(),

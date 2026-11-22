@@ -362,7 +362,7 @@ class ReportCollectionTest {
 
             // 操作：この商品の、2026 年 10 月の注文基準の売上の推移を求める
             var october = new ReportPeriod(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-10-31"));
-            var report = salesTrend.trend(new SalesTrendQuery(october, Granularity.MONTH, Basis.ORDER, new SalesScope(productId, false, false)));
+            var report = salesTrend.trend(new SalesTrendQuery(october, Granularity.MONTH, Basis.ORDER, new SalesScope(new ProductId(productId), false, false)));
 
             // 確認：受付の 1 件の明細だけを数える
             assertThat(report.points()).extracting(TrendPoint::amount, TrendPoint::quantity)

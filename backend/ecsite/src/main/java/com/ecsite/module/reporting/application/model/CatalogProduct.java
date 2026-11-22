@@ -1,7 +1,8 @@
 package com.ecsite.module.reporting.application.model;
 
+import com.ecsite.common.model.id.ProductId;
+
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 商品カタログの商品
@@ -10,5 +11,5 @@ import java.util.UUID;
  * @param name      商品名
  * @param variants  バリアント（商品カタログの並びの順）
  */
-public record CatalogProduct(UUID productId, String name, List<CatalogVariant> variants) {
+public record CatalogProduct(ProductId productId, String name, List<CatalogVariant> variants) {
 }

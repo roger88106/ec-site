@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.jooq.reporting.tables.records.StatusHistoryRecord;
 import com.ecsite.module.reporting.domain.sales.Basis;
 import com.ecsite.module.reporting.domain.sales.ReportPeriod;
@@ -93,6 +94,7 @@ class ReportRestoreFailureTest {
      */
     private void assertHistoryHides(Consumer<StatusHistoryRecord> breaking) {
         var history = RECORDS.newRecord(STATUS_HISTORY);
+        history.setOrderId(UUID.randomUUID());
         history.setKind("ORDER_STATUS");
         history.setToStatus("ACCEPTED");
         history.setOccurredAt(Instant.EPOCH);
@@ -100,6 +102,6 @@ class ReportRestoreFailureTest {
         var dsl = new RestoreFailures().with("status_history", history).dsl();
         var repository = new JooqReportOrderRepository(dsl, JsonMapper.builder().build(), Clock.systemUTC());
 
-        assertValueIsHidden(() -> repository.history(UUID.randomUUID()), value, IllegalArgumentException.class);
+        assertValueIsHidden(() -> repository.history(new OrderId(UUID.randomUUID())), value, IllegalArgumentException.class);
     }
 }

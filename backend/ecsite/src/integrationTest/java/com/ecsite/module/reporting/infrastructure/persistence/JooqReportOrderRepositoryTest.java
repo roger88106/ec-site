@@ -1,5 +1,9 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
+import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.persistence.AdvisoryLockSpace;
 import com.ecsite.common.persistence.AdvisoryLocks;
@@ -137,7 +141,7 @@ class JooqReportOrderRepositoryTest {
             repository.save(order);
 
             // 確認：注文の行の項目が、写しの値のまま
-            assertOrderRowSaved(orderRow(order.orderId()), order.memberId());
+            assertOrderRowSaved(orderRow(order.orderId().value()), order.memberId().value());
         }
 
         @Test
@@ -150,7 +154,7 @@ class JooqReportOrderRepositoryTest {
             repository.save(order);
 
             // 確認：UTC の日付（2026-10-07 と 2026-10-09）でなく、日本時間の 2026-10-08 と 2026-10-10
-            var row = orderRow(order.orderId());
+            var row = orderRow(order.orderId().value());
             assertThat(row.get("ordered_on", LocalDate.class)).isEqualTo(LocalDate.of(2026, 10, 8));
             assertThat(row.get("shipped_on", LocalDate.class)).isEqualTo(LocalDate.of(2026, 10, 10));
         }
@@ -165,10 +169,10 @@ class JooqReportOrderRepositoryTest {
             repository.save(order);
 
             // 確認：明細が 2 行で、1 行目の軸の値が JSON
-            assertThat(dsl.fetchValue("select count(*) from reporting.sales_order_line where order_id = ?", order.orderId()))
+            assertThat(dsl.fetchValue("select count(*) from reporting.sales_order_line where order_id = ?", order.orderId().value()))
                     .isEqualTo(2L);
             assertThat(dsl.fetchValue("select axis_values::text from reporting.sales_order_line where order_id = ? and line_no = 1",
-                    order.orderId())).isEqualTo("[{\"name\": \"色\", \"value\": \"白\"}]");
+                    order.orderId().value())).isEqualTo("[{\"name\": \"色\", \"value\": \"白\"}]");
         }
 
         @Test
@@ -209,7 +213,7 @@ class JooqReportOrderRepositoryTest {
             // 確認：明細は新しい 1 行だけ
             assertThat(dsl.fetchValue("select count(*) from reporting.sales_order_line where order_id = ?", orderId))
                     .isEqualTo(1L);
-            assertThat(repository.productIds(orderId)).isEqualTo(Map.of(1, newProductId));
+            assertThat(repository.productIds(new OrderId(orderId))).isEqualTo(Map.of(1, new ProductId(newProductId)));
         }
     }
 
@@ -226,7 +230,7 @@ class JooqReportOrderRepositoryTest {
             repository.save(order);
 
             // 操作と確認：1 行目の商品 ID だけ
-            assertThat(repository.productIds(order.orderId())).isEqualTo(Map.of(1, productId));
+            assertThat(repository.productIds(order.orderId())).isEqualTo(Map.of(1, new ProductId(productId)));
         }
 
         @Test
@@ -244,7 +248,7 @@ class JooqReportOrderRepositoryTest {
         @DisplayName("写しのない注文には、空を返す")
         void emptyWithoutSnapshot() {
             // 操作と確認：保存していない注文 ID では空
-            assertThat(repository.productIds(UUID.randomUUID())).isEmpty();
+            assertThat(repository.productIds(new OrderId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -256,7 +260,7 @@ class JooqReportOrderRepositoryTest {
         @DisplayName("状態の履歴を追加すると、true を返す")
         void appendReturnsTrue() {
             // 準備：注文の状態の変化
-            var entry = new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+            var entry = new StatusHistoryEntry(UUID.randomUUID(), new OrderId(UUID.randomUUID()), HistoryKind.ORDER_STATUS,
                     ReportOrderStatus.PENDING_PAYMENT, ReportOrderStatus.ACCEPTED, ORDERED_AT, null, null);
 
             // 操作と確認：追加できる
@@ -267,7 +271,7 @@ class JooqReportOrderRepositoryTest {
         @DisplayName("注文の状態と配送状態の履歴を、発生日時の順に、キャンセルの種類と在庫に戻したかを含めて読める")
         void readsHistoryInOccurredOrder() {
             // 準備：発生日時と違う順の、キャンセル・受付・出荷済みの 3 行
-            var orderId = UUID.randomUUID();
+            var orderId = new OrderId(UUID.randomUUID());
             var cancelled = new StatusHistoryEntry(UUID.randomUUID(), orderId, HistoryKind.ORDER_STATUS,
                     ReportOrderStatus.ACCEPTED, ReportOrderStatus.CANCELLED, ORDERED_AT.plusSeconds(120),
                     ReportCancellationKind.OPERATOR, true);
@@ -292,11 +296,11 @@ class JooqReportOrderRepositoryTest {
         @DisplayName("履歴のない注文には、空を返す")
         void emptyWithoutHistory() {
             // 準備：別の注文の履歴
-            repository.appendHistory(new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+            repository.appendHistory(new StatusHistoryEntry(UUID.randomUUID(), new OrderId(UUID.randomUUID()), HistoryKind.ORDER_STATUS,
                     ReportOrderStatus.PENDING_PAYMENT, ReportOrderStatus.ACCEPTED, ORDERED_AT, null, null));
 
             // 操作と確認：履歴を追加していない注文 ID では空
-            assertThat(repository.history(UUID.randomUUID())).isEmpty();
+            assertThat(repository.history(new OrderId(UUID.randomUUID()))).isEmpty();
         }
 
         @Test
@@ -325,7 +329,7 @@ class JooqReportOrderRepositoryTest {
             repository.appendHistory(duplicate);
 
             // 確認：最初の 1 行だけ
-            assertThat(repository.history(orderId)).containsExactly(entry);
+            assertThat(repository.history(new OrderId(orderId))).containsExactly(entry);
         }
     }
 
@@ -348,7 +352,7 @@ class JooqReportOrderRepositoryTest {
             try {
                 transactionTemplate.executeWithoutResult(status -> {
                     // 操作：注文のロックを取る
-                    repository.lock(orderId);
+                    repository.lock(new OrderId(orderId));
 
                     // 確認：別のトランザクションは、同じ注文のロックを取れない
                     assertThat(tryLockInOtherTransaction(executor, orderId)).isFalse();
@@ -367,7 +371,7 @@ class JooqReportOrderRepositoryTest {
             try {
                 transactionTemplate.executeWithoutResult(status -> {
                     // 操作：注文のロックを取る
-                    repository.lock(UUID.randomUUID());
+                    repository.lock(new OrderId(UUID.randomUUID()));
 
                     // 確認：別のトランザクションは、別の注文のロックを取れる
                     assertThat(tryLockInOtherTransaction(executor, UUID.randomUUID())).isTrue();
@@ -386,7 +390,7 @@ class JooqReportOrderRepositoryTest {
             var executor = Executors.newSingleThreadExecutor();
             try {
                 // 操作：注文のロックを取ったトランザクションを終える
-                transactionTemplate.executeWithoutResult(status -> repository.lock(orderId));
+                transactionTemplate.executeWithoutResult(status -> repository.lock(new OrderId(orderId)));
 
                 // 確認：別のトランザクションは、同じ注文のロックを取れる
                 assertThat(tryLockInOtherTransaction(executor, orderId)).isTrue();
@@ -483,7 +487,7 @@ class JooqReportOrderRepositoryTest {
      * @return 注文の写し
      */
     private static ReportOrder cancelledOrder(UUID orderId, UUID productId) {
-        return new ReportOrder(orderId, ORDER_NUMBER, UUID.randomUUID(), ORDERED_AT,
+        return new ReportOrder(new OrderId(orderId), ORDER_NUMBER, new MemberId(UUID.randomUUID()), ORDERED_AT,
                 ReportOrderStatus.CANCELLED, null, null, SHIPPED_AT, ReportCancellationKind.OPERATOR, true, POSTAL_CODE,
                 PREFECTURE_CODE, BUYER_AGE, ReportBuyerGender.FEMALE, Money.of(TOTAL_AMOUNT), Money.of(SHIPPING_FEE),
                 Money.of(TAX_TOTAL), Money.of(SHIPPING_TAX), List.of(line(1, productId)));
@@ -500,7 +504,7 @@ class JooqReportOrderRepositoryTest {
      * @return 注文の写し
      */
     private static ReportOrder order(UUID orderId, ReportOrderStatus status, List<ReportOrder.Line> lines) {
-        return new ReportOrder(orderId, ORDER_NUMBER, UUID.randomUUID(), ORDERED_AT, status, null, null, null, null,
+        return new ReportOrder(new OrderId(orderId), ORDER_NUMBER, new MemberId(UUID.randomUUID()), ORDERED_AT, status, null, null, null, null,
                 null, POSTAL_CODE, PREFECTURE_CODE, BUYER_AGE, ReportBuyerGender.FEMALE, Money.of(TOTAL_AMOUNT),
                 Money.of(SHIPPING_FEE), Money.of(TAX_TOTAL), Money.of(SHIPPING_TAX), lines);
     }
@@ -513,7 +517,7 @@ class JooqReportOrderRepositoryTest {
      * @return 明細
      */
     private static ReportOrder.Line line(int lineNo, UUID productId) {
-        return new ReportOrder.Line(lineNo, productId, UUID.randomUUID(), "TS-001", "TS-001-WM", "T シャツ",
+        return new ReportOrder.Line(lineNo, productId == null ? null : new ProductId(productId), new VariantId(UUID.randomUUID()), "TS-001", "TS-001-WM", "T シャツ",
                 List.of(new ReportOrder.AxisValue("色", "白")), 1, BigDecimal.TEN, Money.of(2970), Money.of(2700));
     }
 
@@ -524,7 +528,7 @@ class JooqReportOrderRepositoryTest {
      * @return 履歴の 1 行
      */
     private static StatusHistoryEntry acceptedEntry(UUID orderId) {
-        return new StatusHistoryEntry(UUID.randomUUID(), orderId, HistoryKind.ORDER_STATUS,
+        return new StatusHistoryEntry(UUID.randomUUID(), new OrderId(orderId), HistoryKind.ORDER_STATUS,
                 ReportOrderStatus.PENDING_PAYMENT, ReportOrderStatus.ACCEPTED, ORDERED_AT, null, null);
     }
 

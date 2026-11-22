@@ -25,7 +25,7 @@ class OrderApiDirectoryTest {
     /**
      * 注文 ID
      */
-    private static final UUID ORDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000572");
+    private static final OrderId ORDER_ID = new OrderId(UUID.fromString("00000000-0000-0000-0000-000000000572"));
 
     /**
      * 注文のメールアドレス
@@ -66,7 +66,7 @@ class OrderApiDirectoryTest {
      */
     private static OrderApi orderApiReturning(Optional<String> email) {
         var api = mock(OrderApi.class);
-        when(api.findEmail(new OrderId(ORDER_ID))).thenReturn(email);
+        when(api.findEmail(ORDER_ID)).thenReturn(email);
         return api;
     }
 }

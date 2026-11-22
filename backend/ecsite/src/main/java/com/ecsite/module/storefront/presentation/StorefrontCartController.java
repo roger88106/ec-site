@@ -2,7 +2,7 @@ package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.api.store.CartViewApi;
 import com.ecsite.api.store.model.Cart;
-import com.ecsite.common.model.id.MemberId;
+import com.ecsite.common.model.id.CartId;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.storefront.application.StorefrontQueryService;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ class StorefrontCartController implements CartViewApi {
      */
     @Override
     public ResponseEntity<Cart> getCart(UUID cartId) {
-        var requester = currentMemberIds.find().map(MemberId::value).orElse(null);
-        return ResponseEntity.ok(mapper.toCart(storefrontQueryService.getCart(cartId, requester)));
+        var requester = currentMemberIds.find().orElse(null);
+        return ResponseEntity.ok(mapper.toCart(storefrontQueryService.getCart(new CartId(cartId), requester)));
     }
 }

@@ -1,6 +1,7 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.model.SegmentTotal;
 import com.ecsite.module.reporting.application.model.VariantTotal;
@@ -96,7 +97,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
         return productLines(dsl.select(SALES_ORDER_LINE.VARIANT_ID, variantCode, quantity, amount).from(SALES_ORDER),
                 period, basis, scope)
                 .groupBy(SALES_ORDER_LINE.VARIANT_ID)
-                .fetch(row -> new VariantTotal(row.get(SALES_ORDER_LINE.VARIANT_ID), row.get(variantCode),
+                .fetch(row -> new VariantTotal(new VariantId(row.get(SALES_ORDER_LINE.VARIANT_ID)), row.get(variantCode),
                         count(row.get(quantity)), money(row.get(amount))));
     }
 
@@ -180,7 +181,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     private static <R extends Record> SelectConditionStep<R> productLines(SelectJoinStep<R> select, ReportPeriod period,
                                                                            Basis basis, SalesScope scope) {
         return select.join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
-                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(Objects.requireNonNull(scope.productId(), "商品を選んだ集計の範囲には商品 ID がある")));
+                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(Objects.requireNonNull(scope.productId(), "商品を選んだ集計の範囲には商品 ID がある").value()));
     }
 
     /**

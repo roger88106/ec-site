@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 商品カタログの腐敗防止層
@@ -37,10 +36,10 @@ class CatalogApiDirectory implements CatalogDirectory {
      * @return バリアント ID → 商品 ID。存在しないバリアントは含めない
      */
     @Override
-    public Map<UUID, UUID> productIdsOf(Collection<UUID> variantIds) {
-        var result = new LinkedHashMap<UUID, UUID>();
-        catalogApi.findVariants(variantIds.stream().map(VariantId::new).toList())
-                .forEach((variantId, variant) -> result.put(variantId.value(), variant.productId().value()));
+    public Map<VariantId, ProductId> productIdsOf(Collection<VariantId> variantIds) {
+        var result = new LinkedHashMap<VariantId, ProductId>();
+        catalogApi.findVariants(variantIds)
+                .forEach((variantId, variant) -> result.put(variantId, variant.productId()));
         return result;
     }
 
@@ -51,9 +50,9 @@ class CatalogApiDirectory implements CatalogDirectory {
      * @return 商品。なければ空
      */
     @Override
-    public Optional<CatalogProduct> findProduct(UUID productId) {
-        return catalogApi.findProduct(new ProductId(productId)).map(product -> new CatalogProduct(product.productId().value(), product.name(),
-                product.variants().stream().map(variant -> new CatalogVariant(variant.variantId().value(), variant.variantCode(),
+    public Optional<CatalogProduct> findProduct(ProductId productId) {
+        return catalogApi.findProduct(productId).map(product -> new CatalogProduct(product.productId(), product.name(),
+                product.variants().stream().map(variant -> new CatalogVariant(variant.variantId(), variant.variantCode(),
                                 variant.axisValues().stream()
                                         .map(axis -> new ReportOrder.AxisValue(axis.name(), axis.value()))
                                         .toList()))

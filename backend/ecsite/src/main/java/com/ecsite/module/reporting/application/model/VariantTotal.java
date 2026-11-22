@@ -1,8 +1,7 @@
 package com.ecsite.module.reporting.application.model;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.model.value.Money;
-
-import java.util.UUID;
 
 /**
  * バリアントの売上の集計
@@ -12,5 +11,5 @@ import java.util.UUID;
  * @param quantity    販売数量
  * @param amount      売上額
  */
-public record VariantTotal(UUID variantId, String variantCode, long quantity, Money amount) {
+public record VariantTotal(VariantId variantId, String variantCode, long quantity, Money amount) {
 }

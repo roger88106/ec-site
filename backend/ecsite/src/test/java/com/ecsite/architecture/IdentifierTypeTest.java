@@ -3,6 +3,7 @@ package com.ecsite.architecture;
 import com.ecsite.architecture.sample.identifier.module.sample.api.ExampleApi;
 import com.ecsite.architecture.sample.identifier.module.sample.application.ExampleProperties;
 import com.ecsite.architecture.sample.identifier.module.sample.application.model.ExampleCommand;
+import com.ecsite.architecture.sample.identifier.module.sample.domain.EventIdCopy;
 import com.ecsite.architecture.sample.identifier.module.sample.domain.ExampleId;
 import com.ecsite.architecture.sample.identifier.module.sample.domain.ExampleIdWithOther;
 import com.ecsite.architecture.sample.identifier.module.sample.domain.UuidConstructor;
@@ -43,25 +44,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * UUID を使ってよいのは、presentation、infrastructure、共通のクラス（{@code AdvisoryLocks}、{@code CreatedResponses}）と、次の例外だけ。
  * <ul>
  *   <li>{@link EntityId} の実装の項目 {@code value}、メソッド {@code value()}、コンストラクター</li>
- *   <li>{@link DomainEvent} の {@code newEventId()}、イベントの項目 {@code eventId}、メソッド {@code eventId()}、コンストラクターの最初の引数（イベント ID）</li>
+ *   <li>イベント ID：{@link DomainEvent} の {@code newEventId()}、項目 {@code eventId}、メソッド {@code eventId()}。
+ *       項目 {@code eventId} を持つクラス（イベントと、受け取ったイベントの ID の写しを持つ記録）では、コンストラクターの最初の引数</li>
  *   <li>設定の型（{@link ConfigurationProperties} を付けたクラス）。環境変数の文字列から作るので、使う側で識別子の型に変換する</li>
  * </ul>
  */
 class IdentifierTypeTest {
 
     // ============================== 定数 ==============================
-
-    /**
-     * まだ識別子の型に替えていないパッケージ
-     *
-     * <p>モジュールを識別子の型に替えるたびに、そのパッケージをこの一覧から除く。
-     * 全てを替えたら空にし、全てのモジュールと共通のモデルに規則を当てる。
-     * 一覧の全てのパッケージに UUID の使用が残っていること（除き忘れていないこと）は、別のテストが確認する。
-     */
-    private static final List<String> UNCONVERTED_PACKAGES = List.of(
-            "com.ecsite.module.notification",
-            "com.ecsite.module.reporting",
-            "com.ecsite.module.storefront");
 
     /**
      * 検査の対象のパッケージ（モジュールの domain・application・api・event と、共通のモデル。それぞれの下を含む）の形
@@ -72,34 +62,13 @@ class IdentifierTypeTest {
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("本番のクラスの、除外の一覧の外に、UUID を使う項目・引数・戻り値がない")
+    @DisplayName("本番のクラスに、UUID を使う項目・引数・戻り値がない")
     void productionCodeDoesNotUseUuid() {
-        // 準備：検査の対象のクラスが 1 件以上ある（除外の一覧の外は、全てを替えるまで 0 件のことがあるので、一覧を除かずに数える）
-        ProductionClasses.requireNotEmpty(checkedClasses(ProductionClasses.handwritten(), List.of()), "識別子の型の検査の対象のクラス");
+        // 準備：検査の対象のクラスが 1 件以上ある
+        ProductionClasses.requireNotEmpty(checkedClasses(ProductionClasses.handwritten()), "識別子の型の検査の対象のクラス");
 
-        // 操作と確認：除外の一覧の外に違反がない
-        assertThat(violations(ProductionClasses.handwritten(), UNCONVERTED_PACKAGES)).isEmpty();
-    }
-
-    @Test
-    @DisplayName("除外の一覧の全てのパッケージに、UUID を使う項目・引数・戻り値が残っている")
-    void listedPackagesStillUseUuid() {
-        // 操作：除外の一覧を空にした規則を、本番のクラスに当てる
-        Map<String, String> violations = violations(ProductionClasses.handwritten(), List.of());
-
-        // 確認：一覧の全てのパッケージに違反がある。替えたのに一覧に残していれば、ここで失敗する（一覧から除く）
-        for (String listed : UNCONVERTED_PACKAGES) {
-            assertThat(violations.values())
-                    .as("除外の一覧のパッケージ：%s（識別子の型に替えたなら一覧から除く）", listed)
-                    .anyMatch(packageName -> ProductionClasses.isInPackage(packageName, listed));
-        }
-    }
-
-    @Test
-    @DisplayName("除外の一覧を空にすると、本番のクラスに違反がある（レッドの確認）")
-    void emptyListFindsViolationsInProduction() {
-        // 操作と確認：一覧を空にした規則を、本番のクラスに当てると、違反がある
-        assertThat(violations(ProductionClasses.handwritten(), List.of())).isNotEmpty();
+        // 操作と確認：違反がない
+        assertThat(violations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
@@ -108,11 +77,11 @@ class IdentifierTypeTest {
         // 準備：違反の例と、規則に合う例（識別子の型、イベント ID、設定の型、対象外の infrastructure）
         JavaClasses examples = new ClassFileImporter().importClasses(
                 UuidField.class, UuidMethod.class, UuidConstructor.class, UuidTypeArguments.class,
-                ExampleId.class, ExampleIdWithOther.class, ExampleEvent.class, ExampleCommand.class, ExampleApi.class,
+                ExampleId.class, ExampleIdWithOther.class, ExampleEvent.class, EventIdCopy.class, ExampleCommand.class, ExampleApi.class,
                 ExampleProperties.class, UsesUuid.class);
 
         // 操作と確認：違反の例の UUID だけが違反になる
-        assertThat(violations(examples, List.of()).keySet()).containsExactlyInAnyOrder(
+        assertThat(violations(examples).keySet()).containsExactlyInAnyOrder(
                 UuidField.class.getName() + ".orderId",
                 UuidMethod.class.getName() + ".convert(java.util.UUID)",
                 UuidConstructor.class.getName() + ".<init>(java.util.UUID)",
@@ -123,22 +92,13 @@ class IdentifierTypeTest {
                 ExampleEvent.class.getName() + ".orderId",
                 ExampleEvent.class.getName() + ".orderId()",
                 ExampleEvent.class.getName() + ".<init>(java.util.UUID, java.time.Instant, java.util.UUID)",
+                EventIdCopy.class.getName() + ".orderId",
+                EventIdCopy.class.getName() + ".orderId()",
+                EventIdCopy.class.getName() + ".<init>(java.util.UUID, java.util.UUID)",
                 ExampleCommand.class.getName() + ".productId",
                 ExampleCommand.class.getName() + ".productId()",
                 ExampleCommand.class.getName() + ".<init>(java.util.UUID)",
                 ExampleApi.class.getName() + ".memberId");
-    }
-
-    @Test
-    @DisplayName("規則は、除外の一覧のパッケージには当たらない")
-    void ruleDoesNotMatchListedPackage() {
-        // 準備：違反の例（別のパッケージの 2 つ）
-        JavaClasses examples = new ClassFileImporter().importClasses(UuidField.class, ExampleApi.class);
-
-        // 操作と確認：片方のパッケージを一覧に入れると、もう片方だけが違反になり、両方を含む上位のパッケージを入れると、違反にならない
-        assertThat(violations(examples, List.of(UuidField.class.getPackageName())).keySet())
-                .containsExactly(ExampleApi.class.getName() + ".memberId");
-        assertThat(violations(examples, List.of("com.ecsite.architecture.sample.identifier.module.sample"))).isEmpty();
     }
 
     // ============================== 補助 ==============================
@@ -146,28 +106,25 @@ class IdentifierTypeTest {
     /**
      * 検査の対象のクラスを返す。
      *
-     * @param classes  調べるクラス
-     * @param excluded 除外するパッケージ（その下を含む）
-     * @return 対象のパッケージのクラスのうち、除外の一覧にないもの
+     * @param classes 調べるクラス
+     * @return 対象のパッケージのクラスのうち、設定の型でないもの
      */
-    private static List<JavaClass> checkedClasses(JavaClasses classes, List<String> excluded) {
+    private static List<JavaClass> checkedClasses(JavaClasses classes) {
         return classes.stream()
                 .filter(CHECKED_PACKAGE)
                 .filter(javaClass -> !javaClass.isAnnotatedWith(ConfigurationProperties.class))
-                .filter(javaClass -> excluded.stream().noneMatch(root -> ProductionClasses.isInPackage(javaClass.getPackageName(), root)))
                 .toList();
     }
 
     /**
      * UUID を使う項目・メソッド・コンストラクターを返す。
      *
-     * @param classes  調べるクラス
-     * @param excluded 除外するパッケージ（その下を含む）
+     * @param classes 調べるクラス
      * @return 違反の項目・メソッド・コンストラクターの完全な名前から、そのクラスのパッケージの名前への対応（名前の順）
      */
-    private static Map<String, String> violations(JavaClasses classes, List<String> excluded) {
+    private static Map<String, String> violations(JavaClasses classes) {
         Map<String, String> found = new TreeMap<>();
-        for (JavaClass javaClass : checkedClasses(classes, excluded)) {
+        for (JavaClass javaClass : checkedClasses(classes)) {
             javaClass.getFields().stream()
                     .filter(field -> usesUuid(field.getType()))
                     .filter(field -> !isException(javaClass, field))
@@ -216,7 +173,7 @@ class IdentifierTypeTest {
     }
 
     /**
-     * 例外の項目か（識別子の型の {@code value}、イベントの {@code eventId}）を返す。
+     * 例外の項目か（識別子の型の {@code value}、イベント ID の {@code eventId}）を返す。
      *
      * @param owner 項目を持つクラス
      * @param field 項目
@@ -227,7 +184,7 @@ class IdentifierTypeTest {
     }
 
     /**
-     * 例外のメソッドか（識別子の型の {@code value()}、イベントの {@code eventId()}、{@code DomainEvent.newEventId()}）を返す。
+     * 例外のメソッドか（識別子の型の {@code value()}、イベント ID の {@code eventId()}、{@code DomainEvent.newEventId()}）を返す。
      *
      * @param owner  メソッドを持つクラス
      * @param method メソッド
@@ -243,17 +200,27 @@ class IdentifierTypeTest {
      *
      * @param owner クラス
      * @param name  項目かメソッドの名前
-     * @return 識別子の型の {@code value}、またはイベントの {@code eventId} なら true
+     * @return 識別子の型の {@code value}、またはイベント ID を持つクラスの {@code eventId} なら true
      */
     private static boolean isExceptionName(JavaClass owner, String name) {
         return (name.equals("value") && owner.isAssignableTo(EntityId.class))
-                || (name.equals("eventId") && owner.isAssignableTo(DomainEvent.class));
+                || (name.equals("eventId") && hasEventId(owner));
+    }
+
+    /**
+     * イベント ID を持つクラス（イベントか、項目 {@code eventId} を持つクラス）かを返す。
+     *
+     * @param owner クラス
+     * @return イベント ID を持てば true
+     */
+    private static boolean hasEventId(JavaClass owner) {
+        return owner.isAssignableTo(DomainEvent.class) || owner.tryGetField("eventId").isPresent();
     }
 
     /**
      * コンストラクターが違反でないかを返す。
      *
-     * <p>識別子の型は、UUID を受け取ってよい。イベントは、最初の引数がイベント ID なので除き、2 つ目以降に UUID があれば違反にする。
+     * <p>識別子の型は、UUID を受け取ってよい。イベント ID を持つクラスは、最初の引数がイベント ID なので除き、2 つ目以降に UUID があれば違反にする。
      *
      * @param owner       コンストラクターを持つクラス
      * @param constructor コンストラクター
@@ -264,7 +231,7 @@ class IdentifierTypeTest {
             return true;
         }
         List<? extends JavaType> parameters = constructor.getParameterTypes();
-        boolean eventIdFirst = owner.isAssignableTo(DomainEvent.class) && !parameters.isEmpty() && usesUuid(parameters.get(0));
+        boolean eventIdFirst = hasEventId(owner) && !parameters.isEmpty() && usesUuid(parameters.get(0));
         return !usesUuid(eventIdFirst ? parameters.subList(1, parameters.size()) : parameters);
     }
 }

@@ -55,7 +55,7 @@ class JooqPendingAssetRepository implements PendingAssetRepository {
     public List<PendingAsset> deleteExpiredBefore(Instant preparedBefore, int limit) {
         // 選ぶのと削除するのを 1 文にし、他のトランザクションがロックしている行はスキップする（次の回で削除する）
         // ※選ぶ行は MATERIALIZED の CTE で 1 回だけ確定させる。IN の副問い合わせに直接書くと、実行計画によっては
-        //   1 文の中で繰り返し評価され、前の評価でロックした行をスキップして次の行を選ぶので、件数の上限より多く削除しうる
+        //   外側の行ごとに再評価され、前の評価で削除した行をスキップして次の行を選ぶので、件数の上限より多く削除しうる
         var targets = name("targets").fields("id").asMaterialized(select(PENDING_ASSET.ID)
                 .from(PENDING_ASSET)
                 .where(PENDING_ASSET.PREPARED_AT.lt(preparedBefore))

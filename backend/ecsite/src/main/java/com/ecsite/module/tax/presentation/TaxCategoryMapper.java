@@ -12,6 +12,7 @@ import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.domain.taxcategory.vo.TaxRateId;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -79,7 +80,7 @@ class TaxCategoryMapper {
      */
     private static ReplaceTaxRatesCommand.Rate toRate(TaxRateDraft draft) {
         return new ReplaceTaxRatesCommand.Rate(
-                draft.getId().map(TaxRateId::new).orElse(null),
+                toTaxRateId(draft.getId().orElse(null)),
                 draft.getRatePercent(),
                 ApiDateTimes.toInstant(draft.getEffectiveFrom().orElse(null)),
                 ApiDateTimes.toInstant(draft.getEffectiveTo().orElse(null)));
@@ -94,5 +95,12 @@ class TaxCategoryMapper {
                 .ratePercent(view.ratePercent())
                 .effectiveFrom(ApiDateTimes.toOffsetDateTime(view.effectiveFrom()))
                 .effectiveTo(ApiDateTimes.toOffsetDateTime(view.effectiveTo()));
+    }
+
+    /**
+     * 税率の ID を識別子の型に変換する。null（新しい税率）は null のまま返す。
+     */
+    private static @Nullable TaxRateId toTaxRateId(@Nullable UUID id) {
+        return id == null ? null : new TaxRateId(id);
     }
 }

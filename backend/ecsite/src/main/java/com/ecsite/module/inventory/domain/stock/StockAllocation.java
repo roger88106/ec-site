@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.domain.stock;
 
+import com.ecsite.common.model.id.VariantId;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jmolecules.ddd.annotation.Service;
@@ -7,7 +8,6 @@ import org.jmolecules.ddd.annotation.Service;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 在庫が足りるかの判定
@@ -23,8 +23,8 @@ public final class StockAllocation {
      * @param sellable  バリアント ID → 販売可能数。在庫のないバリアントは含まなくてよい（0 とみなす）
      * @return 足りないバリアントの ID。すべて足りれば空
      */
-    public static Set<UUID> shortages(Map<UUID, Integer> requested, Map<UUID, Integer> sellable) {
-        var shortages = new LinkedHashSet<UUID>();
+    public static Set<VariantId> shortages(Map<VariantId, Integer> requested, Map<VariantId, Integer> sellable) {
+        var shortages = new LinkedHashSet<VariantId>();
         requested.forEach((variantId, quantity) -> {
             if (sellable.getOrDefault(variantId, 0) < quantity) {
                 shortages.add(variantId);

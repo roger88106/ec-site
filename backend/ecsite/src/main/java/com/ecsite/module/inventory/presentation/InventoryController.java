@@ -6,6 +6,8 @@ import com.ecsite.api.admin.model.Stock;
 import com.ecsite.api.admin.model.StockAdjustment;
 import com.ecsite.api.admin.model.StockAdjustmentPage;
 import com.ecsite.api.admin.model.StockSummaryList;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.inventory.application.StockCommandService;
@@ -57,7 +59,7 @@ class InventoryController implements InventoryApi {
      */
     @Override
     public ResponseEntity<Stock> getStock(UUID variantId) {
-        return ResponseEntity.ok(mapper.toStock(variantId, queryService.getQuantity(variantId)));
+        return ResponseEntity.ok(mapper.toStock(variantId, queryService.getQuantity(new VariantId(variantId))));
     }
 
     /**
@@ -70,7 +72,7 @@ class InventoryController implements InventoryApi {
      */
     @Override
     public ResponseEntity<StockAdjustmentPage> listStockAdjustments(UUID variantId, Integer page, Integer size) {
-        var result = queryService.listAdjustments(variantId, PageRequest.of(page, size));
+        var result = queryService.listAdjustments(new VariantId(variantId), PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toStockAdjustmentPage(result));
     }
 
@@ -82,7 +84,8 @@ class InventoryController implements InventoryApi {
      */
     @Override
     public ResponseEntity<StockSummaryList> listStockSummaries(List<UUID> productIds) {
-        return ResponseEntity.ok(mapper.toStockSummaryList(queryService.listStockSummaries(productIds)));
+        var ids = productIds.stream().map(ProductId::new).toList();
+        return ResponseEntity.ok(mapper.toStockSummaryList(queryService.listStockSummaries(ids)));
     }
 
 // ============================== POST ==============================

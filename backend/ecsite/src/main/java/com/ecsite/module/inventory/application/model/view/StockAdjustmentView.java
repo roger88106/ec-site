@@ -1,10 +1,11 @@
 package com.ecsite.module.inventory.application.model.view;
 
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
+import com.ecsite.module.inventory.domain.stock.vo.StockAdjustmentId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * 在庫調整のビュー
@@ -21,7 +22,7 @@ import java.util.UUID;
  * @param adjustedAt    調整日時
  * @param operatorName  調整した運営者の氏名（写し）。運営者の調整でなければ（記録を始める前も）null
  */
-public record StockAdjustmentView(UUID id, int delta, StockAdjustmentReason reason, @Nullable String memo,
-                                  @Nullable UUID orderId, @Nullable String orderNumber, int quantityAfter,
+public record StockAdjustmentView(StockAdjustmentId id, int delta, StockAdjustmentReason reason, @Nullable String memo,
+                                  @Nullable OrderId orderId, @Nullable String orderNumber, int quantityAfter,
                                   Instant adjustedAt, @Nullable String operatorName) {
 }

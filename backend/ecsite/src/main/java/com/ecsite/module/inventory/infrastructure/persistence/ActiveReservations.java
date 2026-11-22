@@ -1,12 +1,12 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
+import com.ecsite.common.model.id.ReservationHolderId;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jooq.Condition;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.UUID;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 
@@ -25,8 +25,8 @@ final class ActiveReservations {
      * @param now              現在時刻
      * @return 条件
      */
-    static Condition condition(@Nullable UUID excludedHolderId, Instant now) {
+    static Condition condition(@Nullable ReservationHolderId excludedHolderId, Instant now) {
         var active = STOCK_RESERVATION.EXPIRES_AT.gt(now);
-        return excludedHolderId == null ? active : active.and(STOCK_RESERVATION.HOLDER_ID.ne(excludedHolderId));
+        return excludedHolderId == null ? active : active.and(STOCK_RESERVATION.HOLDER_ID.ne(excludedHolderId.value()));
     }
 }

@@ -1,5 +1,8 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.application.StockQueryService;
 import com.ecsite.module.inventory.application.StockReservationCommandService;
 import lombok.NonNull;
@@ -11,7 +14,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 販売可能数と引当の API
@@ -39,7 +41,8 @@ public class StockReservationApi {
      * @param excludedHolderId 数えない引当の持ち主（注文手続き中の自分の引当）。なければ null
      * @return バリアント ID → 販売可能数（指定したすべてのバリアントを含む）
      */
-    public Map<UUID, Integer> sellableQuantities(@NonNull Collection<UUID> variantIds, @Nullable UUID excludedHolderId) {
+    public Map<VariantId, Integer> sellableQuantities(@NonNull Collection<VariantId> variantIds,
+                                                     @Nullable ReservationHolderId excludedHolderId) {
         return queryService.sellableQuantities(variantIds, excludedHolderId);
     }
 
@@ -56,7 +59,8 @@ public class StockReservationApi {
      * @return 足りないバリアントの ID。引き当てたら空
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
-    public Set<UUID> reserve(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull Instant expiresAt) {
+    public Set<VariantId> reserve(@NonNull ReservationHolderId holderId, @NonNull Map<VariantId, Integer> quantities,
+                                  @NonNull Instant expiresAt) {
         return reservationService.reserve(holderId, quantities, expiresAt);
     }
 
@@ -68,7 +72,7 @@ public class StockReservationApi {
      *
      * @param holderIds 持ち主 ID
      */
-    public void release(@NonNull Collection<UUID> holderIds) {
+    public void release(@NonNull Collection<ReservationHolderId> holderIds) {
         reservationService.release(holderIds);
     }
 
@@ -86,8 +90,8 @@ public class StockReservationApi {
      * @return 足りないバリアントの ID。減算したら空
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
-    public Set<UUID> commit(@NonNull UUID holderId, @NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId,
-                            @NonNull String orderNumber) {
+    public Set<VariantId> commit(@NonNull ReservationHolderId holderId, @NonNull Map<VariantId, Integer> quantities,
+                                 @NonNull OrderId orderId, @NonNull String orderNumber) {
         return reservationService.commit(holderId, quantities, orderId, orderNumber);
     }
 
@@ -101,7 +105,7 @@ public class StockReservationApi {
      * @param orderNumber 注文番号
      * @throws IllegalArgumentException 数量が 0 以下のバリアントがある
      */
-    public void restore(@NonNull Map<UUID, Integer> quantities, @NonNull UUID orderId, @NonNull String orderNumber) {
+    public void restore(@NonNull Map<VariantId, Integer> quantities, @NonNull OrderId orderId, @NonNull String orderNumber) {
         reservationService.restore(quantities, orderId, orderNumber);
     }
 }

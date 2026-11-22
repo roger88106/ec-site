@@ -1,5 +1,7 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.support.MutableClock;
 import com.ecsite.support.config.IntegrationTest;
@@ -109,7 +111,7 @@ class PlaceOrderStockApiTest {
 
             // 確認：販売可能数が 1（在庫数が減り、引当が残っていない）
             var variant = fixture.shirtVariant();
-            assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, SHIRT_STOCK - SHIRT_QUANTITY);
+            assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null)).containsEntry(new VariantId(variant), SHIRT_STOCK - SHIRT_QUANTITY);
         }
 
         @Test
@@ -174,7 +176,7 @@ class PlaceOrderStockApiTest {
         private UUID checkoutReservedByOthersAfterExpiry() throws Exception {
             var checkoutId = fixture.orders.startCheckout(fixture.cartId);
             clock.setInstant(clock.instant().plus(PAST_EXPIRY));
-            stockReservationApi.reserve(UUID.randomUUID(), Map.of(fixture.shirtVariant(), 2), clock.instant().plus(Duration.ofMinutes(15)));
+            stockReservationApi.reserve(new ReservationHolderId(UUID.randomUUID()), Map.of(new VariantId(fixture.shirtVariant()), 2), clock.instant().plus(Duration.ofMinutes(15)));
             return checkoutId;
         }
     }

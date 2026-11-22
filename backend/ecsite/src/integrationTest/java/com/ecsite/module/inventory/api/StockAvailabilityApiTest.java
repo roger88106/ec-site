@@ -1,5 +1,7 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.InventoryTestData;
@@ -63,11 +65,11 @@ class StockAvailabilityApiTest {
     void returnsAvailability() {
         // 準備：在庫数 1、在庫数 0、在庫が作られていない、の 3 つのバリアント
         var productId = UUID.randomUUID();
-        var inStock = UUID.randomUUID();
-        var soldOut = UUID.randomUUID();
-        var withoutStock = UUID.randomUUID();
-        inventory.stock(inStock, productId, 1);
-        inventory.create(soldOut, productId);
+        var inStock = new VariantId(UUID.randomUUID());
+        var soldOut = new VariantId(UUID.randomUUID());
+        var withoutStock = new VariantId(UUID.randomUUID());
+        inventory.stock(inStock.value(), productId, 1);
+        inventory.create(soldOut.value(), productId);
 
         // 操作：3 つの在庫の有無を求める
         var availability = api.availabilityOf(List.of(inStock, soldOut, withoutStock));
@@ -84,12 +86,12 @@ class StockAvailabilityApiTest {
     void treatsFullyReservedAsOutOfStock() {
         // 準備：在庫数 1 の全てと、在庫数 2 のうち 1 を引き当てる
         var productId = UUID.randomUUID();
-        var reserved = UUID.randomUUID();
-        var partlyReserved = UUID.randomUUID();
-        inventory.stock(reserved, productId, 1);
-        inventory.stock(partlyReserved, productId, 2);
+        var reserved = new VariantId(UUID.randomUUID());
+        var partlyReserved = new VariantId(UUID.randomUUID());
+        inventory.stock(reserved.value(), productId, 1);
+        inventory.stock(partlyReserved.value(), productId, 2);
         var expiresAt = NOW.plus(Duration.ofHours(1));
-        reservationApi.reserve(UUID.randomUUID(), Map.of(reserved, 1, partlyReserved, 1), expiresAt);
+        reservationApi.reserve(new ReservationHolderId(UUID.randomUUID()), Map.of(reserved, 1, partlyReserved, 1), expiresAt);
 
         // 操作：在庫の有無を求める
         var availability = api.availabilityOf(List.of(reserved, partlyReserved));

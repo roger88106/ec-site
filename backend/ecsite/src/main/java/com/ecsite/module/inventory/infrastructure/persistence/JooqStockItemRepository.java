@@ -3,6 +3,8 @@ package com.ecsite.module.inventory.infrastructure.persistence;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -20,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
@@ -68,12 +69,12 @@ class JooqStockItemRepository implements StockItemRepository {
      * @param productId 商品 ID
      */
     @Override
-    public void createIfAbsent(UUID variantId, UUID productId) {
+    public void createIfAbsent(VariantId variantId, ProductId productId) {
         var now = clock.instant();
         dsl.insertInto(STOCK_ITEM)
                 .set(STOCK_ITEM.ID, idGenerator.generate())
-                .set(STOCK_ITEM.VARIANT_ID, variantId)
-                .set(STOCK_ITEM.PRODUCT_ID, productId)
+                .set(STOCK_ITEM.VARIANT_ID, variantId.value())
+                .set(STOCK_ITEM.PRODUCT_ID, productId.value())
                 .set(STOCK_ITEM.QUANTITY, 0)
                 .set(STOCK_ITEM.CREATED_AT, now)
                 .set(STOCK_ITEM.UPDATED_AT, now)
@@ -93,7 +94,7 @@ class JooqStockItemRepository implements StockItemRepository {
      * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
     @Override
-    public int adjust(UUID variantId, StockAdjustment adjustment) {
+    public int adjust(VariantId variantId, StockAdjustment adjustment) {
         return Objects.requireNonNull(adjustAll(Map.of(variantId, adjustment)).get(variantId), "調整したバリアントは調整後の在庫数を持つ");
     }
 
@@ -110,7 +111,7 @@ class JooqStockItemRepository implements StockItemRepository {
      * @throws BusinessException 在庫がない（{@code NOT_FOUND}）
      */
     @Override
-    public Map<UUID, Integer> adjustAll(Map<UUID, StockAdjustment> adjustments) {
+    public Map<VariantId, Integer> adjustAll(Map<VariantId, StockAdjustment> adjustments) {
         if (adjustments.isEmpty()) {
             return Map.of();
         }
@@ -157,7 +158,7 @@ class JooqStockItemRepository implements StockItemRepository {
 
         // 更新されなかった在庫があれば、増減量と今の在庫数で例外を分ける
         var notUpdated = adjustments.entrySet().stream()
-                .filter(entry -> quantityAfterById.get(entry.getValue().id()) == null)
+                .filter(entry -> quantityAfterById.get(entry.getValue().id().value()) == null)
                 .findFirst();
         if (notUpdated.isPresent()) {
             var variantId = notUpdated.get().getKey();
@@ -165,9 +166,9 @@ class JooqStockItemRepository implements StockItemRepository {
             throw failureOf(adjustment.delta(), adjustment.operator() != null, () -> currentQuantity(variantId));
         }
 
-        var quantityAfterByVariant = new HashMap<UUID, Integer>();
+        var quantityAfterByVariant = new HashMap<VariantId, Integer>();
         adjustments.forEach((variantId, adjustment) ->
-                quantityAfterByVariant.put(variantId, quantityAfterById.get(adjustment.id())));
+                quantityAfterByVariant.put(variantId, quantityAfterById.get(adjustment.id().value())));
         return quantityAfterByVariant;
     }
 
@@ -179,8 +180,8 @@ class JooqStockItemRepository implements StockItemRepository {
      * @param variantId バリアント ID
      */
     @Override
-    public void deleteByVariantId(UUID variantId) {
-        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId)).execute();
+    public void deleteByVariantId(VariantId variantId) {
+        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variantId.value())).execute();
     }
 
     /**
@@ -191,8 +192,8 @@ class JooqStockItemRepository implements StockItemRepository {
      * @param productId 商品 ID
      */
     @Override
-    public void deleteByProductId(UUID productId) {
-        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(productId)).execute();
+    public void deleteByProductId(ProductId productId) {
+        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(productId.value())).execute();
     }
 
 // ============================== テストのために package-private にしたメソッド ==============================
@@ -237,16 +238,17 @@ class JooqStockItemRepository implements StockItemRepository {
      * @param adjustment 在庫調整
      * @return 列の名前は {@link #CHANGE_COLUMNS} の順
      */
-    private static RowN changeRow(UUID variantId, StockAdjustment adjustment) {
+    private static RowN changeRow(VariantId variantId, StockAdjustment adjustment) {
         var operator = adjustment.operator();
+        var orderId = adjustment.orderId();
         return DSL.row(new SelectField<?>[]{
-                DSL.val(variantId, STOCK_ITEM.VARIANT_ID),
-                DSL.val(adjustment.id(), STOCK_ADJUSTMENT.ID),
+                DSL.val(variantId.value(), STOCK_ITEM.VARIANT_ID),
+                DSL.val(adjustment.id().value(), STOCK_ADJUSTMENT.ID),
                 DSL.val(adjustment.delta(), STOCK_ADJUSTMENT.DELTA),
                 DSL.val(operator != null, SQLDataType.BOOLEAN),
                 DSL.val(adjustment.reason().name(), STOCK_ADJUSTMENT.REASON),
                 DSL.val(adjustment.memo(), STOCK_ADJUSTMENT.MEMO),
-                DSL.val(adjustment.orderId(), STOCK_ADJUSTMENT.ORDER_ID),
+                DSL.val(orderId == null ? null : orderId.value(), STOCK_ADJUSTMENT.ORDER_ID),
                 DSL.val(adjustment.orderNumber(), STOCK_ADJUSTMENT.ORDER_NUMBER),
                 DSL.val(adjustment.adjustedAt(), STOCK_ADJUSTMENT.ADJUSTED_AT),
                 DSL.val(operator == null ? null : operator.id().value(), STOCK_ADJUSTMENT.ACTOR_ID),
@@ -259,10 +261,10 @@ class JooqStockItemRepository implements StockItemRepository {
      * @param variantId バリアント ID
      * @return 在庫数。在庫がなければ空
      */
-    private Optional<Integer> currentQuantity(UUID variantId) {
+    private Optional<Integer> currentQuantity(VariantId variantId) {
         return dsl.select(STOCK_ITEM.QUANTITY)
                 .from(STOCK_ITEM)
-                .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
+                .where(STOCK_ITEM.VARIANT_ID.eq(variantId.value()))
                 .fetchOptional(STOCK_ITEM.QUANTITY);
     }
 }

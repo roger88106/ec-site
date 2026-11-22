@@ -1,5 +1,7 @@
 package com.ecsite.module.storefront.presentation;
 
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.support.MutableClock;
@@ -738,7 +740,7 @@ class StorefrontApiTest {
             var product = catalog.product(standard, SHIRT_NAME, SHIRT_PRICE_EXCL_TAX, "色").variant("白").variant("黒").publish();
             inventory.stock(product.variantIds.getFirst(), 1);
             inventory.stock(product.variantIds.get(1), 1);
-            stockReservationApi.reserve(UUID.randomUUID(), Map.of(product.variantIds.getFirst(), 1),
+            stockReservationApi.reserve(new ReservationHolderId(UUID.randomUUID()), Map.of(new VariantId(product.variantIds.getFirst()), 1),
                     clock.instant().plus(Duration.ofMinutes(15)));
 
             // 操作と確認：白は在庫なし、黒は在庫あり

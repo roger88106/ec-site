@@ -1,11 +1,16 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.common.model.base.RestoreGuard;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.port.StockQueryRepository;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
+import com.ecsite.module.inventory.domain.stock.vo.StockAdjustmentId;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -41,10 +46,10 @@ class JooqStockQueryRepository implements StockQueryRepository {
      * @return 在庫数。在庫が作られていなければ空
      */
     @Override
-    public Optional<Integer> findQuantity(UUID variantId) {
+    public Optional<Integer> findQuantity(VariantId variantId) {
         return dsl.select(STOCK_ITEM.QUANTITY)
                 .from(STOCK_ITEM)
-                .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
+                .where(STOCK_ITEM.VARIANT_ID.eq(variantId.value()))
                 .fetchOptional(STOCK_ITEM.QUANTITY);
     }
 
@@ -56,11 +61,11 @@ class JooqStockQueryRepository implements StockQueryRepository {
      * @return 調整履歴。在庫が作られていなければ空
      */
     @Override
-    public Optional<PageResult<StockAdjustmentView>> findAdjustments(UUID variantId, PageRequest request) {
+    public Optional<PageResult<StockAdjustmentView>> findAdjustments(VariantId variantId, PageRequest request) {
         // 在庫の取得 ※在庫がなければ（そのバリアントがなければ）空
         return dsl.select(STOCK_ITEM.ID)
                 .from(STOCK_ITEM)
-                .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
+                .where(STOCK_ITEM.VARIANT_ID.eq(variantId.value()))
                 .fetchOptional(STOCK_ITEM.ID)
                 .map(stockItemId -> adjustmentsOf(stockItemId, request));
     }
@@ -72,13 +77,13 @@ class JooqStockQueryRepository implements StockQueryRepository {
      * @return 商品 ID → 在庫数の合計。在庫がまだない商品は含まない
      */
     @Override
-    public Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds) {
+    public Map<ProductId, Long> sumQuantitiesByProduct(Collection<ProductId> productIds) {
         var total = DSL.sum(STOCK_ITEM.QUANTITY).cast(Long.class);
         return dsl.select(STOCK_ITEM.PRODUCT_ID, total)
                 .from(STOCK_ITEM)
-                .where(STOCK_ITEM.PRODUCT_ID.in(productIds))
+                .where(STOCK_ITEM.PRODUCT_ID.in(productIds.stream().map(ProductId::value).toList()))
                 .groupBy(STOCK_ITEM.PRODUCT_ID)
-                .fetchMap(STOCK_ITEM.PRODUCT_ID, total);
+                .fetchMap(record -> new ProductId(record.get(STOCK_ITEM.PRODUCT_ID)), record -> record.get(total));
     }
 
     /**
@@ -92,7 +97,8 @@ class JooqStockQueryRepository implements StockQueryRepository {
      * @return バリアント ID → 販売可能数。在庫のないバリアントは含まない
      */
     @Override
-    public Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId, Instant now) {
+    public Map<VariantId, Integer> findSellableQuantities(Collection<VariantId> variantIds, @Nullable ReservationHolderId excludedHolderId,
+                                                         Instant now) {
         // 在庫ごとの有効な引当の合計（引当がなければ 0）
         var reserved = DSL.coalesce(
                 DSL.select(DSL.sum(STOCK_RESERVATION.QUANTITY).cast(Integer.class))
@@ -104,8 +110,8 @@ class JooqStockQueryRepository implements StockQueryRepository {
         var sellable = STOCK_ITEM.QUANTITY.minus(reserved);
         return dsl.select(STOCK_ITEM.VARIANT_ID, sellable)
                 .from(STOCK_ITEM)
-                .where(STOCK_ITEM.VARIANT_ID.in(variantIds))
-                .fetchMap(STOCK_ITEM.VARIANT_ID, sellable);
+                .where(STOCK_ITEM.VARIANT_ID.in(variantIds.stream().map(VariantId::value).toList()))
+                .fetchMap(record -> new VariantId(record.get(STOCK_ITEM.VARIANT_ID)), record -> record.get(sellable));
     }
 
 // ============================== プライベートメソッド ==============================
@@ -126,11 +132,11 @@ class JooqStockQueryRepository implements StockQueryRepository {
                 .limit(request.size())
                 .offset(request.offset())
                 .fetch(record -> new StockAdjustmentView(
-                        record.getId(),
+                        new StockAdjustmentId(record.getId()),
                         record.getDelta(),
                         RestoreGuard.restore("stock adjustment", () -> StockAdjustmentReason.valueOf(record.getReason())),
                         record.getMemo(),
-                        record.getOrderId(),
+                        record.getOrderId() == null ? null : new OrderId(record.getOrderId()),
                         record.getOrderNumber(),
                         record.getQuantityAfter(),
                         record.getAdjustedAt(),

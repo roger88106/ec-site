@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
@@ -219,7 +220,7 @@ final class CheckoutStartFixture {
      * @return 販売可能数
      */
     int sellable(UUID variant) {
-        return stockReservationApi.sellableQuantities(List.of(variant), null).get(variant);
+        return stockReservationApi.sellableQuantities(List.of(new VariantId(variant)), null).get(new VariantId(variant));
     }
 
     // ============================== 確認の補助 ==============================

@@ -93,6 +93,7 @@
 | パッケージ | 分けない理由 |
 |------------|--------------|
 | `catalog.infrastructure.persistence` | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
+| `common.model.id` | モジュールをまたぐ識別子の型。1 種類に 1 つの record で、分けても役割のまとまりができない |
 | `config.security` | 認証と認可の設定。組み立てられるクラスは package-private で、分けるとクラスを公開しなければならない |
 
 `PackageSizeTest` が表を読むので、表の書式を変えない。1 列目は、バッククォートで囲んだパッケージ名（`com.ecsite.` と `module.` を除く）にする。見出しの名前を変えるときは、`PACKAGE_SIZE_TITLE` も修正する。

@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockAvailabilityApi;
 import com.ecsite.module.storefront.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +32,9 @@ class StockApiDirectory implements StockDirectory {
     @Override
     public Set<UUID> inStock(Collection<UUID> variantIds) {
         // 在庫があるバリアントの ID だけを残す
-        return stockAvailabilityApi.availabilityOf(variantIds).entrySet().stream()
+        return stockAvailabilityApi.availabilityOf(variantIds.stream().map(VariantId::new).toList()).entrySet().stream()
                 .filter(Map.Entry::getValue)
-                .map(Map.Entry::getKey)
+                .map(entry -> entry.getKey().value())
                 .collect(Collectors.toUnmodifiableSet());
     }
 }

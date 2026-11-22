@@ -1,8 +1,11 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.common.id.IdGenerator;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
+import com.ecsite.module.inventory.domain.stock.vo.StockItemId;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -12,7 +15,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
@@ -41,14 +43,14 @@ class JooqStockReservationRepository implements StockReservationRepository {
      * @return 在庫
      */
     @Override
-    public List<LockedStock> lockStocks(Collection<UUID> variantIds) {
+    public List<LockedStock> lockStocks(Collection<VariantId> variantIds) {
         return dsl.select(STOCK_ITEM.ID, STOCK_ITEM.VARIANT_ID, STOCK_ITEM.QUANTITY)
                 .from(STOCK_ITEM)
-                .where(STOCK_ITEM.VARIANT_ID.in(variantIds))
+                .where(STOCK_ITEM.VARIANT_ID.in(variantIds.stream().map(VariantId::value).toList()))
                 .orderBy(STOCK_ITEM.VARIANT_ID)
                 .forUpdate()
-                .fetch(record -> new LockedStock(
-                        record.get(STOCK_ITEM.ID), record.get(STOCK_ITEM.VARIANT_ID), record.get(STOCK_ITEM.QUANTITY)));
+                .fetch(record -> new LockedStock(new StockItemId(record.get(STOCK_ITEM.ID)),
+                        new VariantId(record.get(STOCK_ITEM.VARIANT_ID)), record.get(STOCK_ITEM.QUANTITY)));
     }
 
     /**
@@ -60,14 +62,15 @@ class JooqStockReservationRepository implements StockReservationRepository {
      * @return 在庫 ID → 引当の数量の合計。引当のない在庫は含まない
      */
     @Override
-    public Map<UUID, Integer> sumActiveReservations(Collection<UUID> stockItemIds, UUID excludedHolderId, Instant now) {
+    public Map<StockItemId, Integer> sumActiveReservations(Collection<StockItemId> stockItemIds, ReservationHolderId excludedHolderId,
+                                                          Instant now) {
         var total = DSL.sum(STOCK_RESERVATION.QUANTITY).cast(Integer.class);
         return dsl.select(STOCK_RESERVATION.STOCK_ITEM_ID, total)
                 .from(STOCK_RESERVATION)
-                .where(STOCK_RESERVATION.STOCK_ITEM_ID.in(stockItemIds))
+                .where(STOCK_RESERVATION.STOCK_ITEM_ID.in(stockItemIds.stream().map(StockItemId::value).toList()))
                 .and(ActiveReservations.condition(excludedHolderId, now))
                 .groupBy(STOCK_RESERVATION.STOCK_ITEM_ID)
-                .fetchMap(STOCK_RESERVATION.STOCK_ITEM_ID, total);
+                .fetchMap(record -> new StockItemId(record.get(STOCK_RESERVATION.STOCK_ITEM_ID)), record -> record.get(total));
     }
 
     /**
@@ -79,12 +82,12 @@ class JooqStockReservationRepository implements StockReservationRepository {
      * @param now                   現在時刻
      */
     @Override
-    public void insert(UUID holderId, Map<UUID, Integer> quantitiesByStockItem, Instant expiresAt, Instant now) {
+    public void insert(ReservationHolderId holderId, Map<StockItemId, Integer> quantitiesByStockItem, Instant expiresAt, Instant now) {
         var insert = dsl.insertInto(STOCK_RESERVATION,
                 STOCK_RESERVATION.ID, STOCK_RESERVATION.HOLDER_ID, STOCK_RESERVATION.STOCK_ITEM_ID,
                 STOCK_RESERVATION.QUANTITY, STOCK_RESERVATION.EXPIRES_AT, STOCK_RESERVATION.CREATED_AT);
         for (var entry : quantitiesByStockItem.entrySet()) {
-            insert = insert.values(idGenerator.generate(), holderId, entry.getKey(), entry.getValue(), expiresAt, now);
+            insert = insert.values(idGenerator.generate(), holderId.value(), entry.getKey().value(), entry.getValue(), expiresAt, now);
         }
         if (!quantitiesByStockItem.isEmpty()) {
             insert.execute();
@@ -97,8 +100,8 @@ class JooqStockReservationRepository implements StockReservationRepository {
      * @param holderId 持ち主 ID
      */
     @Override
-    public void deleteByHolder(UUID holderId) {
-        dsl.deleteFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holderId)).execute();
+    public void deleteByHolder(ReservationHolderId holderId) {
+        dsl.deleteFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holderId.value())).execute();
     }
 
     /**
@@ -107,11 +110,12 @@ class JooqStockReservationRepository implements StockReservationRepository {
      * @param holderIds 持ち主 ID
      */
     @Override
-    public void deleteByHolders(Collection<UUID> holderIds) {
+    public void deleteByHolders(Collection<ReservationHolderId> holderIds) {
         if (holderIds.isEmpty()) {
             return;
         }
-        dsl.deleteFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.in(holderIds)).execute();
+        var ids = holderIds.stream().map(ReservationHolderId::value).toList();
+        dsl.deleteFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.in(ids)).execute();
     }
 
     /**

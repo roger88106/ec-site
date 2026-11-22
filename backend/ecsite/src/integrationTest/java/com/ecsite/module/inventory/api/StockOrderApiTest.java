@@ -1,6 +1,10 @@
 package com.ecsite.module.inventory.api;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
+import com.ecsite.common.model.id.ProductId;
+import com.ecsite.common.model.id.ReservationHolderId;
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.port.StockQueryRepository;
@@ -123,14 +127,14 @@ class StockOrderApiTest {
     /**
      * 注文の ID
      */
-    private UUID orderId;
+    private OrderId orderId;
 
     @BeforeEach
     void setUp() {
         reservations = new ReservationTestData(api, transactionTemplate);
         inventory = new InventoryTestData(stockItemRepository, NOW);
         productId = UUID.randomUUID();
-        orderId = UUID.randomUUID();
+        orderId = new OrderId(UUID.randomUUID());
     }
 
     // ============================== テスト ==============================
@@ -143,7 +147,7 @@ class StockOrderApiTest {
         @DisplayName("AC-87 引当を減算に置き換えると、在庫数が注文数だけ減る")
         void commitsReservation() {
             // 準備：在庫数 5 のうち 2 を引き当てる
-            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var variant = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
             var holder = reserve(variant);
 
             // 操作：引き当てた 2 を減算に置き換える
@@ -160,9 +164,9 @@ class StockOrderApiTest {
         @DisplayName("AC-87 全品目の在庫数を、それぞれの注文数だけ減らす")
         void commitsEveryItem() {
             // 準備：在庫数 5 と 3 の 2 品目を、2 と 1 ずつ引き当てる
-            var first = inventory.stockNewVariant(productId, 5);
-            var second = inventory.stockNewVariant(productId, 3);
-            var holder = UUID.randomUUID();
+            var first = new VariantId(inventory.stockNewVariant(productId, 5));
+            var second = new VariantId(inventory.stockNewVariant(productId, 3));
+            var holder = new ReservationHolderId(UUID.randomUUID());
             var quantities = Map.of(first, 2, second, 1);
             assertThat(reservations.reserve(holder, quantities, EXPIRES_AT)).isEmpty();
 
@@ -181,7 +185,7 @@ class StockOrderApiTest {
         @DisplayName("AC-84 注文の成立で、引当は減算に置き換わり、残らない")
         void removesReservationOnCommit() {
             // 準備：在庫数 5 のうち 2 を引き当てる
-            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var variant = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
             var holder = reserve(variant);
 
             // 操作：減算に置き換える
@@ -195,7 +199,7 @@ class StockOrderApiTest {
         @DisplayName("AC-107 減算は、理由「注文」と注文番号の履歴を残す")
         void recordsOrderAdjustment() {
             // 準備：在庫数 5 のうち 2 を引き当てる
-            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var variant = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
             var holder = reserve(variant);
 
             // 操作：減算に置き換える
@@ -214,8 +218,8 @@ class StockOrderApiTest {
         @DisplayName("AC-87 引当の期限が切れていても、足りれば減算できる")
         void commitsAfterExpiryWhenSufficient() {
             // 準備：在庫数 2 の全てを引き当て、期限を過ぎる
-            var variant = inventory.stockNewVariant(productId, 2);
-            var holder = UUID.randomUUID();
+            var variant = new VariantId(inventory.stockNewVariant(productId, 2));
+            var holder = new ReservationHolderId(UUID.randomUUID());
             reservations.reserve(holder, Map.of(variant, 2), EXPIRES_AT);
             clock.setInstant(EXPIRES_AT.plusSeconds(1));
 
@@ -230,8 +234,8 @@ class StockOrderApiTest {
         @DisplayName("AC-87 期限切れの間にほかの持ち主が引き当てて足りなければ、足りない品目を返す")
         void returnsShortagesWhenOthersReservedAfterExpiry() {
             // 準備：期限切れの間に、在庫数 1 の品目をほかの持ち主が引き当てる
-            var plenty = inventory.stockNewVariant(productId, 5);
-            var scarce = inventory.stockNewVariant(productId, 1);
+            var plenty = new VariantId(inventory.stockNewVariant(productId, 5));
+            var scarce = new VariantId(inventory.stockNewVariant(productId, 1));
             var holder = reserveThenLoseToOthers(plenty, scarce);
 
             // 操作：減算に置き換える
@@ -245,8 +249,8 @@ class StockOrderApiTest {
         @DisplayName("AC-87 期限切れの間にほかの持ち主が引き当てて足りなければ、どの在庫も減らさない")
         void keepsQuantitiesWhenOthersReservedAfterExpiry() {
             // 準備：期限切れの間に、在庫数 1 の品目をほかの持ち主が引き当てる
-            var plenty = inventory.stockNewVariant(productId, 5);
-            var scarce = inventory.stockNewVariant(productId, 1);
+            var plenty = new VariantId(inventory.stockNewVariant(productId, 5));
+            var scarce = new VariantId(inventory.stockNewVariant(productId, 1));
             var holder = reserveThenLoseToOthers(plenty, scarce);
 
             // 操作：減算に置き換える
@@ -261,8 +265,8 @@ class StockOrderApiTest {
         @DisplayName("AC-87 期限切れの間にほかの持ち主が引き当てて足りなければ、減算の履歴を残さない")
         void recordsNothingWhenOthersReservedAfterExpiry() {
             // 準備：期限切れの間に、在庫数 1 の品目をほかの持ち主が引き当てる
-            var plenty = inventory.stockNewVariant(productId, 5);
-            var scarce = inventory.stockNewVariant(productId, 1);
+            var plenty = new VariantId(inventory.stockNewVariant(productId, 5));
+            var scarce = new VariantId(inventory.stockNewVariant(productId, 1));
             var holder = reserveThenLoseToOthers(plenty, scarce);
 
             // 操作：減算に置き換える
@@ -281,19 +285,19 @@ class StockOrderApiTest {
         @DisplayName("AC-87 減算は、持ち主の引当の行をロックしてから在庫の行をロックする（注文手続きの開始と同じ順序で、デッドロックにならない）")
         void locksReservationBeforeStock() throws Exception {
             // 準備：在庫数 5 のうち 2 を引き当てる
-            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var variant = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
             var holder = reserve(variant);
             var executor = Executors.newSingleThreadExecutor();
             try {
-                var committing = new AtomicReference<Future<Set<UUID>>>();
+                var committing = new AtomicReference<Future<Set<VariantId>>>();
                 transactionTemplate.executeWithoutResult(status -> {
                     // 操作：テストのトランザクションが在庫の行をロックし、減算を在庫の行で待たせる
-                    dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variant)).forUpdate().fetch();
+                    dsl.selectFrom(STOCK_ITEM).where(STOCK_ITEM.VARIANT_ID.eq(variant.value())).forUpdate().fetch();
                     committing.set(executor.submit(() -> commit(holder, variant)));
                     LockWaits.awaitBlockedByThisTransaction(dsl);
 
                     // 確認：在庫の行を待つ減算が引当の行をロックしていれば、引当の行は読み飛ばされ、行が返らない
-                    assertThat(dsl.selectFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holder))
+                    assertThat(dsl.selectFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holder.value()))
                             .forUpdate().skipLocked().fetch()).isEmpty();
                 });
 
@@ -314,7 +318,7 @@ class StockOrderApiTest {
         @DisplayName("AC-107 戻すと、在庫数が注文数だけ増える")
         void restoresStock() {
             // 準備：在庫数 3
-            var variant = inventory.stockNewVariant(productId, 3);
+            var variant = new VariantId(inventory.stockNewVariant(productId, 3));
 
             // 操作：注文数 2 を戻す
             restoreInTransaction(Map.of(variant, ORDER_QUANTITY), orderId, ORDER_NUMBER);
@@ -327,7 +331,7 @@ class StockOrderApiTest {
         @DisplayName("AC-107 戻すと、理由「注文のキャンセル」と注文番号の履歴を残す")
         void recordsCancellationAdjustment() {
             // 準備：在庫数 3
-            var variant = inventory.stockNewVariant(productId, 3);
+            var variant = new VariantId(inventory.stockNewVariant(productId, 3));
 
             // 操作：注文数 2 を戻す
             restoreInTransaction(Map.of(variant, ORDER_QUANTITY), orderId, ORDER_NUMBER);
@@ -344,7 +348,7 @@ class StockOrderApiTest {
         @DisplayName("AC-42 注文のキャンセルの戻しには在庫数の上限を当てず、上限の 1,000,000 を超えて戻せる")
         void restoresBeyondManualLimit() {
             // 準備：在庫数が運営者の調整の上限の 1,000,000
-            var variant = inventory.stockNewVariant(productId, 1_000_000);
+            var variant = new VariantId(inventory.stockNewVariant(productId, 1_000_000));
 
             // 操作：1 個戻す
             restoreInTransaction(Map.of(variant, 1), orderId, ORDER_NUMBER);
@@ -358,8 +362,8 @@ class StockOrderApiTest {
         @DisplayName("在庫のなくなったバリアントの戻しは飛ばし、残りのバリアントだけを戻す")
         void skipsVariantWithoutStock() {
             // 準備：在庫数 3 のバリアントと、在庫のないバリアント
-            var variant = inventory.stockNewVariant(productId, 3);
-            var removed = UUID.randomUUID();
+            var variant = new VariantId(inventory.stockNewVariant(productId, 3));
+            var removed = new VariantId(UUID.randomUUID());
 
             // 操作：両方を戻す
             restoreInTransaction(Map.of(variant, ORDER_QUANTITY, removed, 1), orderId, ORDER_NUMBER);
@@ -373,7 +377,7 @@ class StockOrderApiTest {
         @DisplayName("全てのバリアントの在庫がなくても、戻しは失敗しない")
         void ignoresWhenNoStockRemains() {
             // 準備：在庫のないバリアント
-            var removed = UUID.randomUUID();
+            var removed = new VariantId(UUID.randomUUID());
 
             // 操作と確認：例外にならず、在庫も作らない
             assertThatCode(() -> restoreInTransaction(Map.of(removed, 1), orderId, ORDER_NUMBER)).doesNotThrowAnyException();
@@ -389,9 +393,9 @@ class StockOrderApiTest {
         @DisplayName("AC-87 引き当てた後に商品が削除されて在庫がなくなると、減算は全ての品目を足りないとして返す")
         void returnsAllWhenStockDeleted() {
             // 準備：引き当てた後に、商品の在庫を削除する
-            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var variant = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
             var holder = reserve(variant);
-            stockItemRepository.deleteByProductId(productId);
+            stockItemRepository.deleteByProductId(new ProductId(productId));
 
             // 操作：減算に置き換える
             var shortages = commit(holder, variant);
@@ -410,10 +414,10 @@ class StockOrderApiTest {
         @DisplayName("AC-87 在庫数 1 に 2 人が同時に減算しても、1 人だけが減らし、在庫数は負にならない")
         void commitsOnlyOneOfTwo() throws Exception {
             // 準備：在庫数 1（どちらも引き当てていない）
-            var variant = inventory.stockNewVariant(productId, 1);
+            var variant = new VariantId(inventory.stockNewVariant(productId, 1));
 
             // 操作：2 人が 1 個ずつ同時に減算する
-            var results = Concurrently.run(2, i -> commitInTransaction(UUID.randomUUID(), Map.of(variant, 1), UUID.randomUUID(), ORDER_NUMBER));
+            var results = Concurrently.run(2, i -> commitInTransaction(new ReservationHolderId(UUID.randomUUID()), Map.of(variant, 1), new OrderId(UUID.randomUUID()), ORDER_NUMBER));
 
             // 確認：1 人は足りない品目がなく、もう 1 人はその品目が足りず、在庫数は 0
             assertThat(results).filteredOn(Set::isEmpty).hasSize(1);
@@ -425,15 +429,15 @@ class StockOrderApiTest {
         @DisplayName("AC-43、87 在庫数 1 に注文の減算と運営者の減算が同時に来ても、1 つだけが減らし、在庫数は負にならない")
         void commitAndManualDecrementDoNotGoNegative() throws Exception {
             // 準備：在庫数 1
-            var variant = inventory.stockNewVariant(productId, 1);
+            var variant = new VariantId(inventory.stockNewVariant(productId, 1));
 
             // 操作：注文の減算と運営者の 1 個の減算を同時に行い、成功を数える
             var results = Concurrently.run(2, i -> {
                 if (i == 0) {
-                    return commitInTransaction(UUID.randomUUID(), Map.of(variant, 1), UUID.randomUUID(), ORDER_NUMBER).isEmpty();
+                    return commitInTransaction(new ReservationHolderId(UUID.randomUUID()), Map.of(variant, 1), new OrderId(UUID.randomUUID()), ORDER_NUMBER).isEmpty();
                 }
                 try {
-                    inventory.adjust(variant, -1);
+                    inventory.adjust(variant.value(), -1);
                     return true;
                 } catch (BusinessException e) {
                     return false;
@@ -455,8 +459,8 @@ class StockOrderApiTest {
         @DisplayName("引当で、数量が 0 以下の品目があれば、プログラムの誤りとして拒否され、在庫数も引当も変わらない")
         void rejectsReserve(int quantity) {
             // 準備：在庫数 5 のうち 2 を引き当てた持ち主と、正常な品目と数量が 0 以下の品目
-            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
-            var invalid = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var variant = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
+            var invalid = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
             var holder = reserve(variant);
 
             // 操作と確認：IllegalArgumentException で拒否される
@@ -475,8 +479,8 @@ class StockOrderApiTest {
         @DisplayName("減算で、数量が 0 以下の品目があれば、プログラムの誤りとして拒否され、在庫数も引当も変わらない")
         void rejectsCommit(int quantity) {
             // 準備：在庫数 5 のうち 2 を引き当てた持ち主と、数量が 0 以下の品目
-            var variant = inventory.stockNewVariant(productId, STOCK_QUANTITY);
-            var invalid = inventory.stockNewVariant(productId, STOCK_QUANTITY);
+            var variant = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
+            var invalid = new VariantId(inventory.stockNewVariant(productId, STOCK_QUANTITY));
             var holder = reserve(variant);
 
             // 操作と確認：IllegalArgumentException で拒否される
@@ -494,8 +498,8 @@ class StockOrderApiTest {
         @DisplayName("戻しで、数量が 0 以下の品目があれば、プログラムの誤りとして拒否され、在庫数が変わらない")
         void rejectsRestore(int quantity) {
             // 準備：在庫数 3 の正常な品目と、数量が 0 以下の品目
-            var variant = inventory.stockNewVariant(productId, 3);
-            var invalid = inventory.stockNewVariant(productId, 3);
+            var variant = new VariantId(inventory.stockNewVariant(productId, 3));
+            var invalid = new VariantId(inventory.stockNewVariant(productId, 3));
 
             // 操作と確認：IllegalArgumentException で拒否される
             assertThatThrownBy(() -> restoreInTransaction(Map.of(variant, ORDER_QUANTITY, invalid, quantity), orderId, ORDER_NUMBER))
@@ -524,7 +528,7 @@ class StockOrderApiTest {
      * @param adjustment 確認する調整履歴
      * @param orderId    注文 ID（実行ごとに作るので、定数にできない）
      */
-    private static void assertOrderAdjustment(StockAdjustmentView adjustment, UUID orderId) {
+    private static void assertOrderAdjustment(StockAdjustmentView adjustment, OrderId orderId) {
         assertThat(adjustment.delta()).isEqualTo(-ORDER_QUANTITY);
         assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER);
         assertThat(adjustment.orderId()).isEqualTo(orderId);
@@ -540,8 +544,8 @@ class StockOrderApiTest {
      * @param variant バリアント ID
      * @return 持ち主 ID
      */
-    private UUID reserve(UUID variant) {
-        var holder = UUID.randomUUID();
+    private ReservationHolderId reserve(VariantId variant) {
+        var holder = new ReservationHolderId(UUID.randomUUID());
         assertThat(reservations.reserve(holder, Map.of(variant, ORDER_QUANTITY), EXPIRES_AT)).isEmpty();
         return holder;
     }
@@ -553,7 +557,7 @@ class StockOrderApiTest {
      * @param variant バリアント ID
      * @return 足りないバリアントの ID
      */
-    private Set<UUID> commit(UUID holder, UUID variant) {
+    private Set<VariantId> commit(ReservationHolderId holder, VariantId variant) {
         return commitInTransaction(holder, Map.of(variant, ORDER_QUANTITY), orderId, ORDER_NUMBER);
     }
 
@@ -566,11 +570,11 @@ class StockOrderApiTest {
      * @param scarce 足りなくなる品目のバリアント ID（在庫数 1）
      * @return 期限の切れた引当の持ち主 ID
      */
-    private UUID reserveThenLoseToOthers(UUID plenty, UUID scarce) {
-        var holder = UUID.randomUUID();
+    private ReservationHolderId reserveThenLoseToOthers(VariantId plenty, VariantId scarce) {
+        var holder = new ReservationHolderId(UUID.randomUUID());
         reservations.reserve(holder, Map.of(plenty, 1, scarce, 1), EXPIRES_AT);
         clock.setInstant(EXPIRES_AT.plusSeconds(1));
-        reservations.reserve(UUID.randomUUID(), Map.of(scarce, 1), EXPIRES_AT.plus(Duration.ofMinutes(30)));
+        reservations.reserve(new ReservationHolderId(UUID.randomUUID()), Map.of(scarce, 1), EXPIRES_AT.plus(Duration.ofMinutes(30)));
         return holder;
     }
 
@@ -580,7 +584,7 @@ class StockOrderApiTest {
      * @param variantId バリアント ID
      * @return 最新の調整履歴
      */
-    private StockAdjustmentView latestAdjustment(UUID variantId) {
+    private StockAdjustmentView latestAdjustment(VariantId variantId) {
         return stockQueryRepository.findAdjustments(variantId, PageRequest.of(1, 1)).orElseThrow().items().getFirst();
     }
 
@@ -593,7 +597,7 @@ class StockOrderApiTest {
      * @param orderNumber 注文番号
      * @return 足りないバリアントの ID。減算したら空
      */
-    private Set<UUID> commitInTransaction(UUID holderId, Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
+    private Set<VariantId> commitInTransaction(ReservationHolderId holderId, Map<VariantId, Integer> quantities, OrderId orderId, String orderNumber) {
         return transactionTemplate.execute(status -> api.commit(holderId, quantities, orderId, orderNumber));
     }
 
@@ -604,7 +608,7 @@ class StockOrderApiTest {
      * @param orderId     注文 ID
      * @param orderNumber 注文番号
      */
-    private void restoreInTransaction(Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
+    private void restoreInTransaction(Map<VariantId, Integer> quantities, OrderId orderId, String orderNumber) {
         transactionTemplate.executeWithoutResult(status -> api.restore(quantities, orderId, orderNumber));
     }
 }

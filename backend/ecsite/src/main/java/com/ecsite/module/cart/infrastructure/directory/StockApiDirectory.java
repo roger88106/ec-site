@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.infrastructure.directory;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.cart.application.port.StockDirectory;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ class StockApiDirectory implements StockDirectory {
     @Override
     public int sellableQuantity(UUID variantId) {
         // カートは注文手続き（引当の持ち主）を知らないので、除く持ち主を指定せず（null）、全ての引当を差し引く
-        return stockReservationApi.sellableQuantities(List.of(variantId), null).getOrDefault(variantId, 0);
+        var id = new VariantId(variantId);
+        return stockReservationApi.sellableQuantities(List.of(id), null).getOrDefault(id, 0);
     }
 }

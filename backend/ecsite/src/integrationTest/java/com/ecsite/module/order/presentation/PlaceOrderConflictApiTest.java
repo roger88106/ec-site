@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.model.id.VariantId;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.support.config.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,8 +220,8 @@ class PlaceOrderConflictApiTest {
             assertNotWritten(checkoutId);
 
             // 確認：注文手続きの引当は残る（販売可能数は、在庫数からカートの数量を除いた数）
-            assertThat(stockReservationApi.sellableQuantities(List.of(fixture.shirtVariant()), null))
-                    .containsEntry(fixture.shirtVariant(), SHIRT_STOCK - SHIRT_QUANTITY);
+            assertThat(stockReservationApi.sellableQuantities(List.of(new VariantId(fixture.shirtVariant())), null))
+                    .containsEntry(new VariantId(fixture.shirtVariant()), SHIRT_STOCK - SHIRT_QUANTITY);
 
             // 確認：カートの T シャツは残り、販売停止を理由に購入できない
             fixture.mockMvc.perform(get("/api/store/carts/" + fixture.cartId))

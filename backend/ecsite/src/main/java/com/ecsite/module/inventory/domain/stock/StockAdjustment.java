@@ -1,9 +1,11 @@
 package com.ecsite.module.inventory.domain.stock;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.id.OrderId;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.inventory.domain.InventoryErrorCode;
+import com.ecsite.module.inventory.domain.stock.vo.StockAdjustmentId;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -14,7 +16,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 在庫調整
@@ -32,7 +33,7 @@ public final class StockAdjustment {
      */
     @Identity
     @EqualsAndHashCode.Include
-    private final UUID id;
+    private final StockAdjustmentId id;
 
     /**
      * 増減量（0 以外）
@@ -54,7 +55,7 @@ public final class StockAdjustment {
      * 注文 ID。注文に由来する調整でなければ null
      */
     @Nullable
-    private final UUID orderId;
+    private final OrderId orderId;
 
     /**
      * 注文番号（写し）。注文に由来する調整でなければ null
@@ -109,8 +110,8 @@ public final class StockAdjustment {
      * @throws BusinessException 増減量が 0（{@code INVALID_STOCK_DELTA}）
      * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
      */
-    public StockAdjustment(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
-                           @Nullable UUID orderId, @Nullable String orderNumber, @NonNull Instant adjustedAt,
+    public StockAdjustment(@NonNull StockAdjustmentId id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
+                           @Nullable OrderId orderId, @Nullable String orderNumber, @NonNull Instant adjustedAt,
                            @Nullable Operator operator) {
         verifyDeltaNotZero(delta);
         if (memo != null && !BoundedText.fitsWithin(memo, MEMO_MAX_LENGTH)) {
@@ -146,7 +147,7 @@ public final class StockAdjustment {
      * @throws BusinessException 理由が「その他」でメモがない（{@code STOCK_MEMO_REQUIRED}）
      * @throws BusinessException メモが長すぎる（{@code INVALID_STOCK_MEMO}）
      */
-    public static StockAdjustment create(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
+    public static StockAdjustment create(@NonNull StockAdjustmentId id, int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
         // 0 と、絶対値が上限を超える増減量は、他の条件より先に検査して拒否する（エラーの順を保つ）
         verifyDeltaNotZero(delta);
@@ -176,7 +177,7 @@ public final class StockAdjustment {
      * @throws BusinessException        増減量が 0（{@code INVALID_STOCK_DELTA}）
      * @throws IllegalArgumentException 理由が注文に由来しない。理由が注文で増減量が正、または注文のキャンセルで増減量が負
      */
-    public static StockAdjustment forOrder(@NonNull UUID id, int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
+    public static StockAdjustment forOrder(@NonNull StockAdjustmentId id, int delta, @NonNull StockAdjustmentReason reason, @NonNull OrderId orderId,
                                            @NonNull String orderNumber, @NonNull Instant now) {
         verifyDeltaNotZero(delta);
         if (!reason.isFromOrder()) {

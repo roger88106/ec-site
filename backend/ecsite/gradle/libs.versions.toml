@@ -12,9 +12,9 @@
 [versions]
 
 # --- フレームワーク ---
-spring-boot = "4.1.2"
+spring-boot = "4.1.3"
 spring-dependency-management = "1.1.7"
-spring-modulith = "2.1.2"
+spring-modulith = "2.1.3"
 
 # --- DB ---
 jooq = "3.21.9"
@@ -38,14 +38,14 @@ shedlock = "7.11.0"
 stripe = "34.1.0"
 
 # --- 画像のファイル（オブジェクトストレージ） ---
-awssdk = "2.57.13"
+awssdk = "2.59.1"
 
 # --- 静的解析 ---
 # コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体でバージョンが別
 errorprone-plugin = "5.2.0"
 errorprone = "2.52.0"
 # null の検査（Error Prone の検査として動く）
-nullaway = "0.14.3"
+nullaway = "0.14.4"
 # Javadoc の書き漏れと import の検査（コメントの書き方の「Java」、バックエンドの書き方の「書式」）
 checkstyle = "14.3.0"
 

@@ -5,6 +5,7 @@ import com.ecsite.support.MutableClock;
 import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.assertj.core.api.ThrowingConsumer;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -751,7 +752,7 @@ class EventResubmissionJobTest {
         @DisplayName("DC-613-4 発行から 5 分たっていない行は、再発行の枠を使わない")
         void recentlyPublishedDoNotUseSlots() {
             // 準備：発行から 5 分を過ぎた対象の行 1 件（最後の試行は 500 件より後）と、
-            // その 2 分後に発行した（ジョブの時点で 4 分）、最後の試行が古い失敗の行 500 件
+            // その 2 分後に発行した（ジョブを動かす時点で、発行から 4 分）、最後の試行が古い失敗の行 500 件
             var target = publications.failedOnce(failingEvent("target"));
             clock.advance(Duration.ofMinutes(2));
             var recent = publications.failedOnce(failingEvent("recent"));
@@ -775,8 +776,43 @@ class EventResubmissionJobTest {
         }
 
         @Test
-        @DisplayName("DC-613-4 再発行中の件数が上限のときも、処理の回数が上限の失敗の行は止めたイベントの表に移り、メトリクスを記録する")
-        void stopsAtMaxAttemptsEvenWhenInFlightAtLimit() {
+        @DisplayName("再発行中の件数が上限のときも、処理の回数が上限の失敗の行は止めたイベントの表に移る")
+        void movesStoppedEventWhenInFlightAtLimit() {
+            runAtInFlightLimit(stopped ->
+                    // 操作と確認：ジョブを動かすと、止めたイベントの表に移り、イベント発行記録の表になくなる。
+                    // 統合テストは DB を共有するので、ジョブの実行から繰り返して待つ
+                    await().atMost(AsyncEvents.TIMEOUT).untilAsserted(() -> {
+                        job.resubmit();
+                        assertThat(publications.stoppedOf(stopped.id())).isPresent();
+                        assertThat(publications.count(stopped.id())).isZero();
+                    }));
+        }
+
+        @Test
+        @DisplayName("再発行中の件数が上限のときも、未完了と止めたイベントの件数をメトリクスに記録する")
+        void recordsMetricsWhenInFlightAtLimit() {
+            runAtInFlightLimit(stopped -> {
+                // 準備：メトリクスを、DB の件数と合わない値にする（前のテストの値が、偶然 DB の件数と合うことを防ぐ）
+                publicationMetrics.record(-1, -1);
+
+                // 操作と確認：ジョブを動かすと、メトリクスが DB の件数と合う。
+                // 統合テストは DB を共有し、他のテストの非同期の処理で件数が変わるので、DB の件数と合うまで、ジョブの実行から繰り返す
+                await().atMost(AsyncEvents.TIMEOUT).untilAsserted(() -> {
+                    job.resubmit();
+                    var stoppedCount = publications.countStopped();
+                    var incompleteCount = publications.countIncomplete();
+                    assertThat(gauge("ecsite.events.stopped")).isEqualTo(stoppedCount);
+                    assertThat(gauge("ecsite.events.incomplete")).isEqualTo(incompleteCount + stoppedCount);
+                });
+            });
+        }
+
+        /**
+         * 再発行中の件数が上限（500）で、処理の回数が上限（60）の失敗の行が 1 件ある状態にして、確認を呼ぶ。
+         *
+         * @param check 止めるイベントを受け取り、ジョブを動かして確認する処理
+         */
+        private void runAtInFlightLimit(ThrowingConsumer<FailingEvent> check) {
             // 準備：再発行中の 500 件と、処理の回数が上限（60）の失敗の行 1 件
             var inFlight = publications.failedOnce(failingEvent("in-flight"));
             var stopped = publications.failedOnce(failingEvent("stopped"));
@@ -785,17 +821,10 @@ class EventResubmissionJobTest {
                 markInFlight(inFlight, 500);
                 clock.advance(Duration.ofMinutes(6));
 
-                // 操作と確認：ジョブを動かすと、止めたイベントの表に移り、イベント発行記録の表になく、メトリクスは DB の件数と合う。
-                // 統合テストは DB を共有し、ほかのテストの非同期の処理で件数が動くので、DB の件数と合うまで、ジョブの実行から繰り返す
-                await().atMost(AsyncEvents.TIMEOUT).untilAsserted(() -> {
-                    job.resubmit();
-                    var stoppedCount = publications.countStopped();
-                    var incompleteCount = publications.countIncomplete();
-                    assertThat(publications.stoppedOf(stopped.id())).isPresent();
-                    assertThat(publications.count(stopped.id())).isZero();
-                    assertThat(gauge("ecsite.events.stopped")).isEqualTo(stoppedCount);
-                    assertThat(gauge("ecsite.events.incomplete")).isEqualTo(incompleteCount + stoppedCount);
-                });
+                // 確認（前提）：再発行中の件数が上限以上
+                assertThat(publications.countResubmitted()).isGreaterThanOrEqualTo(500);
+
+                check.accept(stopped);
             } finally {
                 // 後片付け：複製した記録を削除する
                 publications.deleteAll(inFlight.id());

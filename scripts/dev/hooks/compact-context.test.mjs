@@ -28,6 +28,42 @@ describe('compact-context.mjs', () => {
     assert.match(result.stdout, /「最初に読むもの」/)
   })
 
+  test('PreCompact では、動いているセッションの行に、セッションごとに書く項目の語が全て入る', () => {
+    const result = run(JSON.stringify({ hook_event_name: 'PreCompact', trigger: 'auto' }))
+    const lines = result.stdout.split('\n').filter((line) => line.startsWith('- ') && line.includes('動いているセッション'))
+    assert.equal(lines.length, 1)
+    for (const word of ['サブエージェント', '報告先のセッション', '識別子', '担当の issue', '作業ツリーのパス', 'ブランチ', 'なければ「なし」']) {
+      assert.ok(lines[0].includes(word), `動いているセッションの行に「${word}」がない：${lines[0]}`)
+    }
+  })
+
+  test('PreCompact では、担当の作業ブランチと作業ツリーのパス、引き継ぎの文書とメモの行を出す', () => {
+    const result = run(JSON.stringify({ hook_event_name: 'PreCompact', trigger: 'auto' }))
+    const lines = result.stdout.split('\n')
+    const assigned = lines.find((line) => line.includes('担当の issue と spec の番号'))
+    assert.ok(assigned, '担当の issue と spec の番号の行がない')
+    assert.ok(assigned.includes('作業ブランチ'), '作業ブランチがない')
+    assert.ok(assigned.includes('作業ツリーのパス'), '作業ツリーのパスがない')
+    const handoff = lines.find((line) => line.includes('引き継ぎの文書') && line.includes('メモ'))
+    assert.ok(handoff, '引き継ぎの文書とメモの行がない')
+  })
+
+  test('圧縮の後の SessionStart では、答える前に読み直す指示が、読むものの箇条より前にある', () => {
+    const result = run(JSON.stringify({ hook_event_name: 'SessionStart', source: 'compact' }))
+    const out = result.stdout
+    const before = out.indexOf('答える前')
+    const first = out.indexOf('最初に読むもの')
+    const tasks = out.indexOf('作業中の tasks')
+    const handoff = out.indexOf('引き継ぎの文書とメモ')
+    assert.notEqual(before, -1, '「答える前」がない')
+    assert.notEqual(first, -1, '「最初に読むもの」がない')
+    assert.notEqual(tasks, -1, '「作業中の tasks」がない')
+    assert.notEqual(handoff, -1, '「引き継ぎの文書とメモ」がない')
+    assert.ok(before < first, '「答える前」が「最初に読むもの」より後にある')
+    assert.ok(first < tasks && tasks < handoff, '箇条の順が違う')
+    assert.ok(out.includes('他のセッションのメッセージ'), '「他のセッションのメッセージ」がない')
+  })
+
   test('圧縮の後でない SessionStart では、何も出さない', () => {
     for (const source of ['startup', 'resume', 'clear']) {
       const result = run(JSON.stringify({ hook_event_name: 'SessionStart', source }))

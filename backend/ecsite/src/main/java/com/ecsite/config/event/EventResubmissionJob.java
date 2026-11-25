@@ -123,7 +123,7 @@ class EventResubmissionJob {
         log.debug("未完了のイベントを {} 件再発行する", targets.size());
         // 件数は自前で絞ったので、Spring Modulith には上限なしで渡し、選んだ ID だけを通す。
         // 上限を渡すと、Spring Modulith が発行の古い順に上限まで読むので、選んだイベントが読む範囲に入らないことがある。
-        // そのため、失敗の状態の行を毎回全て読ませる（イベントの本文を復元するのは、filter を通したイベントだけ）。
+        // そのため、再発行の操作を呼ぶ回は、発行から下限の時間を過ぎた失敗の状態の行を全て読ませる（イベントの本文を復元するのは、filter を通したイベントだけ）。
         // 回数の上限に達した行は、止めたイベントの表に移る
         incompletePublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
                 .withMinAge(properties.minAge())

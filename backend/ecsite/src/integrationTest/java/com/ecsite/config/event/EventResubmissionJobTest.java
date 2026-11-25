@@ -285,17 +285,22 @@ class EventResubmissionJobTest {
             var job = jobWithMaxAttempts(3);
             var event = failedUntil(job, 2);
             var lastResubmission = publicationOf(event).getLastResubmissionDate();
-            markStatus(event, status);
+            try {
+                markStatus(event, status);
 
-            // 操作：6 分後に再発行する（結果の出ないイベントを失敗の扱いにする監視は動かさない）
-            clock.advance(Duration.ofMinutes(6));
-            job.resubmit();
+                // 操作：6 分後に再発行する（結果の出ないイベントを失敗の扱いにする監視は動かさない）
+                clock.advance(Duration.ofMinutes(6));
+                job.resubmit();
 
-            // 確認：処理の回数と最後の再発行の日時が変わらない。リスナーが受けた回数も 2 回のまま（非同期で動くので、回数だけでは確認にならない）
-            var publication = publicationOf(event);
-            assertThat(publication.getCompletionAttempts()).isEqualTo(2);
-            assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
-            assertThat(failingListener.attempts(event)).isEqualTo(2);
+                // 確認：処理の回数と最後の再発行の日時が変わらない。リスナーが受けた回数も 2 回のまま（非同期で動くので、回数だけでは確認にならない）
+                var publication = publicationOf(event);
+                assertThat(publication.getCompletionAttempts()).isEqualTo(2);
+                assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
+                assertThat(failingListener.attempts(event)).isEqualTo(2);
+            } finally {
+                // 後片付け：再発行中の行が、他のテストの再発行の枠を使わないよう削除する
+                publications.deleteAll(event.id());
+            }
         }
 
         @Test
@@ -784,14 +789,15 @@ class EventResubmissionJobTest {
         @Test
         @DisplayName("再発行中の件数が上限のときも、処理の回数が上限の失敗の行は止めたイベントの表に移る")
         void movesStoppedEventWhenInFlightAtLimit() {
-            runAtInFlightLimit(stopped ->
-                    // 操作と確認：ジョブを動かすと、止めたイベントの表に移り、イベント発行記録の表になくなる。
-                    // 統合テストは DB を共有するので、ジョブの実行から繰り返して待つ
-                    await().atMost(AsyncEvents.TIMEOUT).untilAsserted(() -> {
-                        job.resubmit();
-                        assertThat(publications.stoppedOf(stopped.id())).isPresent();
-                        assertThat(publications.count(stopped.id())).isZero();
-                    }));
+            // 準備は runAtInFlightLimit で、再発行中の 500 件と、処理の回数が上限の失敗の行 1 件にする
+            runAtInFlightLimit(stopped -> {
+                // 操作：ジョブを 1 回動かす
+                job.resubmit();
+
+                // 確認：止めたイベントの表に移り、イベント発行記録の表になくなる（移す処理は、ジョブの中で同期で行われるので、待たない）
+                assertThat(publications.stoppedOf(stopped.id())).isPresent();
+                assertThat(publications.count(stopped.id())).isZero();
+            });
         }
 
         @Test
@@ -1026,18 +1032,23 @@ class EventResubmissionJobTest {
             var job = jobWithMaxAttempts(2);
             var event = failedUntil(job, 2);
             var publication = publicationOf(event);
-            markStatus(event, status);
+            try {
+                markStatus(event, status);
 
-            // 操作：1 分後に再発行する
-            clock.advance(Duration.ofMinutes(1));
-            logs.clear();
-            job.resubmit();
+                // 操作：1 分後に再発行する
+                clock.advance(Duration.ofMinutes(1));
+                logs.clear();
+                job.resubmit();
 
-            // 確認：イベント発行記録の表に、状態と処理の回数が変わらないまま残り、止めたイベントの表になく、この発行の記録のログがない
-            assertThat(statusOf(publication)).isEqualTo(status);
-            assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
-            assertThat(publications.stoppedOf(event.id())).isEmpty();
-            assertThat(logs.text()).doesNotContain(publication.getIdentifier().toString());
+                // 確認：イベント発行記録の表に、状態と処理の回数が変わらないまま残り、止めたイベントの表になく、この発行の記録のログがない
+                assertThat(statusOf(publication)).isEqualTo(status);
+                assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
+                assertThat(publications.stoppedOf(event.id())).isEmpty();
+                assertThat(logs.text()).doesNotContain(publication.getIdentifier().toString());
+            } finally {
+                // 後片付け：再発行中の行が、他のテストの再発行の枠を使わないよう削除する
+                publications.deleteAll(event.id());
+            }
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -1177,18 +1188,23 @@ class EventResubmissionJobTest {
             var job = jobWithMaxAttempts(3);
             var event = failedUntil(job, 2);
             var lastResubmission = publicationOf(event).getLastResubmissionDate();
-            markStatus(event, status);
+            try {
+                markStatus(event, status);
 
-            // 操作：4 分後に、結果の出ないイベントを失敗の扱いにしてから、再発行する
-            clock.advance(Duration.ofMinutes(4));
-            registry.markStalePublicationsFailed(staleness);
-            job.resubmit();
+                // 操作：4 分後に、結果の出ないイベントを失敗の扱いにしてから、再発行する
+                clock.advance(Duration.ofMinutes(4));
+                registry.markStalePublicationsFailed(staleness);
+                job.resubmit();
 
-            // 確認：処理中のままで、処理の回数と最後の再発行の日時が変わらない
-            var publication = publicationOf(event);
-            assertThat(statusOf(publication)).isEqualTo(status);
-            assertThat(publication.getCompletionAttempts()).isEqualTo(2);
-            assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
+                // 確認：処理中のままで、処理の回数と最後の再発行の日時が変わらない
+                var publication = publicationOf(event);
+                assertThat(statusOf(publication)).isEqualTo(status);
+                assertThat(publication.getCompletionAttempts()).isEqualTo(2);
+                assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
+            } finally {
+                // 後片付け：再発行中の行が、他のテストの再発行の枠を使わないよう削除する
+                publications.deleteAll(event.id());
+            }
         }
     }
 
@@ -1281,37 +1297,17 @@ class EventResubmissionJobTest {
     /**
      * 再発行中の記録の件数（他のテストが残した行を含む）が、指定の件数になるようにする。
      *
-     * <p>発行したイベントの記録を複製し、元の行と合わせて再発行中の状態にする。他のテストが残した再発行中の行が処理を終えて減ることがあるので、
-     * 合計が指定の件数になるまで、足りない分を複製して再発行中にする（{@link AsyncEvents#TIMEOUT} まで）。
-     * 他のテストの再発行中の行が、初めから指定の件数を超えているときは、例外で失敗する。
+     * <p>初めに、他のテストが残した再発行中の行が処理を終えて 0 件になるまで待つ（{@link AsyncEvents#TIMEOUT} まで）。
+     * その後に、発行したイベントの記録を複製し、元の行と合わせて、ちょうど指定の件数を再発行中の状態にする。
      *
      * @param base  発行して失敗させたイベント（複製の元）
      * @param total 再発行中の記録の件数
      */
     private void markInFlight(FailingEvent base, int total) {
-        var others = publications.countResubmitted();
-        if (others > total) {
-            throw new IllegalStateException("他のテストの再発行中の行が、指定の件数を超えている：他のテスト " + others + " 件、指定 " + total + " 件");
-        }
-        await().atMost(AsyncEvents.TIMEOUT).until(() -> {
-            var current = publications.countResubmitted();
-            if (current < total) {
-                // 元の行が再発行中でない間は元の行から複製して 1 件増やし、元の行も合わせて再発行中にする
-                publications.copyPublication(base, total - current - (isInFlight(base) ? 0 : 1));
-                publications.markStatusAll(base.id(), "RESUBMITTED");
-            }
-            return publications.countResubmitted() == total;
-        });
-    }
-
-    /**
-     * イベントの記録に、再発行中の状態の行があるか。
-     *
-     * @param event 発行したイベント
-     * @return 再発行中の行があれば true
-     */
-    private boolean isInFlight(FailingEvent event) {
-        return publications.count(event.id(), "RESUBMITTED", 1) > 0;
+        // 他のテストの再発行中の行が、準備の後に処理を終えて減ると、合計が足りなくなる。先に 0 件にする
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> publications.countResubmitted() == 0);
+        publications.copyPublication(base, total - 1);
+        publications.markStatusAll(base.id(), "RESUBMITTED");
     }
 
     /**

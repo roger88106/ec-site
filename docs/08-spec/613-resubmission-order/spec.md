@@ -126,7 +126,7 @@
   - 依存：なし
   - 範囲：`EventResubmissionJobTest.java`
   - 確認方法：選ぶメソッドがまだないので、先にメソッドの宣言だけを置き、失敗（レッド）を確認する。今の振る舞いで通るもの（DC-613-3 の上限）は、レッドにならないことを結果に書く
-- [ ] **T613-01-03** 再発行するイベントを選ぶ SQL と再発行中の件数を、イベント記録の読み書きのクラスに加え、ジョブで使う。ジョブのコメントの誤り（`EventResubmissionJob.java:96-99`）を修正する（決定 1。DC-613-1〜4）。
+- [x] **T613-01-03** 再発行するイベントを選ぶ SQL と再発行中の件数を、イベント記録の読み書きのクラスに加え、ジョブで使う。ジョブのコメントの誤り（`EventResubmissionJob.java:96-99`）を修正する（決定 1。DC-613-1〜4）。
   - 依存：T613-01-01、T613-01-02
   - 範囲：`EventResubmissionJob.java`、`EventPublicationRecords.java`
   - 確認方法：T613-01-01、T613-01-02 のテストが通る。`./gradlew integrationTest --tests 'com.ecsite.config.event.*'` が通る

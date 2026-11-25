@@ -102,6 +102,11 @@ class EventPublicationRecords {
     private static final String FAILED = "FAILED";
 
     /**
+     * 再発行中の状態
+     */
+    private static final String RESUBMITTED = "RESUBMITTED";
+
+    /**
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
@@ -209,7 +214,18 @@ class EventPublicationRecords {
      * @return 再発行するイベントの記録の ID（最後の試行の古い順）
      */
     List<UUID> findResubmissionTargets(Instant publishedBefore, Instant lastTriedBy, int maxAttempts, int limit) {
-        throw new UnsupportedOperationException("まだ実装していない");
+        // 最後の試行は、再発行したことがなければ発行の時刻
+        var lastTried = DSL.coalesce(LAST_RESUBMISSION_DATE, PUBLICATION_DATE);
+        return dsl.select(ID)
+                .from(EVENT_PUBLICATION)
+                .where(STATUS.eq(FAILED))
+                .and(COMPLETION_DATE.isNull())
+                .and(PUBLICATION_DATE.lt(publishedBefore))
+                .and(lastTried.le(lastTriedBy))
+                .and(COMPLETION_ATTEMPTS.lt(maxAttempts))
+                .orderBy(lastTried.asc(), ID.asc())
+                .limit(limit)
+                .fetch(ID);
     }
 
     /**
@@ -218,7 +234,7 @@ class EventPublicationRecords {
      * @return 再発行中の記録の件数
      */
     int countResubmitted() {
-        throw new UnsupportedOperationException("まだ実装していない");
+        return dsl.fetchCount(EVENT_PUBLICATION, STATUS.eq(RESUBMITTED));
     }
 
     /**

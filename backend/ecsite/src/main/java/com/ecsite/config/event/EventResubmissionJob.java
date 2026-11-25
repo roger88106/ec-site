@@ -16,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.HashSet;
 
 /**
  * 最後の処理に失敗した、未完了のイベントの再発行のジョブ
@@ -26,7 +27,7 @@ import java.time.Duration;
 class EventResubmissionJob {
 
     /**
-     * 1 回に再発行する件数と、再発行中の件数の上限
+     * 再発行中（RESUBMITTED）の件数と、1 回に再発行する件数を合わせた上限
      *
      * <p>リスナーのスレッドプールのキューの上限（既定は 1000。{@code spring.task.execution.pool.queue-capacity}、
      * {@code ecsite.async.external-service.queue-capacity}）より小さくする。環境で変えない値なので、設定にしない。
@@ -63,6 +64,7 @@ class EventResubmissionJob {
      *
      * <p>最後の処理に失敗したイベントを、もう一度リスナーに渡す。処理の途中でインスタンスが止まったイベントは、
      * Spring Modulith の監視が失敗の状態にした後の回で渡す。
+     * 最後の試行の古いものから、再発行中の件数と合わせて {@link #BATCH_SIZE} 件まで再発行する。
      * 次のイベントは再発行しない。
      * <ul>
      *     <li>最後の処理の結果が出ていない（処理中など）</li>
@@ -81,32 +83,49 @@ class EventResubmissionJob {
             log.error("処理の回数が上限に達したイベントの再発行を止めた：種類 {}、イベント ID {}、リスナー {}、処理の回数 {}",
                     stopped.eventType(), stopped.id(), stopped.listenerId(), stopped.completionAttempts());
         }
-        log.debug("未完了のイベントを再発行する（最後の処理に失敗し、発行から {} より前で、最後の試行から {} 以上たち、処理の回数が {} より少ないもの）",
-                properties.minAge(), properties.interval(), properties.maxAttempts());
-        var lastTriedBy = clock.instant().minus(properties.interval());
-        // 選ぶ条件：
-        // - 最後の処理に失敗した。絞り込みの条件には入れない。失敗したイベントを再発行する Spring Modulith の操作は、
-        //   失敗の状態の行と、状態が空で未完了の行を読むが、今の表の作り方では状態が必ず入るので、ジョブが読むのは失敗の行だけになる。
-        //   処理中のものは、リスナーの処理が続いていることがあるので読まない。処理の途中でインスタンスが止まったものは、
-        //   Spring Modulith の監視（spring.modulith.events.staleness）が失敗の状態にした後の回で読む
-        // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
-        // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
-        // - 回数が上限より少ない
-        // 1 回に読む件数と、再発行中（RESUBMITTED）の件数に、上限を置く。リスナーのスレッドプールのキューの上限（1000）を超えて渡すと、
-        // キューが拒否し、そのイベントは処理されないまま、処理の回数だけが増える（Spring Modulith は、再発行の記録（回数を 1 増やす）を
-        // 先に書いてから、リスナーを呼ぶため）。上限に達したら、その回は再発行せず、次の回に回す。
-        // この操作は失敗の状態の行を発行の古い順に件数の上限まで読んでから絞る。止めたイベントは別の表に移るので、
-        // 失敗の状態の行は、まだ再発行するものだけになり、上限を置いても、古いものだけが読まれ続けることはない
-        incompletePublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
-                .withMinAge(properties.minAge())
-                .withBatchSize(BATCH_SIZE)
-                .withMaxInFlight(BATCH_SIZE)
-                .withFilter(publication -> !publication.getLastPublicationDate().isAfter(lastTriedBy)
-                        && publication.getCompletionAttempts() < properties.maxAttempts()));
+        resubmitTargets();
         // 2 つの件数を 1 つの文で数え、同じ時点の値にする（文を分けると、2 つの文の間に復旧で行が戻ったとき、
         // その行が両方の件数に入り、未完了の件数が多くなる）
         var counts = publicationRecords.countIncompleteAndStopped();
         publicationMetrics.record(counts.incompleteNotStopped() + counts.stopped(), counts.stopped());
+    }
+
+    /**
+     * 再発行するイベントを選び、Spring Modulith に再発行させる。
+     */
+    private void resubmitTargets() {
+        // 件数に上限を置く。リスナーのスレッドプールのキューの上限（1000）を超えて渡すと、キューが拒否し、
+        // そのイベントは処理されないまま、処理の回数だけが増える（Spring Modulith は、再発行の記録（回数を 1 増やす）を
+        // 先に書いてから、リスナーを呼ぶため）。上限は再発行中（RESUBMITTED）の件数と合わせ、
+        // 残りの枠がなければ、その回は再発行せず、次の回に回す
+        var remaining = BATCH_SIZE - publicationRecords.countResubmitted();
+        if (remaining <= 0) {
+            log.debug("再発行中の件数が上限に達しているので、再発行しない（上限 {}）", BATCH_SIZE);
+            return;
+        }
+        // 再発行するイベントは自前で選ぶ。Spring Modulith は失敗の行を発行の古い順に件数まで読んでから filter を掛けるので、
+        // 失敗し続ける古い行が上限以上あると、新しい行が読まれない。そこで最後の試行の古い順に選ぶ。条件：
+        // - 最後の処理に失敗した。処理中のものは、リスナーの処理が続いていることがあるので選ばない。
+        //   処理の途中でインスタンスが止まったものは、Spring Modulith の監視（spring.modulith.events.staleness）が
+        //   失敗の状態にした後の回で選ぶ
+        // - 発行から下限の時間がたった（発行の直後は、まだ処理中のことがある）
+        // - 最後の試行から間隔がたった（間隔のタイマーはインスタンスごとにあるので、台数のぶんだけ回数が速く増えないように）
+        // - 回数が上限より少ない
+        var now = clock.instant();
+        var targets = new HashSet<>(publicationRecords.findResubmissionTargets(
+                now.minus(properties.minAge()), now.minus(properties.interval()), properties.maxAttempts(), remaining));
+        if (targets.isEmpty()) {
+            log.debug("再発行するイベントがない");
+            return;
+        }
+        log.debug("未完了のイベントを {} 件再発行する", targets.size());
+        // 件数は自前で絞ったので、ライブラリには上限なしで渡し、選んだ ID だけを通す。
+        // ライブラリが読む失敗の行は、回数の上限で止めたイベントの表へ移るので、約 1 時間分に限られる
+        incompletePublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
+                .withMinAge(properties.minAge())
+                .withBatchSize(Integer.MAX_VALUE)
+                .withMaxInFlight(Integer.MAX_VALUE)
+                .withFilter(publication -> targets.contains(publication.getIdentifier())));
     }
 
     /**

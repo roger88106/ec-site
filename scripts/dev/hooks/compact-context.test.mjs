@@ -47,17 +47,18 @@ describe('compact-context.mjs', () => {
     assert.ok(assigned.includes('作業ツリーのパス'), '作業ツリーのパスがない')
     const handoff = lines.find((line) => line.includes('引き継ぎの文書'))
     assert.ok(handoff, '引き継ぎの文書の行がない')
+    assert.ok(handoff.includes('引き継ぎの文書のパス'), '引き継ぎの文書の行に「引き継ぎの文書のパス」がない')
     assert.ok(handoff.includes('状態を書いているメモのパス'), '引き継ぎの文書の行に「状態を書いているメモのパス」がない')
   })
 
   test('圧縮の後の SessionStart では、1 行目に答える前の指示があり、箇条に読むものが全て入る', () => {
     const result = run(JSON.stringify({ hook_event_name: 'SessionStart', source: 'compact' }))
     const [head, ...rest] = result.stdout.split('\n')
-    for (const word of ['他のセッションのメッセージ', '答える前', '読み直す', 'ファイルを読む']) {
+    for (const word of ['他のセッションのメッセージ', '予約した時刻の起動', '利用者の依頼', '答える前', '作業を続ける前', '読み直す', '元の文書と issue を読む']) {
       assert.ok(head.includes(word), `1 行目に「${word}」がない：${head}`)
     }
     const items = rest.filter((line) => line.startsWith('- '))
-    for (const word of ['最初に読むもの', '担当の issue', '引き継ぎの文書とメモ']) {
+    for (const word of ['最初に読むもの', '自分が担当する issue', '作業中の spec と tasks', '引き継ぎの文書とメモ']) {
       assert.ok(items.some((line) => line.includes(word)), `箇条に「${word}」の行がない`)
     }
     const first = items.find((line) => line.includes('最初に読むもの'))

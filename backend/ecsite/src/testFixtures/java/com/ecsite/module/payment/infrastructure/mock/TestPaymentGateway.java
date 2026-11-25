@@ -6,11 +6,11 @@ import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentFailures.Kind;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -52,21 +52,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicReference<Runnable> duringNextOpen = new AtomicReference<>();
 
     /**
-     * これから接続できないことにする支払画面の作成の回数
-     */
-    private final AtomicInteger openFailures = new AtomicInteger();
-
-    /**
      * 画面を閉じる操作に渡された支払画面 ID
      *
      * <p>呼ばれた順。失敗と重複を含む。
      */
     private final List<String> closedPageCalls = new CopyOnWriteArrayList<>();
-
-    /**
-     * これから接続の失敗にする、画面を閉じる操作の回数
-     */
-    private final AtomicInteger closeFailures = new AtomicInteger();
 
     /**
      * 与信の取得を呼ばれた回数
@@ -76,26 +66,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger authorizationFetchCalls = new AtomicInteger();
 
     /**
-     * これから接続の失敗にする与信の取得の回数
-     */
-    private final AtomicInteger authorizationFetchFailures = new AtomicInteger();
-
-    /**
-     * 与信の取得を、予期しないエラーで失敗させ続ける支払画面 ID
-     */
-    private final Set<String> rejectedAuthorizationFetches = ConcurrentHashMap.newKeySet();
-
-    /**
      * 売上確定の状態の取得に渡された与信の参照
      *
      * <p>呼ばれた順。失敗を含む。
      */
     private final List<String> captureStateFetches = new CopyOnWriteArrayList<>();
-
-    /**
-     * 売上確定の状態の取得を、これから接続の失敗にする回数
-     */
-    private final AtomicInteger captureStateFetchFailures = new AtomicInteger();
 
     /**
      * 売上確定の状態の取得の最中に、次の 1 回だけ行う処理
@@ -110,18 +85,6 @@ public class TestPaymentGateway implements PaymentGateway {
      * <p>取り消した順。
      */
     private final List<String> voided = new CopyOnWriteArrayList<>();
-
-    /**
-     * これから失敗させる与信の取消の回数
-     */
-    private final AtomicInteger voidFailures = new AtomicInteger();
-
-    /**
-     * 与信が切れたことにした与信の参照
-     *
-     * <p>売上確定が与信期限切れで断られる。
-     */
-    private final Set<String> expiredAuthorizations = ConcurrentHashMap.newKeySet();
 
     /**
      * 売上を確定した注文 ID
@@ -152,26 +115,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger captureCalls = new AtomicInteger();
 
     /**
-     * これから接続できないことにする売上確定の回数
-     */
-    private final AtomicInteger captureFailures = new AtomicInteger();
-
-    /**
-     * 売上は確定するが、応答が届かないことにする売上確定の残りの回数
-     */
-    private final AtomicInteger captureResponseLosses = new AtomicInteger();
-
-    /**
      * 返金した注文 ID
      *
      * <p>返金した順。
      */
     private final CopyOnWriteArrayList<UUID> refunded = new CopyOnWriteArrayList<>();
-
-    /**
-     * これから失敗させる返金の回数
-     */
-    private final AtomicInteger refundFailures = new AtomicInteger();
 
     /**
      * 返金と与信の取消を呼ばれた時点で行う処理
@@ -188,6 +136,13 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicReference<Runnable> onFetchAuthorization = new AtomicReference<>();
 
     /**
+     * 失敗の注入の指定
+     *
+     * <p>{@link #reset()} で新しいものに替える。
+     */
+    private volatile TestPaymentFailures failures = new TestPaymentFailures();
+
+    /**
      * 本番の mock を包む。
      *
      * @param mock 包む mock
@@ -201,7 +156,7 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public PaymentPage openPage(PageRequest request) {
         amountCalls.add(new AmountCall(Operation.OPEN_PAGE, request.orderId().value(), request.amount()));
-        if (consume(openFailures)) {
+        if (failures.consume(Kind.OPEN)) {
             throw SystemException.of("mock：支払画面を作れなくする: " + request.paymentId(), null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
@@ -217,7 +172,7 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public CloseResult closePage(String pageId) {
         closedPageCalls.add(pageId);
-        if (consume(closeFailures)) {
+        if (failures.consume(Kind.CLOSE)) {
             throw SystemException.of("mock：支払画面を閉じる操作を接続の失敗にする: " + pageId, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
@@ -231,11 +186,11 @@ public class TestPaymentGateway implements PaymentGateway {
         if (action != null) {
             action.run();
         }
-        if (consume(authorizationFetchFailures)) {
+        if (failures.consume(Kind.AUTHORIZATION_FETCH)) {
             throw SystemException.of("mock：与信の取得を接続の失敗にする: " + pageId, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
-        if (rejectedAuthorizationFetches.contains(pageId)) {
+        if (failures.isAuthorizationFetchRejected(pageId)) {
             throw SystemException.of("mock：与信の取得を失敗させる: " + pageId, null);
         }
         return mock.fetchAuthorization(pageId);
@@ -244,7 +199,7 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public VoidResult voidAuthorization(String authorizationRef) {
         runOnRefundOrVoid();
-        if (consume(voidFailures)) {
+        if (failures.consume(Kind.VOID)) {
             throw SystemException.of("mock：与信の取消に失敗させる: " + authorizationRef, null);
         }
         var result = mock.voidAuthorization(authorizationRef);
@@ -258,10 +213,10 @@ public class TestPaymentGateway implements PaymentGateway {
     public CaptureResult capture(CaptureRequest request) {
         captureCalls.incrementAndGet();
         amountCalls.add(new AmountCall(Operation.CAPTURE, request.orderId().value(), request.amount()));
-        if (consume(captureFailures)) {
+        if (failures.consume(Kind.CAPTURE_CONNECTION)) {
             return CaptureResult.UNREACHABLE;
         }
-        if (expiredAuthorizations.contains(request.authorizationRef())) {
+        if (failures.isExpired(request.authorizationRef())) {
             return CaptureResult.AUTHORIZATION_EXPIRED;
         }
         var result = mock.capture(request);
@@ -272,7 +227,7 @@ public class TestPaymentGateway implements PaymentGateway {
         if (during != null) {
             during.run();
         }
-        if (consume(captureResponseLosses)) {
+        if (failures.consume(Kind.CAPTURE_RESPONSE)) {
             return CaptureResult.UNREACHABLE;
         }
         return result;
@@ -281,13 +236,13 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public CaptureState fetchCaptureState(String authorizationRef) {
         captureStateFetches.add(authorizationRef);
-        if (consume(captureStateFetchFailures)) {
+        if (failures.consume(Kind.CAPTURE_STATE_FETCH)) {
             throw SystemException.of("mock：売上確定の状態の取得を接続の失敗にする: " + authorizationRef, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
         var state = mock.fetchCaptureState(authorizationRef);
         // 確定していない与信が切れていれば、与信期限切れ
-        if (state == CaptureState.NOT_CAPTURED && expiredAuthorizations.contains(authorizationRef)) {
+        if (state == CaptureState.NOT_CAPTURED && failures.isExpired(authorizationRef)) {
             state = CaptureState.AUTHORIZATION_EXPIRED;
         }
         var during = duringNextCaptureStateFetch.getAndSet(null);
@@ -301,7 +256,7 @@ public class TestPaymentGateway implements PaymentGateway {
     public void refund(RefundRequest request) {
         amountCalls.add(new AmountCall(Operation.REFUND, request.orderId().value(), request.amount()));
         runOnRefundOrVoid();
-        if (consume(refundFailures)) {
+        if (failures.consume(Kind.REFUND)) {
             throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
         }
         mock.refund(request);
@@ -370,7 +325,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 失敗させる回数
      */
     public void failNextVoids(int times) {
-        voidFailures.set(times);
+        failures.failNext(Kind.VOID, times);
     }
 
     /**
@@ -379,7 +334,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続できなくする回数
      */
     public void failNextOpens(int times) {
-        openFailures.set(times);
+        failures.failNext(Kind.OPEN, times);
     }
 
     /**
@@ -388,7 +343,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続の失敗にする回数
      */
     public void failNextCloses(int times) {
-        closeFailures.set(times);
+        failures.failNext(Kind.CLOSE, times);
     }
 
     /**
@@ -397,7 +352,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続の失敗にする回数
      */
     public void failNextAuthorizationFetches(int times) {
-        authorizationFetchFailures.set(times);
+        failures.failNext(Kind.AUTHORIZATION_FETCH, times);
     }
 
     /**
@@ -408,7 +363,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param pageId 支払画面 ID
      */
     public void rejectAuthorizationFetch(String pageId) {
-        rejectedAuthorizationFetches.add(pageId);
+        failures.rejectAuthorizationFetch(pageId);
     }
 
     /**
@@ -419,7 +374,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param authorizationRef 与信の参照
      */
     public void expireAuthorization(String authorizationRef) {
-        expiredAuthorizations.add(authorizationRef);
+        failures.expireAuthorization(authorizationRef);
     }
 
     /**
@@ -428,7 +383,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続できなくする回数
      */
     public void failNextCaptures(int times) {
-        captureFailures.set(times);
+        failures.failNext(Kind.CAPTURE_CONNECTION, times);
     }
 
     /**
@@ -439,7 +394,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 応答を届かなくする回数
      */
     public void loseNextCaptureResponses(int times) {
-        captureResponseLosses.set(times);
+        failures.failNext(Kind.CAPTURE_RESPONSE, times);
     }
 
     /**
@@ -448,7 +403,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続の失敗にする回数
      */
     public void failNextCaptureStateFetches(int times) {
-        captureStateFetchFailures.set(times);
+        failures.failNext(Kind.CAPTURE_STATE_FETCH, times);
     }
 
     /**
@@ -484,7 +439,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 失敗させる回数
      */
     public void failNextRefunds(int times) {
-        refundFailures.set(times);
+        failures.failNext(Kind.REFUND, times);
     }
 
     /**
@@ -667,29 +622,20 @@ public class TestPaymentGateway implements PaymentGateway {
      * <p>本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
      */
     public void reset() {
+        failures = new TestPaymentFailures();
         amountCalls.clear();
         openedPageIds.clear();
         duringNextOpen.set(null);
-        openFailures.set(0);
         voided.clear();
-        voidFailures.set(0);
         closedPageCalls.clear();
-        closeFailures.set(0);
         authorizationFetchCalls.set(0);
-        authorizationFetchFailures.set(0);
-        rejectedAuthorizationFetches.clear();
-        expiredAuthorizations.clear();
         captured.clear();
         capturedAuthorizationRefs.clear();
         duringNextCapture.set(null);
         captureCalls.set(0);
-        captureFailures.set(0);
-        captureResponseLosses.set(0);
         captureStateFetches.clear();
-        captureStateFetchFailures.set(0);
         duringNextCaptureStateFetch.set(null);
         refunded.clear();
-        refundFailures.set(0);
         onRefundOrVoid.set(null);
         onFetchAuthorization.set(null);
     }
@@ -733,15 +679,5 @@ public class TestPaymentGateway implements PaymentGateway {
         if (action != null) {
             action.run();
         }
-    }
-
-    /**
-     * 失敗させる残りの回数を 1 つ減らす。
-     *
-     * @param remaining 残りの回数
-     * @return 残りがあった（今回を失敗させる）なら true
-     */
-    private static boolean consume(AtomicInteger remaining) {
-        return remaining.getAndUpdate(count -> Math.max(count - 1, 0)) > 0;
     }
 }

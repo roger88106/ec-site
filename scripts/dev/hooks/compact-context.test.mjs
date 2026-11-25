@@ -28,12 +28,13 @@ describe('compact-context.mjs', () => {
     assert.match(result.stdout, /「最初に読むもの」/)
   })
 
-  test('PreCompact では、動いているセッションの行に、セッションごとに書く項目の語が全て入る', () => {
+  test('PreCompact では、作業中のセッションの行に、セッションごとに書く項目の語が全て入る', () => {
     const result = run(JSON.stringify({ hook_event_name: 'PreCompact', trigger: 'auto' }))
-    const lines = result.stdout.split('\n').filter((line) => line.startsWith('- ') && line.includes('動いているセッション'))
+    const lines = result.stdout.split('\n').filter((line) => line.startsWith('- ') && line.includes('報告先のセッション'))
     assert.equal(lines.length, 1)
-    for (const word of ['サブエージェント', '報告先のセッション', '識別子', '担当の issue', '作業ツリーのパス', 'ブランチ', 'なければ「なし」']) {
-      assert.ok(lines[0].includes(word), `動いているセッションの行に「${word}」がない：${lines[0]}`)
+    const words = ['作業中のセッション', '返事や再開を待つ', 'サブエージェント', '報告先のセッション', 'なければ「なし」', '1 つごとに', '識別子', '担当の issue', '作業ツリーのパス', 'ブランチ', '実際の値', 'ない項目は「なし」']
+    for (const word of words) {
+      assert.ok(lines[0].includes(word), `作業中のセッションの行に「${word}」がない：${lines[0]}`)
     }
   })
 
@@ -44,24 +45,23 @@ describe('compact-context.mjs', () => {
     assert.ok(assigned, '担当の issue と spec の番号の行がない')
     assert.ok(assigned.includes('作業ブランチ'), '作業ブランチがない')
     assert.ok(assigned.includes('作業ツリーのパス'), '作業ツリーのパスがない')
-    const handoff = lines.find((line) => line.includes('引き継ぎの文書') && line.includes('メモ'))
-    assert.ok(handoff, '引き継ぎの文書とメモの行がない')
+    const handoff = lines.find((line) => line.includes('引き継ぎの文書'))
+    assert.ok(handoff, '引き継ぎの文書の行がない')
+    assert.ok(handoff.includes('状態を書いているメモのパス'), '引き継ぎの文書の行に「状態を書いているメモのパス」がない')
   })
 
-  test('圧縮の後の SessionStart では、答える前に読み直す指示が、読むものの箇条より前にある', () => {
+  test('圧縮の後の SessionStart では、1 行目に答える前の指示があり、箇条に読むものが全て入る', () => {
     const result = run(JSON.stringify({ hook_event_name: 'SessionStart', source: 'compact' }))
-    const out = result.stdout
-    const before = out.indexOf('答える前')
-    const first = out.indexOf('最初に読むもの')
-    const tasks = out.indexOf('作業中の tasks')
-    const handoff = out.indexOf('引き継ぎの文書とメモ')
-    assert.notEqual(before, -1, '「答える前」がない')
-    assert.notEqual(first, -1, '「最初に読むもの」がない')
-    assert.notEqual(tasks, -1, '「作業中の tasks」がない')
-    assert.notEqual(handoff, -1, '「引き継ぎの文書とメモ」がない')
-    assert.ok(before < first, '「答える前」が「最初に読むもの」より後にある')
-    assert.ok(first < tasks && tasks < handoff, '箇条の順が違う')
-    assert.ok(out.includes('他のセッションのメッセージ'), '「他のセッションのメッセージ」がない')
+    const [head, ...rest] = result.stdout.split('\n')
+    for (const word of ['他のセッションのメッセージ', '答える前', '読み直す', 'ファイルを読む']) {
+      assert.ok(head.includes(word), `1 行目に「${word}」がない：${head}`)
+    }
+    const items = rest.filter((line) => line.startsWith('- '))
+    for (const word of ['最初に読むもの', '担当の issue', '引き継ぎの文書とメモ']) {
+      assert.ok(items.some((line) => line.includes(word)), `箇条に「${word}」の行がない`)
+    }
+    const first = items.find((line) => line.includes('最初に読むもの'))
+    assert.ok(first.includes('hook が圧縮の後に文脈に入れた文書は除く'), '「最初に読むもの」の行に「hook が圧縮の後に文脈に入れた文書は除く」がない')
   })
 
   test('圧縮の後でない SessionStart では、何も出さない', () => {

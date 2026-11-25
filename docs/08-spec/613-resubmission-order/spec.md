@@ -135,7 +135,7 @@
   - 依存：T613-01-03
   - 範囲：`docs/02-設計/backend-architecture.md`
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs` と `node scripts/ci/ja/ja-text.mjs --warning`
-- [ ] **T613-01-05** `./gradlew check` を通す（DC-613-6）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
+- [x] **T613-01-05** `./gradlew check` を通す（DC-613-6）。重い検査なので、実行の前に issue 担当のセッションの合図を待つ。
   - 依存：T613-01-04
 - [ ] **T613-01-06** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T613-01-05

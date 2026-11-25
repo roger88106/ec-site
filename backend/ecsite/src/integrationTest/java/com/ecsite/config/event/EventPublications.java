@@ -122,7 +122,7 @@ class EventPublications {
     private final EventPublicationRegistry registry;
 
     /**
-     * 本番の、イベントの記録を読む操作
+     * 本番のコードの、イベントの記録を読み書きするクラス
      */
     private final EventPublicationRecords records;
 
@@ -145,7 +145,7 @@ class EventPublications {
      * @param transactionTemplate トランザクションのテンプレート
      * @param eventPublisher      イベントの発行
      * @param registry            イベントの発行の記録
-     * @param records             本番の、イベントの記録を読む操作
+     * @param records             本番のコードの、イベントの記録を読み書きするクラス
      * @param asyncEvents         リスナーの処理を待つ補助
      * @param clock               テスト用の時計
      */
@@ -264,7 +264,7 @@ class EventPublications {
     }
 
     /**
-     * 再発行中の記録の件数（ほかのテストの行を含む）。
+     * 再発行中の記録の件数（他のテストの行を含む）。
      *
      * @return 再発行中の記録の件数
      */
@@ -273,7 +273,7 @@ class EventPublications {
     }
 
     /**
-     * イベント ID を含む記録を、全て消す（複製した記録が、ほかのテストの再発行の枠を使わないように片付ける）。
+     * イベント ID を含む記録を、全て削除する（複製した記録が、他のテストの再発行の枠を使わないように片付ける）。
      *
      * @param eventId イベントを見分ける ID
      */
@@ -282,7 +282,7 @@ class EventPublications {
     }
 
     /**
-     * イベント ID を含む記録を、全て、指定の状態にする（再発行中に見せるときなどに使う）。
+     * イベント ID を含む記録を、全て、指定の状態にする（再発行中の状態にするときなどに使う）。
      *
      * @param eventId イベントを見分ける ID
      * @param status  処理の状態
@@ -306,15 +306,16 @@ class EventPublications {
     }
 
     /**
-     * 最後の再発行の時刻が指定の時刻の記録の数（ほかのテストの行を含む）。
+     * イベント ID を含む記録を、全て、最後の再発行の時刻だけ書き換える（状態と処理の回数は変えない）。
      *
-     * @param resubmittedAt 最後の再発行の時刻
-     * @param status        処理の状態（絞らないときは null）
-     * @return 記録の数
+     * <p>再発行の対象に選ばれる順（最後の試行の古い順）を決めるときに使う。
+     *
+     * @param eventId     イベントを見分ける ID
+     * @param lastTriedAt 最後の再発行の時刻
      */
-    int countResubmittedAt(Instant resubmittedAt, String status) {
-        var condition = LAST_RESUBMISSION_DATE.eq(resubmittedAt);
-        return dsl.fetchCount(EVENT_PUBLICATION, status == null ? condition : condition.and(STATUS.eq(status)));
+    void markLastTried(UUID eventId, Instant lastTriedAt) {
+        dsl.update(EVENT_PUBLICATION).set(LAST_RESUBMISSION_DATE, lastTriedAt)
+                .where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
     }
 
     /**
@@ -333,7 +334,25 @@ class EventPublications {
      */
     UUID insertRecord(UUID marker, String status, int attempts, Instant publicationDate,
                       Instant lastResubmissionDate, Instant completionDate) {
-        var id = UUID.randomUUID();
+        return insertRecord(UUID.randomUUID(), marker, status, attempts, publicationDate, lastResubmissionDate, completionDate);
+    }
+
+    /**
+     * 記録の行を、指定の ID で 1 行直接入れる（並びを ID で確認するテスト用）。
+     *
+     * <p>他の引数は {@link #insertRecord(UUID, String, int, Instant, Instant, Instant)} と同じ。
+     *
+     * @param id                   記録の ID
+     * @param marker               記録を見分けるマーカーの ID
+     * @param status               処理の状態
+     * @param attempts             処理の回数
+     * @param publicationDate      発行の時刻
+     * @param lastResubmissionDate 最後の再発行の時刻（なければ null）
+     * @param completionDate       処理を終えた時刻（未完了なら null）
+     * @return 入れた行の ID（引数の id）
+     */
+    UUID insertRecord(UUID id, UUID marker, String status, int attempts, Instant publicationDate,
+                      Instant lastResubmissionDate, Instant completionDate) {
         dsl.insertInto(EVENT_PUBLICATION)
                 .columns(ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE, COMPLETION_DATE, STATUS,
                         COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE)

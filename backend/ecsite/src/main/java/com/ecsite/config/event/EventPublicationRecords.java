@@ -234,7 +234,8 @@ class EventPublicationRecords {
      * @return 再発行中の記録の件数
      */
     int countResubmitted() {
-        return dsl.fetchCount(EVENT_PUBLICATION, STATUS.eq(RESUBMITTED));
+        // 再発行中の行は必ず未完了なので、件数は変わらない。完了日時の条件を加え、完了日時の索引を使える形にする
+        return dsl.fetchCount(EVENT_PUBLICATION, STATUS.eq(RESUBMITTED).and(COMPLETION_DATE.isNull()));
     }
 
     /**

@@ -30,7 +30,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -383,26 +382,26 @@ class EventResubmissionJobTest {
             // 準備：失敗し続ける古いイベント 501 件（1 件を発行し、残りは記録を複製する）と、その後に 1 回目の処理に失敗した新しいイベント。
             // 古いイベントは、新しいイベントの発行より後に再発行して失敗した状態にする（失敗し続ける古いイベントは毎回再発行されるため）
             var old = publications.failedOnce(failingEvent("old"));
-            publications.copyPublication(old, 500);
-            clock.advance(Duration.ofMinutes(1));
-            var event = failedOnce();
-            var publicationId = publicationOf(event).getIdentifier();
-
             try {
+                publications.copyPublication(old, 500);
+                clock.advance(Duration.ofMinutes(1));
+                var event = failedOnce();
                 clock.advance(Duration.ofMinutes(5));
                 publications.markFailedAfterResubmission(old.id(), clock.instant());
+
+                // 確認（前提）：古いイベントは、処理の回数 2 で失敗の状態の行として 501 件ある
+                assertThat(publications.count(old.id(), "FAILED", 2)).isEqualTo(501);
 
                 // 操作：どちらも発行から 5 分を過ぎ、最後の試行から 1 分がたった時点で、再発行する
                 clock.advance(Duration.ofMinutes(1));
                 job.resubmit();
 
-                // 確認：新しいイベントの処理の回数が増え、2 回目の処理で成功する
-                assertThat(dsl.select(COMPLETION_ATTEMPTS).from(EVENT_PUBLICATION).where(ID.eq(publicationId))
-                        .fetchOne(COMPLETION_ATTEMPTS)).isEqualTo(2);
+                // 確認：新しいイベントが 2 回目の処理で成功し、リスナーが受けた回数は 2 回
                 asyncEvents.awaitHandled(event::equals);
+                assertThat(listener.attempts(event)).isEqualTo(2);
                 assertThat(listener.succeeded(event)).isTrue();
             } finally {
-                // 後片付け：複製した記録が、ほかのテストの再発行の枠を使わないよう消す
+                // 後片付け：複製した記録が、他のテストの再発行の枠を使わないよう削除する
                 publications.deleteAll(old.id());
             }
         }
@@ -441,29 +440,58 @@ class EventResubmissionJobTest {
         private static final int MAX_ATTEMPTS = 5;
 
         /**
-         * テストの行の発行の時刻の基準。ほかのテストの行より古くし、選ぶ件数の上限で、ほかの行が先に選ばれないようにする。
+         * テストの行の発行の時刻の基準。他のテストの行より古くし、選ぶ件数の上限で、他の行が先に選ばれないようにする。
          */
         private static final Instant BASE = Instant.parse("2000-01-01T00:00:00Z");
 
+        /**
+         * 時刻の境界の「1 つ外」の差（PostgreSQL の timestamp の精度である 1 マイクロ秒）
+         */
+        private static final Duration ONE_MICROSECOND = Duration.ofNanos(1_000);
+
         @Test
-        @DisplayName("DC-613-2 最後の試行の古い順に、件数の上限まで選ぶ。最後の再発行の時刻がない行は、発行の時刻で並ぶ")
+        @DisplayName("DC-613-2 最後の試行の古い順に、件数の上限まで選ぶ")
         void selectsOldestLastTryFirstUpToLimit() {
             var marker = UUID.randomUUID();
             try {
-                // 準備：最後の試行が 3 月 1 日（再発行あり）、1 月 2 日（再発行なし。発行の時刻）、2 月 1 日（再発行あり）の 3 行。
+                // 準備：最後の再発行の時刻が 3 月 1 日、1 月 11 日、2 月 1 日の 3 行。
                 // 発行の時刻の順（3 月 1 日の行が最も古い）と、最後の試行の順が逆になるようにする
-                var march = publications.insertRecord(marker, "FAILED", 1, BASE, BASE.plus(Duration.ofDays(60)), null);
-                var january = publications.insertRecord(marker, "FAILED", 1, BASE.plus(Duration.ofDays(1)), null, null);
-                var february = publications.insertRecord(marker, "FAILED", 1, BASE.plus(Duration.ofDays(2)),
+                publications.insertRecord(marker, "FAILED", 1, BASE, BASE.plus(Duration.ofDays(60)), null);
+                var january = publications.insertRecord(marker, "FAILED", 1, BASE.plus(Duration.ofDays(2)),
+                        BASE.plus(Duration.ofDays(10)), null);
+                var february = publications.insertRecord(marker, "FAILED", 1, BASE.plus(Duration.ofDays(1)),
                         BASE.plus(Duration.ofDays(31)), null);
 
                 // 操作：件数の上限 2 で選ぶ
                 var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 2);
 
-                // 確認：最後の試行の古い 2 行が、古い順に返る
+                // 確認：最後の試行の古い 2 行だけが、古い順に返る
                 assertThat(targets).containsExactly(january, february);
-                assertThat(targets).doesNotContain(march);
             } finally {
+                // 後片付け：入れた行を削除する
+                publications.deleteAll(marker);
+            }
+        }
+
+        @Test
+        @DisplayName("DC-613-2 最後の再発行の時刻がない行は、発行の時刻で並ぶ")
+        void ordersWithoutResubmissionByPublicationDate() {
+            var marker = UUID.randomUUID();
+            try {
+                // 準備：最後の再発行の時刻がない 2 行（発行の時刻が 1 月 3 日と 1 月 2 日）と、
+                // 最後の再発行の時刻が 2 月 1 日で、発行の時刻が最も古い行を、並びと違う順に入れる
+                var later = publications.insertRecord(marker, "FAILED", 1, BASE.plus(Duration.ofDays(2)), null, null);
+                var resubmitted = publications.insertRecord(marker, "FAILED", 1, BASE,
+                        BASE.plus(Duration.ofDays(31)), null);
+                var earlier = publications.insertRecord(marker, "FAILED", 1, BASE.plus(Duration.ofDays(1)), null, null);
+
+                // 操作：選ぶ
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
+
+                // 確認：発行の時刻が古い順に並び、最後の再発行の時刻がある行は、その時刻の順で最後になる
+                assertThat(targets).containsExactly(earlier, later, resubmitted);
+            } finally {
+                // 後片付け：入れた行を削除する
                 publications.deleteAll(marker);
             }
         }
@@ -473,34 +501,33 @@ class EventResubmissionJobTest {
         void ordersSameLastTryById() {
             var marker = UUID.randomUUID();
             try {
-                // 準備：最後の試行が同じ 3 行
-                var ids = new ArrayList<String>();
-                for (var i = 0; i < 3; i++) {
-                    ids.add(publications.insertRecord(marker, "FAILED", 1, BASE, null, null).toString());
+                // 準備：最後の試行が同じ 3 行を、ID の降順に入れる（PostgreSQL の uuid の順は、バイトの順）
+                var first = UUID.fromString("00000001-0000-4000-8000-000000000000");
+                var second = UUID.fromString("00000002-0000-4000-8000-000000000000");
+                var third = UUID.fromString("00000003-0000-4000-8000-000000000000");
+                for (var id : List.of(third, second, first)) {
+                    publications.insertRecord(id, marker, "FAILED", 1, BASE, null, null);
                 }
 
-                // 操作：3 行より多い件数の上限で選ぶ
+                // 操作：3 行ちょうどの件数の上限で選ぶ
                 var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 3);
 
-                // 確認：ID の順（PostgreSQL の uuid の順は、16 進数の文字列の順と同じ）に返る
-                assertThat(targets.stream().map(UUID::toString).toList()).isEqualTo(ids.stream().sorted().toList());
+                // 確認：ID の昇順に返る
+                assertThat(targets).containsExactly(first, second, third);
             } finally {
+                // 後片付け：入れた行を削除する
                 publications.deleteAll(marker);
             }
         }
 
         @Test
-        @DisplayName("DC-613-4 処理の回数が上限以上の失敗の行、結果の出ていない行、完了した行は選ばない")
-        void doesNotSelectAtMaxAttemptsOrWithoutResultOrCompleted() {
+        @DisplayName("DC-613-4 処理の回数が上限以上の失敗の行は選ばない")
+        void doesNotSelectAtMaxAttempts() {
             var marker = UUID.randomUUID();
             try {
-                // 準備：選ぶ行 1 行と、回数が上限の失敗の行、処理中・再発行中・発行済みの行、完了日時のある失敗の行
+                // 準備：選ぶ行 1 行と、処理の回数が上限の失敗の行
                 var target = publications.insertRecord(marker, "FAILED", MAX_ATTEMPTS - 1, BASE, null, null);
                 publications.insertRecord(marker, "FAILED", MAX_ATTEMPTS, BASE, null, null);
-                publications.insertRecord(marker, "PROCESSING", 1, BASE, null, null);
-                publications.insertRecord(marker, "RESUBMITTED", 1, BASE, null, null);
-                publications.insertRecord(marker, "PUBLISHED", 1, BASE, null, null);
-                publications.insertRecord(marker, "FAILED", 1, BASE, null, BASE.plus(Duration.ofDays(1)));
 
                 // 操作：選ぶ
                 var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
@@ -508,18 +535,60 @@ class EventResubmissionJobTest {
                 // 確認：処理の回数が上限より 1 少ない失敗の行だけが選ばれる
                 assertThat(targets).containsExactly(target);
             } finally {
+                // 後片付け：入れた行を削除する
+                publications.deleteAll(marker);
+            }
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(strings = {"PUBLISHED", "PROCESSING", "RESUBMITTED"})
+        @DisplayName("DC-613-4 結果の出ていない行は選ばない")
+        void doesNotSelectWithoutResult(String status) {
+            var marker = UUID.randomUUID();
+            try {
+                // 準備：選ぶ行 1 行と、結果の出ていない状態の行
+                var target = publications.insertRecord(marker, "FAILED", 1, BASE, null, null);
+                publications.insertRecord(marker, status, 1, BASE, null, null);
+
+                // 操作：選ぶ
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
+
+                // 確認：失敗の行だけが選ばれる
+                assertThat(targets).containsExactly(target);
+            } finally {
+                // 後片付け：入れた行を削除する
                 publications.deleteAll(marker);
             }
         }
 
         @Test
-        @DisplayName("DC-613-4 最後の試行が上限の時刻より後の行は選ばず、ちょうどの行は選ぶ")
+        @DisplayName("DC-613-4 完了日時のある行は選ばない")
+        void doesNotSelectCompleted() {
+            var marker = UUID.randomUUID();
+            try {
+                // 準備：選ぶ行 1 行と、完了日時のある失敗の行
+                var target = publications.insertRecord(marker, "FAILED", 1, BASE, null, null);
+                publications.insertRecord(marker, "FAILED", 1, BASE, null, BASE.plus(Duration.ofDays(1)));
+
+                // 操作：選ぶ
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
+
+                // 確認：完了日時のない行だけが選ばれる
+                assertThat(targets).containsExactly(target);
+            } finally {
+                // 後片付け：入れた行を削除する
+                publications.deleteAll(marker);
+            }
+        }
+
+        @Test
+        @DisplayName("DC-613-4 最後の試行が上限の時刻より 1 マイクロ秒後の行は選ばず、ちょうどの行は選ぶ")
         void selectsLastTryAtBoundaryOnly() {
             var marker = UUID.randomUUID();
             try {
-                // 準備：最後の再発行の時刻が、上限の時刻ちょうどの行と、1 ミリ秒後の行
+                // 準備：最後の再発行の時刻が、上限の時刻ちょうどの行と、1 マイクロ秒後の行
                 var exactly = publications.insertRecord(marker, "FAILED", 1, BASE, LAST_TRIED_BY, null);
-                publications.insertRecord(marker, "FAILED", 1, BASE, LAST_TRIED_BY.plusMillis(1), null);
+                publications.insertRecord(marker, "FAILED", 1, BASE, LAST_TRIED_BY.plus(ONE_MICROSECOND), null);
 
                 // 操作：選ぶ
                 var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
@@ -527,6 +596,7 @@ class EventResubmissionJobTest {
                 // 確認：ちょうどの行だけが選ばれる
                 assertThat(targets).containsExactly(exactly);
             } finally {
+                // 後片付け：入れた行を削除する
                 publications.deleteAll(marker);
             }
         }
@@ -536,38 +606,40 @@ class EventResubmissionJobTest {
         void doesNotSelectWithoutResubmissionWhenPublishedAfterLastTriedBy() {
             var marker = UUID.randomUUID();
             try {
-                // 準備：最後の再発行の時刻がなく、発行の時刻が最後の試行の上限の 1 ミリ秒後の行と、ちょうどの行。
+                // 準備：最後の再発行の時刻がなく、発行の時刻が最後の試行の上限の 1 マイクロ秒後の行と、ちょうどの行。
                 // 発行の時刻の上限（publishedBefore）は、2 行より後にする
                 var publishedBefore = LAST_TRIED_BY.plus(Duration.ofDays(1));
-                var after = publications.insertRecord(marker, "FAILED", 1, LAST_TRIED_BY.plusMillis(1), null, null);
+                var after = publications.insertRecord(marker, "FAILED", 1, LAST_TRIED_BY.plus(ONE_MICROSECOND), null, null);
                 var exactly = publications.insertRecord(marker, "FAILED", 1, LAST_TRIED_BY, null, null);
 
                 // 操作：選ぶ
                 var targets = publications.findResubmissionTargets(publishedBefore, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
 
-                // 確認：ちょうどの行は選ばれ、1 ミリ秒後の行は選ばれない
+                // 確認：ちょうどの行は選ばれ、1 マイクロ秒後の行は選ばれない
                 assertThat(targets).contains(exactly);
                 assertThat(targets).doesNotContain(after);
             } finally {
+                // 後片付け：入れた行を削除する
                 publications.deleteAll(marker);
             }
         }
 
         @Test
-        @DisplayName("DC-613-4 発行の時刻が上限以後の行は選ばず、1 ミリ秒前の行は選ぶ")
+        @DisplayName("DC-613-4 発行の時刻が上限以後の行は選ばず、1 マイクロ秒前の行は選ぶ")
         void doesNotSelectPublishedAtOrAfterPublishedBefore() {
             var marker = UUID.randomUUID();
             try {
-                // 準備：発行の時刻が、上限ちょうどの行と、1 ミリ秒前の行（どちらも最後の再発行の時刻はなく、最後の試行の上限の前）
-                var justBefore = publications.insertRecord(marker, "FAILED", 1, PUBLISHED_BEFORE.minusMillis(1), null, null);
+                // 準備：発行の時刻が、上限ちょうどの行と、1 マイクロ秒前の行（どちらも最後の再発行の時刻はなく、最後の試行の上限の前）
+                var justBefore = publications.insertRecord(marker, "FAILED", 1, PUBLISHED_BEFORE.minus(ONE_MICROSECOND), null, null);
                 publications.insertRecord(marker, "FAILED", 1, PUBLISHED_BEFORE, null, null);
 
                 // 操作：選ぶ
                 var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
 
-                // 確認：1 ミリ秒前の行だけが選ばれる
+                // 確認：1 マイクロ秒前の行だけが選ばれる
                 assertThat(targets).containsExactly(justBefore);
             } finally {
+                // 後片付け：入れた行を削除する
                 publications.deleteAll(marker);
             }
         }
@@ -577,7 +649,7 @@ class EventResubmissionJobTest {
         void countsOnlyResubmitted() {
             var marker = UUID.randomUUID();
             try {
-                // 準備：ほかのテストの行を含む今の件数と、再発行中の 2 行、そのほかの状態の行
+                // 準備：他のテストの行を含む今の件数と、再発行中の 2 行、その他の状態の行
                 var before = publications.countResubmitted();
                 publications.insertRecord(marker, "RESUBMITTED", 1, BASE, null, null);
                 publications.insertRecord(marker, "RESUBMITTED", 2, BASE, BASE, null);
@@ -591,6 +663,7 @@ class EventResubmissionJobTest {
                 // 確認：再発行中の 2 行だけが増える
                 assertThat(after - before).isEqualTo(2);
             } finally {
+                // 後片付け：入れた行を削除する
                 publications.deleteAll(marker);
             }
         }
@@ -598,49 +671,135 @@ class EventResubmissionJobTest {
         @Test
         @DisplayName("DC-613-3 再発行の対象が 501 件あるとき、ジョブの 1 回で再発行するのは 500 件")
         void resubmitsAtMost500PerRun() {
-            // 準備：失敗し続ける 501 件（1 件を発行し、残りは記録を複製する）。発行から 5 分と、最後の試行から 1 分を過ぎる
+            // 準備：失敗し続ける 501 件（1 件を発行し、残りは記録を複製する）。最後の試行を他の行より十分に古くして、選ばれる順の先頭に置く
             var old = publications.failedOnce(failingEvent("batch"));
-            publications.copyPublication(old, 500);
             try {
+                publications.copyPublication(old, 500);
+                publications.markLastTried(old.id(), BASE);
+                // 他のテストが残した再発行中の行も、枠を使う
                 clock.advance(Duration.ofMinutes(6));
-                var resubmittedAt = clock.instant();
-                // ほかのテストが残した失敗の行も、枠を使うことがある。再発行した記録は、表の全体で、ジョブの前後の増えた数を数える
-                var resubmittedBefore = publications.countResubmittedAt(resubmittedAt, null);
-                var failedBefore = publications.countResubmittedAt(resubmittedAt, "FAILED");
+                var expected = 500 - publications.countResubmitted();
 
                 // 操作：ジョブを 1 回動かす
                 job.resubmit();
 
-                // 確認：再発行した記録が 500 件増える。再発行した記録は、リスナーが失敗して、また失敗の状態になる。それを待ってから片付ける
-                assertThat(publications.countResubmittedAt(resubmittedAt, null) - resubmittedBefore).isEqualTo(500);
-                await().atMost(Duration.ofSeconds(60)).untilAsserted(() ->
-                        assertThat(publications.countResubmittedAt(resubmittedAt, "FAILED") - failedBefore).isEqualTo(500));
+                // 確認：自分の行のうち、処理の回数が増えて失敗に戻ったものが、残りの枠の数になり、残りの行は処理の回数が増えていない
+                await().atMost(AsyncEvents.TIMEOUT).untilAsserted(() ->
+                        assertThat(publications.count(old.id(), "FAILED", 2)).isEqualTo(expected));
+                assertThat(publications.count(old.id(), "FAILED", 1)).isEqualTo(501 - expected);
             } finally {
+                // 後片付け：複製した記録を削除する
                 publications.deleteAll(old.id());
             }
         }
 
         @Test
-        @DisplayName("再発行中の件数が上限の 500 のとき、ジョブは何も再発行しない")
-        void doesNotResubmitWhenInFlightAtLimit() {
-            // 準備：再発行中の 500 件（1 件を発行し、記録を複製して、状態を再発行中にする）と、再発行の対象の失敗の行 1 件
+        @DisplayName("DC-613-2 再発行中が 499 件、対象が 2 件のとき、再発行するのは最後の試行が古い 1 件だけ")
+        void resubmitsOnlyOldestWhenOneSlotLeft() {
+            // 準備：再発行中の 499 件と、再発行の対象の失敗の行 2 件（最後の試行が古い行と、新しい行）
             var inFlight = publications.failedOnce(failingEvent("in-flight"));
-            publications.copyPublication(inFlight, 499);
-            publications.markStatusAll(inFlight.id(), "RESUBMITTED");
-            var target = publications.failedOnce(failingEvent("target"));
+            var oldest = publications.failedOnce(failingEvent("oldest"));
+            var newer = publications.failedOnce(failingEvent("newer"));
             try {
+                publications.markLastTried(oldest.id(), BASE);
+                publications.markLastTried(newer.id(), BASE.plus(Duration.ofDays(1)));
+                markInFlight(inFlight, 499);
                 clock.advance(Duration.ofMinutes(6));
 
                 // 操作：ジョブを 1 回動かす
                 job.resubmit();
 
+                // 確認：最後の試行が古い行だけが、2 回目の処理に進む。新しい行は処理の回数が 1 のままで、リスナーが受けた回数も 1 回のまま
+                asyncEvents.awaitFailed(oldest::equals, 2);
+                assertThat(failingListener.attempts(oldest)).isEqualTo(2);
+                assertThat(publications.count(newer.id(), "FAILED", 1)).isEqualTo(1);
+                assertThat(failingListener.attempts(newer)).isEqualTo(1);
+            } finally {
+                // 後片付け：複製した記録と、対象の記録を削除する
+                publications.deleteAll(inFlight.id());
+                publications.deleteAll(oldest.id());
+                publications.deleteAll(newer.id());
+            }
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {500, 501})
+        @DisplayName("DC-613-2 再発行中の件数が上限以上のとき、ジョブは例外を出さず、何も再発行しない")
+        void doesNotResubmitWhenInFlightAtOrOverLimit(int inFlightCount) {
+            // 準備：再発行中の件数が上限以上（1 件を発行し、記録を複製して、状態を再発行中にする）と、再発行の対象の失敗の行 1 件
+            var inFlight = publications.failedOnce(failingEvent("in-flight"));
+            var target = publications.failedOnce(failingEvent("target"));
+            try {
+                publications.markLastTried(target.id(), BASE);
+                markInFlight(inFlight, inFlightCount);
+                clock.advance(Duration.ofMinutes(6));
+
+                // 操作：ジョブを 1 回動かす（例外が出れば、テストは失敗する）
+                job.resubmit();
+
                 // 確認：対象の行の処理の回数が 1 のままで、リスナーが受けた回数も 1 回のまま（非同期で動くので、回数だけでは確認にならない）
                 assertThat(publications.count(target.id(), "FAILED", 1)).isEqualTo(1);
                 assertThat(failingListener.attempts(target)).isEqualTo(1);
-                assertThat(publications.count(inFlight.id(), "RESUBMITTED", 1)).isEqualTo(500);
             } finally {
+                // 後片付け：複製した記録と、対象の記録を削除する
                 publications.deleteAll(inFlight.id());
                 publications.deleteAll(target.id());
+            }
+        }
+
+        @Test
+        @DisplayName("DC-613-4 発行から 5 分たっていない行は、再発行の枠を使わない")
+        void recentlyPublishedDoNotUseSlots() {
+            // 準備：発行から 5 分を過ぎた対象の行 1 件（最後の試行は 500 件より後）と、
+            // その 2 分後に発行した（ジョブの時点で 4 分）、最後の試行が古い失敗の行 500 件
+            var target = publications.failedOnce(failingEvent("target"));
+            clock.advance(Duration.ofMinutes(2));
+            var recent = publications.failedOnce(failingEvent("recent"));
+            try {
+                publications.copyPublication(recent, 499);
+                publications.markLastTried(recent.id(), BASE);
+                publications.markLastTried(target.id(), BASE.plus(Duration.ofDays(1)));
+                clock.advance(Duration.ofMinutes(4));
+
+                // 操作：ジョブを 1 回動かす
+                job.resubmit();
+
+                // 確認：発行から 5 分を過ぎた対象が、2 回目の処理に進む。発行から 4 分の行は、処理の回数が 1 のまま
+                asyncEvents.awaitFailed(target::equals, 2);
+                assertThat(publications.count(recent.id(), "FAILED", 1)).isEqualTo(500);
+            } finally {
+                // 後片付け：複製した記録と、対象の記録を削除する
+                publications.deleteAll(recent.id());
+                publications.deleteAll(target.id());
+            }
+        }
+
+        @Test
+        @DisplayName("DC-613-4 再発行中の件数が上限のときも、処理の回数が上限の失敗の行は止めたイベントの表に移り、メトリクスを記録する")
+        void stopsAtMaxAttemptsEvenWhenInFlightAtLimit() {
+            // 準備：再発行中の 500 件と、処理の回数が上限（60）の失敗の行 1 件
+            var inFlight = publications.failedOnce(failingEvent("in-flight"));
+            var stopped = publications.failedOnce(failingEvent("stopped"));
+            try {
+                markAttempts(stopped, 60);
+                markInFlight(inFlight, 500);
+                clock.advance(Duration.ofMinutes(6));
+
+                // 操作と確認：ジョブを動かすと、止めたイベントの表に移り、イベント発行記録の表になく、メトリクスは DB の件数と合う。
+                // 統合テストは DB を共有し、ほかのテストの非同期の処理で件数が動くので、DB の件数と合うまで、ジョブの実行から繰り返す
+                await().atMost(AsyncEvents.TIMEOUT).untilAsserted(() -> {
+                    job.resubmit();
+                    var stoppedCount = publications.countStopped();
+                    var incompleteCount = publications.countIncomplete();
+                    assertThat(publications.stoppedOf(stopped.id())).isPresent();
+                    assertThat(publications.count(stopped.id())).isZero();
+                    assertThat(gauge("ecsite.events.stopped")).isEqualTo(stoppedCount);
+                    assertThat(gauge("ecsite.events.incomplete")).isEqualTo(incompleteCount + stoppedCount);
+                });
+            } finally {
+                // 後片付け：複製した記録を削除する
+                publications.deleteAll(inFlight.id());
+                publications.deleteAll(stopped.id());
             }
         }
     }
@@ -1083,6 +1242,20 @@ class EventResubmissionJobTest {
     }
 
     // ============================== 準備の補助 ==============================
+
+    /**
+     * 再発行中の記録の件数（他のテストが残した行を含む）が、指定の件数になるようにする。
+     *
+     * <p>発行したイベントの記録を複製し、元の行と合わせて再発行中の状態にする。他のテストが残した再発行中の行は、複製する数から引く。
+     *
+     * @param base  発行して失敗させたイベント（複製の元）
+     * @param total 再発行中の記録の件数
+     */
+    private void markInFlight(FailingEvent base, int total) {
+        var others = publications.countResubmitted();
+        publications.copyPublication(base, total - others - 1);
+        publications.markStatusAll(base.id(), "RESUBMITTED");
+    }
 
     /**
      * 処理の回数の上限 2 のジョブで、処理を 2 回失敗させてから止めたイベントを作る。

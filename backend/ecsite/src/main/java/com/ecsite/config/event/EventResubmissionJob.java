@@ -65,7 +65,8 @@ class EventResubmissionJob {
      * <p>最後の処理に失敗したイベントを、もう一度リスナーに渡す。処理の途中でインスタンスが止まったイベントは、
      * Spring Modulith の監視が失敗の状態にした後の回で渡す。
      * 最後の試行の古いものから、再発行中の件数と合わせて {@link #BATCH_SIZE} 件まで再発行する。
-     * 次のイベントは再発行しない。
+     *
+     * <p>次のイベントは再発行しない。
      * <ul>
      *     <li>最後の処理の結果が出ていない（処理中など）</li>
      *     <li>最後の試行から、再発行の間隔がたっていない</li>
@@ -98,9 +99,10 @@ class EventResubmissionJob {
         // そのイベントは処理されないまま、処理の回数だけが増える（Spring Modulith は、再発行の記録（回数を 1 増やす）を
         // 先に書いてから、リスナーを呼ぶため）。上限は再発行中（RESUBMITTED）の件数と合わせ、
         // 残りの枠がなければ、その回は再発行せず、次の回に回す
-        var remaining = BATCH_SIZE - publicationRecords.countResubmitted();
+        var resubmitted = publicationRecords.countResubmitted();
+        var remaining = BATCH_SIZE - resubmitted;
         if (remaining <= 0) {
-            log.debug("再発行中の件数が上限に達しているので、再発行しない（上限 {}）", BATCH_SIZE);
+            log.info("再発行中の件数が上限に達しているので、再発行しない：上限 {}、再発行中 {}", BATCH_SIZE, resubmitted);
             return;
         }
         // 再発行するイベントは自前で選ぶ。Spring Modulith は失敗の行を発行の古い順に件数まで読んでから filter を掛けるので、
@@ -119,8 +121,10 @@ class EventResubmissionJob {
             return;
         }
         log.debug("未完了のイベントを {} 件再発行する", targets.size());
-        // 件数は自前で絞ったので、ライブラリには上限なしで渡し、選んだ ID だけを通す。
-        // ライブラリが読む失敗の行は、回数の上限で止めたイベントの表へ移るので、約 1 時間分に限られる
+        // 件数は自前で絞ったので、Spring Modulith には上限なしで渡し、選んだ ID だけを通す。
+        // 上限を渡すと、Spring Modulith が発行の古い順に上限まで読むので、選んだイベントに届かない。
+        // そのため、失敗の状態の行を毎回全て読ませる（イベントの本文を復元するのは、filter を通したイベントだけ）。
+        // 回数の上限に達した行は、止めたイベントの表に移る
         incompletePublications.resubmitIncompletePublications(ResubmissionOptions.defaults()
                 .withMinAge(properties.minAge())
                 .withBatchSize(Integer.MAX_VALUE)

@@ -124,7 +124,7 @@ class EventCleanupJobTest {
 
     @BeforeEach
     void setUp() {
-        publications = new EventPublications(dsl, transactionTemplate, eventPublisher, registry, asyncEvents, clock);
+        publications = new EventPublications(dsl, transactionTemplate, eventPublisher, registry, records, asyncEvents, clock);
     }
 
     // ============================== テスト ==============================

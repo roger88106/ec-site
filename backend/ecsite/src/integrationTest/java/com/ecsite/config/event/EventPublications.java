@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -71,6 +72,11 @@ class EventPublications {
     private static final Field<String> EVENT_TYPE = DSL.field(DSL.name("event_type"), String.class);
 
     /**
+     * 発行の時刻
+     */
+    private static final Field<Instant> PUBLICATION_DATE = DSL.field(DSL.name("publication_date"), Instant.class);
+
+    /**
      * 最後の再発行の時刻
      */
     private static final Field<Instant> LAST_RESUBMISSION_DATE = DSL.field(DSL.name("last_resubmission_date"), Instant.class);
@@ -79,6 +85,21 @@ class EventPublications {
      * 止めた時刻
      */
     private static final Field<Instant> STOPPED_DATE = DSL.field(DSL.name("stopped_date"), Instant.class);
+
+    /**
+     * 記録の行を、新しい ID で複製する SQL（複製する数と、元の行の ID を bind 変数で渡す）
+     *
+     * <p>リスナーが受けられる JSON を含めて、列を元の行のままにする。1 件ずつイベントを発行するより速い。
+     */
+    private static final String COPY_PUBLICATION = """
+            INSERT INTO common.event_publication
+                (id, listener_id, event_type, serialized_event, publication_date,
+                 completion_date, status, completion_attempts, last_resubmission_date)
+            SELECT gen_random_uuid(), source.listener_id, source.event_type, source.serialized_event, source.publication_date,
+                   source.completion_date, source.status, source.completion_attempts, source.last_resubmission_date
+            FROM common.event_publication source, generate_series(1, ?)
+            WHERE source.id = ?
+            """;
 
     /**
      * イベント発行記録の表を数える DSLContext
@@ -101,6 +122,11 @@ class EventPublications {
     private final EventPublicationRegistry registry;
 
     /**
+     * 本番のコードの、イベントの記録を読み書きするクラス
+     */
+    private final EventPublicationRecords records;
+
+    /**
      * リスナーの処理を待つ補助
      */
     private final AsyncEvents asyncEvents;
@@ -119,15 +145,18 @@ class EventPublications {
      * @param transactionTemplate トランザクションのテンプレート
      * @param eventPublisher      イベントの発行
      * @param registry            イベントの発行の記録
+     * @param records             本番のコードの、イベントの記録を読み書きするクラス
      * @param asyncEvents         リスナーの処理を待つ補助
      * @param clock               テスト用の時計
      */
     EventPublications(DSLContext dsl, TransactionTemplate transactionTemplate, ApplicationEventPublisher eventPublisher,
-                      EventPublicationRegistry registry, AsyncEvents asyncEvents, MutableClock clock) {
+                      EventPublicationRegistry registry, EventPublicationRecords records, AsyncEvents asyncEvents,
+                      MutableClock clock) {
         this.dsl = dsl;
         this.transactionTemplate = transactionTemplate;
         this.eventPublisher = eventPublisher;
         this.registry = registry;
+        this.records = records;
         this.asyncEvents = asyncEvents;
         this.clock = clock;
     }
@@ -191,6 +220,146 @@ class EventPublications {
         return registry.findIncompletePublications().stream()
                 .filter(publication -> publication.getEvent().equals(event))
                 .findFirst().orElseThrow();
+    }
+
+    /**
+     * 発行したイベントの未完了の記録を、新しい ID で指定の数だけ複製する。
+     *
+     * <p>列は元の記録と同じ（発行の日時、処理の回数、最後の再発行の日時、状態、イベントの JSON）。
+     * 同じイベントを受けるリスナー宛の、同じ状態の記録を、イベントを発行せずに多く作るときに使う。
+     *
+     * @param event 発行したイベント
+     * @param count 複製する数
+     */
+    void copyPublication(Object event, int count) {
+        dsl.execute(COPY_PUBLICATION, count, publicationOf(event).getIdentifier());
+    }
+
+    /**
+     * イベント ID を含む記録を、全て、指定の時刻に再発行して失敗した状態にする（処理の回数を 1 増やす）。
+     *
+     * @param eventId       イベントを見分ける ID
+     * @param resubmittedAt 再発行した時刻
+     */
+    void markFailedAfterResubmission(UUID eventId, Instant resubmittedAt) {
+        dsl.update(EVENT_PUBLICATION)
+                .set(LAST_RESUBMISSION_DATE, resubmittedAt)
+                .set(COMPLETION_ATTEMPTS, COMPLETION_ATTEMPTS.plus(1))
+                .set(STATUS, "FAILED")
+                .where(SERIALIZED_EVENT.contains(eventId.toString()))
+                .execute();
+    }
+
+    /**
+     * 再発行するイベントの記録の ID を、本番の選び方で選ぶ。
+     *
+     * @param publishedBefore 発行の時刻の上限
+     * @param lastTriedBy     最後の試行の時刻の上限
+     * @param maxAttempts     処理の回数の上限
+     * @param limit           選ぶ件数の上限
+     * @return 再発行するイベントの記録の ID（最後の試行の古い順）
+     */
+    List<UUID> findResubmissionTargets(Instant publishedBefore, Instant lastTriedBy, int maxAttempts, int limit) {
+        return records.findResubmissionTargets(publishedBefore, lastTriedBy, maxAttempts, limit);
+    }
+
+    /**
+     * 再発行中の記録の件数（他のテストの行を含む）。
+     *
+     * @return 再発行中の記録の件数
+     */
+    int countResubmitted() {
+        return records.countResubmitted();
+    }
+
+    /**
+     * イベント ID を含む記録を、全て削除する（複製した記録が、他のテストの再発行の枠を使わないように片付ける）。
+     *
+     * @param eventId イベントを見分ける ID
+     */
+    void deleteAll(UUID eventId) {
+        dsl.deleteFrom(EVENT_PUBLICATION).where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
+    }
+
+    /**
+     * イベント ID を含む記録を、全て、指定の状態にする（再発行中の状態にするときなどに使う）。
+     *
+     * @param eventId イベントを見分ける ID
+     * @param status  処理の状態
+     */
+    void markStatusAll(UUID eventId, String status) {
+        dsl.update(EVENT_PUBLICATION).set(STATUS, status)
+                .where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
+    }
+
+    /**
+     * イベント ID を含む記録のうち、指定の状態と処理の回数のものの数。
+     *
+     * @param eventId  イベントを見分ける ID
+     * @param status   処理の状態
+     * @param attempts 処理の回数
+     * @return 記録の数
+     */
+    int count(UUID eventId, String status, int attempts) {
+        return dsl.fetchCount(EVENT_PUBLICATION, SERIALIZED_EVENT.contains(eventId.toString())
+                .and(STATUS.eq(status)).and(COMPLETION_ATTEMPTS.eq(attempts)));
+    }
+
+    /**
+     * イベント ID を含む記録を、全て、最後の再発行の時刻だけ書き換える（状態と処理の回数は変えない）。
+     *
+     * <p>再発行の対象に選ばれる順（最後の試行の古い順）を決めるときに使う。
+     *
+     * @param eventId     イベントを見分ける ID
+     * @param lastTriedAt 最後の再発行の時刻
+     */
+    void markLastTried(UUID eventId, Instant lastTriedAt) {
+        dsl.update(EVENT_PUBLICATION).set(LAST_RESUBMISSION_DATE, lastTriedAt)
+                .where(SERIALIZED_EVENT.contains(eventId.toString())).execute();
+    }
+
+    /**
+     * 記録の行を、リスナーを介さずに 1 行直接入れる（選び方の SQL のテスト用）。
+     *
+     * <p>イベントの JSON はマーカーの ID だけを持つ。マーカーの ID で {@link #deleteAll(UUID)} が使える。
+     * リスナーが受けられる形ではないので、再発行のジョブには使わない。
+     *
+     * @param marker               記録を見分けるマーカーの ID
+     * @param status               処理の状態
+     * @param attempts             処理の回数
+     * @param publicationDate      発行の時刻
+     * @param lastResubmissionDate 最後の再発行の時刻（なければ null）
+     * @param completionDate       処理を終えた時刻（未完了なら null）
+     * @return 入れた行の ID
+     */
+    UUID insertRecord(UUID marker, String status, int attempts, Instant publicationDate,
+                      Instant lastResubmissionDate, Instant completionDate) {
+        return insertRecord(UUID.randomUUID(), marker, status, attempts, publicationDate, lastResubmissionDate, completionDate);
+    }
+
+    /**
+     * 記録の行を、指定の ID で 1 行直接入れる（並びを ID で確認するテスト用）。
+     *
+     * <p>他の引数は {@link #insertRecord(UUID, String, int, Instant, Instant, Instant)} と同じ。
+     *
+     * @param id                   記録の ID
+     * @param marker               記録を見分けるマーカーの ID
+     * @param status               処理の状態
+     * @param attempts             処理の回数
+     * @param publicationDate      発行の時刻
+     * @param lastResubmissionDate 最後の再発行の時刻（なければ null）
+     * @param completionDate       処理を終えた時刻（未完了なら null）
+     * @return 入れた行の ID（引数の id）
+     */
+    UUID insertRecord(UUID id, UUID marker, String status, int attempts, Instant publicationDate,
+                      Instant lastResubmissionDate, Instant completionDate) {
+        dsl.insertInto(EVENT_PUBLICATION)
+                .columns(ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE, COMPLETION_DATE, STATUS,
+                        COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE)
+                .values(id, "test-listener", "test.UnknownEvent", "{\"marker\":\"" + marker + "\"}", publicationDate,
+                        completionDate, status, attempts, lastResubmissionDate)
+                .execute();
+        return id;
     }
 
     /**

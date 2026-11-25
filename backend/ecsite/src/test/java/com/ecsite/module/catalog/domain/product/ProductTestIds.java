@@ -10,6 +10,9 @@ import java.util.UUID;
  */
 final class ProductTestIds {
 
+    /**
+     * インスタンスを作らない。
+     */
     private ProductTestIds() {
     }
 

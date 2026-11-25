@@ -102,6 +102,11 @@ class EventPublicationRecords {
     private static final String FAILED = "FAILED";
 
     /**
+     * 再発行中の状態
+     */
+    private static final String RESUBMITTED = "RESUBMITTED";
+
+    /**
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
@@ -188,6 +193,51 @@ class EventPublicationRecords {
                         .and(STATUS.eq(COMPLETED).or(STATUS.isNull()))
                         .limit(limit)))
                 .execute();
+    }
+
+    /**
+     * 再発行するイベントの記録の ID を選ぶ。
+     *
+     * <p>条件は、次を全て満たす行。
+     * <ul>
+     *   <li>状態が失敗で、完了日時が空（未完了）</li>
+     *   <li>発行の時刻が publishedBefore より前</li>
+     *   <li>最後の試行（最後の再発行の時刻。なければ発行の時刻）が lastTriedBy 以前</li>
+     *   <li>処理の回数が maxAttempts より少ない</li>
+     * </ul>
+     * 並びは、最後の試行の古い順。同じなら ID の順。limit 件まで返す。
+     *
+     * @param publishedBefore 発行の時刻の上限（この時刻より前に発行したものだけを選ぶ）
+     * @param lastTriedBy     最後の試行の時刻の上限（この時刻以前に最後に試行したものだけを選ぶ）
+     * @param maxAttempts     処理の回数の上限（これより少ないものだけを選ぶ）
+     * @param limit           選ぶ件数の上限
+     * @return 再発行するイベントの記録の ID（最後の試行の古い順）
+     */
+    List<UUID> findResubmissionTargets(Instant publishedBefore, Instant lastTriedBy, int maxAttempts, int limit) {
+        // 最後の試行は、再発行したことがなければ発行の時刻
+        var lastTried = DSL.coalesce(LAST_RESUBMISSION_DATE, PUBLICATION_DATE);
+        // 状態が空の行は選ばない。Spring Modulith の操作は状態が空で未完了の行も読むが、
+        // Spring Modulith 2.1.2 は発行のときに必ず状態を入れるので、状態が空の行は作られない
+        return dsl.select(ID)
+                .from(EVENT_PUBLICATION)
+                .where(STATUS.eq(FAILED))
+                .and(COMPLETION_DATE.isNull())
+                .and(PUBLICATION_DATE.lt(publishedBefore))
+                .and(lastTried.le(lastTriedBy))
+                .and(COMPLETION_ATTEMPTS.lt(maxAttempts))
+                .orderBy(lastTried.asc(), ID.asc())
+                .limit(limit)
+                .fetch(ID);
+    }
+
+    /**
+     * 再発行中（状態が RESUBMITTED）の記録の件数を数える。
+     *
+     * @return 再発行中の記録の件数
+     */
+    int countResubmitted() {
+        // 再発行中の行は必ず未完了なので、件数は変わらない。完了日時の条件を加え、完了日時の索引を使える形にする
+        return dsl.fetchCount(EVENT_PUBLICATION, STATUS.eq(RESUBMITTED).and(COMPLETION_DATE.isNull()));
     }
 
     /**

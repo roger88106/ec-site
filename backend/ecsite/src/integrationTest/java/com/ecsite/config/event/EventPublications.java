@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -121,6 +122,11 @@ class EventPublications {
     private final EventPublicationRegistry registry;
 
     /**
+     * 本番の、イベントの記録を読む操作
+     */
+    private final EventPublicationRecords records;
+
+    /**
      * リスナーの処理を待つ補助
      */
     private final AsyncEvents asyncEvents;
@@ -139,15 +145,18 @@ class EventPublications {
      * @param transactionTemplate トランザクションのテンプレート
      * @param eventPublisher      イベントの発行
      * @param registry            イベントの発行の記録
+     * @param records             本番の、イベントの記録を読む操作
      * @param asyncEvents         リスナーの処理を待つ補助
      * @param clock               テスト用の時計
      */
     EventPublications(DSLContext dsl, TransactionTemplate transactionTemplate, ApplicationEventPublisher eventPublisher,
-                      EventPublicationRegistry registry, AsyncEvents asyncEvents, MutableClock clock) {
+                      EventPublicationRegistry registry, EventPublicationRecords records, AsyncEvents asyncEvents,
+                      MutableClock clock) {
         this.dsl = dsl;
         this.transactionTemplate = transactionTemplate;
         this.eventPublisher = eventPublisher;
         this.registry = registry;
+        this.records = records;
         this.asyncEvents = asyncEvents;
         this.clock = clock;
     }
@@ -239,6 +248,28 @@ class EventPublications {
                 .set(STATUS, "FAILED")
                 .where(SERIALIZED_EVENT.contains(eventId.toString()))
                 .execute();
+    }
+
+    /**
+     * 再発行するイベントの記録の ID を、本番の選び方で選ぶ。
+     *
+     * @param publishedBefore 発行の時刻の上限
+     * @param lastTriedBy     最後の試行の時刻の上限
+     * @param maxAttempts     処理の回数の上限
+     * @param limit           選ぶ件数の上限
+     * @return 再発行するイベントの記録の ID（最後の試行の古い順）
+     */
+    List<UUID> findResubmissionTargets(Instant publishedBefore, Instant lastTriedBy, int maxAttempts, int limit) {
+        return records.findResubmissionTargets(publishedBefore, lastTriedBy, maxAttempts, limit);
+    }
+
+    /**
+     * 再発行中の記録の件数（ほかのテストの行を含む）。
+     *
+     * @return 再発行中の記録の件数
+     */
+    int countResubmitted() {
+        return records.countResubmitted();
     }
 
     /**

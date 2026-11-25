@@ -204,7 +204,7 @@ class EventResubmissionJobTest {
 
     @BeforeEach
     void setUp() {
-        publications = new EventPublications(dsl, transactionTemplate, eventPublisher, registry, asyncEvents, clock);
+        publications = new EventPublications(dsl, transactionTemplate, eventPublisher, registry, publicationRecords, asyncEvents, clock);
     }
 
     // ============================== テスト ==============================
@@ -458,7 +458,7 @@ class EventResubmissionJobTest {
                         BASE.plus(Duration.ofDays(31)), null);
 
                 // 操作：件数の上限 2 で選ぶ
-                var targets = publicationRecords.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 2);
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 2);
 
                 // 確認：最後の試行の古い 2 行が、古い順に返る
                 assertThat(targets).containsExactly(january, february);
@@ -480,7 +480,7 @@ class EventResubmissionJobTest {
                 }
 
                 // 操作：3 行より多い件数の上限で選ぶ
-                var targets = publicationRecords.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 3);
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 3);
 
                 // 確認：ID の順（PostgreSQL の uuid の順は、16 進数の文字列の順と同じ）に返る
                 assertThat(targets.stream().map(UUID::toString).toList()).isEqualTo(ids.stream().sorted().toList());
@@ -503,7 +503,7 @@ class EventResubmissionJobTest {
                 publications.insertRecord(marker, "FAILED", 1, BASE, null, BASE.plus(Duration.ofDays(1)));
 
                 // 操作：選ぶ
-                var targets = publicationRecords.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
 
                 // 確認：処理の回数が上限より 1 少ない失敗の行だけが選ばれる
                 assertThat(targets).containsExactly(target);
@@ -522,7 +522,7 @@ class EventResubmissionJobTest {
                 publications.insertRecord(marker, "FAILED", 1, BASE, LAST_TRIED_BY.plusMillis(1), null);
 
                 // 操作：選ぶ
-                var targets = publicationRecords.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
 
                 // 確認：ちょうどの行だけが選ばれる
                 assertThat(targets).containsExactly(exactly);
@@ -543,7 +543,7 @@ class EventResubmissionJobTest {
                 var exactly = publications.insertRecord(marker, "FAILED", 1, LAST_TRIED_BY, null, null);
 
                 // 操作：選ぶ
-                var targets = publicationRecords.findResubmissionTargets(publishedBefore, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
+                var targets = publications.findResubmissionTargets(publishedBefore, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
 
                 // 確認：ちょうどの行は選ばれ、1 ミリ秒後の行は選ばれない
                 assertThat(targets).contains(exactly);
@@ -563,7 +563,7 @@ class EventResubmissionJobTest {
                 publications.insertRecord(marker, "FAILED", 1, PUBLISHED_BEFORE, null, null);
 
                 // 操作：選ぶ
-                var targets = publicationRecords.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
+                var targets = publications.findResubmissionTargets(PUBLISHED_BEFORE, LAST_TRIED_BY, MAX_ATTEMPTS, 100);
 
                 // 確認：1 ミリ秒前の行だけが選ばれる
                 assertThat(targets).containsExactly(justBefore);
@@ -578,7 +578,7 @@ class EventResubmissionJobTest {
             var marker = UUID.randomUUID();
             try {
                 // 準備：ほかのテストの行を含む今の件数と、再発行中の 2 行、そのほかの状態の行
-                var before = publicationRecords.countResubmitted();
+                var before = publications.countResubmitted();
                 publications.insertRecord(marker, "RESUBMITTED", 1, BASE, null, null);
                 publications.insertRecord(marker, "RESUBMITTED", 2, BASE, BASE, null);
                 publications.insertRecord(marker, "FAILED", 1, BASE, null, null);
@@ -586,7 +586,7 @@ class EventResubmissionJobTest {
                 publications.insertRecord(marker, "PUBLISHED", 1, BASE, null, null);
 
                 // 操作：数える
-                var after = publicationRecords.countResubmitted();
+                var after = publications.countResubmitted();
 
                 // 確認：再発行中の 2 行だけが増える
                 assertThat(after - before).isEqualTo(2);

@@ -82,7 +82,8 @@
 | ジョブ | `config/event/EventResubmissionJob.java` |
 | 記録の読み書き | `config/event/EventPublicationRecords.java` |
 | 統合テスト | `backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventResubmissionJobTest.java` |
-| 統合テストの補助（必要なとき） | `backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventPublications.java` |
+| 統合テストの補助 | `backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventPublications.java` |
+| 統合テスト（補助の作り方の変更に合わせる） | `backend/ecsite/src/integrationTest/java/com/ecsite/config/event/EventCleanupJobTest.java` |
 | 文書 | `docs/02-設計/backend-architecture.md` |
 
 呼び出し元：イベント記録の読み書きのクラスを使うのは、同じパッケージのジョブ（再発行とクリーンアップ）、メトリクス、統合テストである。加えるメソッドの呼び出し元は、再発行のジョブだけである。

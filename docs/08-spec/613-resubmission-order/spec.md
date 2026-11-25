@@ -130,7 +130,7 @@
   - 依存：T613-01-01、T613-01-02
   - 範囲：`EventResubmissionJob.java`、`EventPublicationRecords.java`
   - 確認方法：T613-01-01、T613-01-02 のテストが通る。`./gradlew integrationTest --tests 'com.ecsite.config.event.*'` が通る
-- [ ] **T613-01-04** 設計書を修正する（決定 2、決定 3。DC-613-5）。
+- [x] **T613-01-04** 設計書を修正する（決定 2、決定 3。DC-613-5）。
   - 依存：T613-01-03
   - 範囲：`docs/02-設計/backend-architecture.md`
   - 確認方法：文書を読み、決定と照合する。`node scripts/ci/docs/doc-refs.mjs` と `node scripts/ci/ja/ja-text.mjs --warning`

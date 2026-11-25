@@ -707,6 +707,9 @@ class EventResubmissionJobTest {
                 markInFlight(inFlight, 499);
                 clock.advance(Duration.ofMinutes(6));
 
+                // 確認（前提）：再発行中の件数が 499
+                assertThat(publications.countResubmitted()).isEqualTo(499);
+
                 // 操作：ジョブを 1 回動かす
                 job.resubmit();
 
@@ -734,6 +737,9 @@ class EventResubmissionJobTest {
                 publications.markLastTried(target.id(), BASE);
                 markInFlight(inFlight, inFlightCount);
                 clock.advance(Duration.ofMinutes(6));
+
+                // 確認（前提）：再発行中の件数が指定の件数
+                assertThat(publications.countResubmitted()).isEqualTo(inFlightCount);
 
                 // 操作：ジョブを 1 回動かす（例外が出れば、テストは失敗する）
                 job.resubmit();
@@ -1275,15 +1281,37 @@ class EventResubmissionJobTest {
     /**
      * 再発行中の記録の件数（他のテストが残した行を含む）が、指定の件数になるようにする。
      *
-     * <p>発行したイベントの記録を複製し、元の行と合わせて再発行中の状態にする。他のテストが残した再発行中の行は、複製する数から引く。
+     * <p>発行したイベントの記録を複製し、元の行と合わせて再発行中の状態にする。他のテストが残した再発行中の行が処理を終えて減ることがあるので、
+     * 合計が指定の件数になるまで、足りない分を複製して再発行中にする（{@link AsyncEvents#TIMEOUT} まで）。
+     * 他のテストの再発行中の行が、初めから指定の件数を超えているときは、例外で失敗する。
      *
      * @param base  発行して失敗させたイベント（複製の元）
      * @param total 再発行中の記録の件数
      */
     private void markInFlight(FailingEvent base, int total) {
         var others = publications.countResubmitted();
-        publications.copyPublication(base, total - others - 1);
-        publications.markStatusAll(base.id(), "RESUBMITTED");
+        if (others > total) {
+            throw new IllegalStateException("他のテストの再発行中の行が、指定の件数を超えている：他のテスト " + others + " 件、指定 " + total + " 件");
+        }
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> {
+            var current = publications.countResubmitted();
+            if (current < total) {
+                // 元の行が再発行中でない間は元の行から複製して 1 件増やし、元の行も合わせて再発行中にする
+                publications.copyPublication(base, total - current - (isInFlight(base) ? 0 : 1));
+                publications.markStatusAll(base.id(), "RESUBMITTED");
+            }
+            return publications.countResubmitted() == total;
+        });
+    }
+
+    /**
+     * イベントの記録に、再発行中の状態の行があるか。
+     *
+     * @param event 発行したイベント
+     * @return 再発行中の行があれば true
+     */
+    private boolean isInFlight(FailingEvent event) {
+        return publications.count(event.id(), "RESUBMITTED", 1) > 0;
     }
 
     /**

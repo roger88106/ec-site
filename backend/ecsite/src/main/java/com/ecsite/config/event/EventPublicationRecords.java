@@ -216,6 +216,8 @@ class EventPublicationRecords {
     List<UUID> findResubmissionTargets(Instant publishedBefore, Instant lastTriedBy, int maxAttempts, int limit) {
         // 最後の試行は、再発行したことがなければ発行の時刻
         var lastTried = DSL.coalesce(LAST_RESUBMISSION_DATE, PUBLICATION_DATE);
+        // 状態が空の行は選ばない。Spring Modulith の操作は状態が空で未完了の行も読むが、
+        // Spring Modulith 2.1.2 は発行のときに必ず状態を入れるので、状態が空の行はできない
         return dsl.select(ID)
                 .from(EVENT_PUBLICATION)
                 .where(STATUS.eq(FAILED))

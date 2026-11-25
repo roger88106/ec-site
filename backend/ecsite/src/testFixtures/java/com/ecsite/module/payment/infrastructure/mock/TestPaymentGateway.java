@@ -6,12 +6,12 @@ import com.ecsite.module.payment.application.model.Authorization;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentActions.Timing;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentFailures.Kind;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * テストで使う決済サービス
@@ -27,39 +27,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final MockPaymentGateway mock;
 
     /**
-     * 次の支払画面の作成の最中に行う処理
+     * 操作の途中に差し込む処理の指定
      *
-     * <p>画面を作った後、応答を返す前に行う。同時のリクエストや、作っている間の期限切れのテスト用。なければ null。
+     * <p>{@link #reset()} で新しいものに替える。
      */
-    private final AtomicReference<Runnable> duringNextOpen = new AtomicReference<>();
-
-    /**
-     * 売上確定の状態の取得の最中に、次の 1 回だけ行う処理
-     *
-     * <p>状態を読んだ後、応答を返す前に行う。照合が読んでいる間の再実行のテスト用。なければ null。
-     */
-    private final AtomicReference<Runnable> duringNextCaptureStateFetch = new AtomicReference<>();
-
-    /**
-     * 次の売上確定の最中に行う処理
-     *
-     * <p>売上確定と注文のキャンセルが重なったときのテスト用。なければ null。
-     */
-    private final AtomicReference<Runnable> duringNextCapture = new AtomicReference<>();
-
-    /**
-     * 返金と与信の取消を呼ばれた時点で行う処理
-     *
-     * <p>呼ばれた時点の状態を記録するテスト用。なければ null。
-     */
-    private final AtomicReference<Runnable> onRefundOrVoid = new AtomicReference<>();
-
-    /**
-     * 与信の取得を呼ばれた時点で行う処理
-     *
-     * <p>呼ばれた時点の状態を記録するテスト用。なければ null。
-     */
-    private final AtomicReference<Runnable> onFetchAuthorization = new AtomicReference<>();
+    private volatile TestPaymentActions actions = new TestPaymentActions();
 
     /**
      * 失敗の注入の指定
@@ -95,10 +67,7 @@ public class TestPaymentGateway implements PaymentGateway {
         }
         var page = mock.openPage(request);
         calls.recordOpenedPage(page.id());
-        var during = duringNextOpen.getAndSet(null);
-        if (during != null) {
-            during.run();
-        }
+        actions.run(Timing.AFTER_OPEN);
         return page;
     }
 
@@ -115,10 +84,7 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public Authorization fetchAuthorization(String pageId) {
         calls.recordAuthorizationFetch(pageId);
-        var action = onFetchAuthorization.get();
-        if (action != null) {
-            action.run();
-        }
+        actions.run(Timing.ON_FETCH_AUTHORIZATION);
         if (failures.consume(Kind.AUTHORIZATION_FETCH)) {
             throw SystemException.of("mock：与信の取得を接続の失敗にする: " + pageId, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
@@ -131,7 +97,7 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public VoidResult voidAuthorization(String authorizationRef) {
-        runOnRefundOrVoid();
+        actions.run(Timing.ON_REFUND_OR_VOID);
         if (failures.consume(Kind.VOID)) {
             throw SystemException.of("mock：与信の取消に失敗させる: " + authorizationRef, null);
         }
@@ -153,10 +119,7 @@ public class TestPaymentGateway implements PaymentGateway {
         }
         var result = mock.capture(request);
         calls.recordCapture(request.orderId().value(), request.authorizationRef());
-        var during = duringNextCapture.getAndSet(null);
-        if (during != null) {
-            during.run();
-        }
+        actions.run(Timing.AFTER_CAPTURE);
         if (failures.consume(Kind.CAPTURE_RESPONSE)) {
             return CaptureResult.UNREACHABLE;
         }
@@ -175,17 +138,14 @@ public class TestPaymentGateway implements PaymentGateway {
         if (state == CaptureState.NOT_CAPTURED && failures.isExpired(authorizationRef)) {
             state = CaptureState.AUTHORIZATION_EXPIRED;
         }
-        var during = duringNextCaptureStateFetch.getAndSet(null);
-        if (during != null) {
-            during.run();
-        }
+        actions.run(Timing.AFTER_CAPTURE_STATE_FETCH);
         return state;
     }
 
     @Override
     public void refund(RefundRequest request) {
         calls.recordAmount(Operation.REFUND, request.orderId().value(), request.amount());
-        runOnRefundOrVoid();
+        actions.run(Timing.ON_REFUND_OR_VOID);
         if (failures.consume(Kind.REFUND)) {
             throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
         }
@@ -341,7 +301,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理（売上確定の再実行、時計を進めるなど）
      */
     public void duringNextCaptureStateFetch(Runnable action) {
-        duringNextCaptureStateFetch.set(action);
+        actions.once(Timing.AFTER_CAPTURE_STATE_FETCH, action);
     }
 
     /**
@@ -350,7 +310,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理（同じ注文の支払画面のリクエスト、時計を進めるなど）
      */
     public void duringNextOpen(Runnable action) {
-        duringNextOpen.set(action);
+        actions.once(Timing.AFTER_OPEN, action);
     }
 
     /**
@@ -359,7 +319,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理（注文のキャンセルなど）
      */
     public void duringNextCapture(Runnable action) {
-        duringNextCapture.set(action);
+        actions.once(Timing.AFTER_CAPTURE, action);
     }
 
     /**
@@ -377,7 +337,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理
      */
     public void onRefundOrVoid(Runnable action) {
-        onRefundOrVoid.set(action);
+        actions.always(Timing.ON_REFUND_OR_VOID, action);
     }
 
     /**
@@ -386,7 +346,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理
      */
     public void onFetchAuthorization(Runnable action) {
-        onFetchAuthorization.set(action);
+        actions.always(Timing.ON_FETCH_AUTHORIZATION, action);
     }
 
     /**
@@ -550,11 +510,7 @@ public class TestPaymentGateway implements PaymentGateway {
     public void reset() {
         failures = new TestPaymentFailures();
         calls = new TestPaymentCalls();
-        duringNextOpen.set(null);
-        duringNextCapture.set(null);
-        duringNextCaptureStateFetch.set(null);
-        onRefundOrVoid.set(null);
-        onFetchAuthorization.set(null);
+        actions = new TestPaymentActions();
     }
 
     /**
@@ -576,15 +532,5 @@ public class TestPaymentGateway implements PaymentGateway {
          * 返金（返金する額）
          */
         REFUND
-    }
-
-    /**
-     * 返金と与信の取消で、呼ばれた時点の処理があれば行う。
-     */
-    private void runOnRefundOrVoid() {
-        var action = onRefundOrVoid.get();
-        if (action != null) {
-            action.run();
-        }
     }
 }

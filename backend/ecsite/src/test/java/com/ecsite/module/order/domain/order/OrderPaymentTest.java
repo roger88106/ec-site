@@ -161,47 +161,6 @@ class OrderPaymentTest {
     class ExpirePayment {
 
         @Test
-        @DisplayName("AC-153 支払待ちの注文は、支払の期限切れでキャンセルになる")
-        void cancelsPendingOrder() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：支払の期限切れを受ける
-            var changed = order.expirePayment(LATER);
-
-            // 確認：キャンセル
-            assertThat(changed).isTrue();
-            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-        }
-
-        @Test
-        @DisplayName("AC-155 期限切れのキャンセルは、種類が「支払期限切れ」で、運営者と理由の文を持たない")
-        void recordsPaymentExpired() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：支払の期限切れを受ける
-            order.expirePayment(LATER);
-
-            // 確認：支払期限切れのキャンセルの記録
-            assertPaymentExpired(order.cancellation());
-        }
-
-        @Test
-        @DisplayName("AC-153 期限切れのキャンセルで、在庫を戻すための注文キャンセルのイベントが登録される")
-        void registersCancelledEvent() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：支払の期限切れを受ける
-            order.expirePayment(LATER);
-
-            // 確認：キャンセルへの状態の変化のイベントだけ
-            assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
-                    event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
-        }
-
-        @Test
         @DisplayName("受付の注文は、支払の期限切れを受けても状態とイベントを変えない")
         void ignoresWhenAccepted() {
             // 準備：受付の注文
@@ -233,17 +192,32 @@ class OrderPaymentTest {
         }
 
         @Test
-        @DisplayName("AC-153 期限切れのイベントは、前の状態が支払待ちで、種類が支払期限切れで、在庫に戻す")
+        @DisplayName("AC-153、AC-155 支払待ちの注文は、支払の期限切れでキャンセルになり、種類が支払期限切れの記録と、在庫に戻すイベントが 1 件だけ登録される")
         void registersPaymentExpiredEvent() {
             // 準備：支払待ちの注文
             var order = pendingOrder();
 
             // 操作：支払の期限切れを受ける
-            order.expirePayment(LATER);
+            var changed = order.expirePayment(LATER);
 
-            // 確認：イベントの前の状態・種類・在庫に戻すか
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
-                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED, true);
+            // 確認：キャンセルになった
+            assertThat(changed).isTrue();
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+
+            // 確認：支払期限切れのキャンセルの記録
+            assertPaymentExpired(order.cancellation());
+
+            // 確認：イベントは取り出すので最後に確認する。全体が 1 件で、キャンセルへの状態の変化だけ
+            // （assertStatusChangedEventOnly は内部で取り出すため、全体の件数の確認と同時に使えない）
+            var events = order.pullEvents();
+            assertThat(events).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class, event -> {
+                assertThat(event.orderId()).isEqualTo(order.id());
+                assertThat(event.occurredAt()).isEqualTo(LATER);
+                assertThat(event.from()).isEqualTo(OrderStatusChanged.Status.PENDING_PAYMENT);
+                assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED);
+                assertThat(event.cancellationKind()).isEqualTo(OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED);
+                assertThat(event.restocked()).isTrue();
+            });
         }
 
         @Test

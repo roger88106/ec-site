@@ -181,8 +181,8 @@ class OrderCancellationTest {
     class Approve {
 
         @Test
-        @DisplayName("AC-101 申請を承認すると、キャンセルになる")
-        void becomesCancelled() {
+        @DisplayName("AC-101、申請を承認すると、キャンセルになり、承認の記録と申請の承認のキャンセルの記録を残し、在庫に戻す注文キャンセルのイベントが 1 件登録される")
+        void registersApprovedEvent() {
             // 準備：キャンセル申請中の注文
             var order = TestOrders.requested(ORDERED_AT);
 
@@ -192,59 +192,16 @@ class OrderCancellationTest {
             // 確認：キャンセル
             assertThat(cancelled).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-        }
 
-        @Test
-        @DisplayName("AC-101 承認すると、申請に承認の結果と判断の日時を記録する")
-        void recordsApproval() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：承認する
-            order.approveCancellation(OPERATOR, LATER);
-
-            // 確認：承認の結果と日時
+            // 確認：承認の結果と判断の日時
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
             assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
-        }
 
-        @Test
-        @DisplayName("AC-101 承認によるキャンセルは、種類が申請の承認で、承認した運営者を記録する")
-        void recordsApprovedCancellation() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：承認する
-            order.approveCancellation(OPERATOR, LATER);
-
-            // 確認：申請の承認のキャンセルの記録
+            // 確認：申請の承認のキャンセルの記録（種類と承認した運営者）
             assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.REQUEST_APPROVED, null, OPERATOR));
-        }
 
-        @Test
-        @DisplayName("AC-101 承認すると、在庫を戻すための注文キャンセルのイベントが登録される")
-        void registersCancelledEvent() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：承認する
-            order.approveCancellation(OPERATOR, LATER);
-
-            // 確認：キャンセルへの状態の変化のイベントだけ
-            OrderEventAssertions.assertCancelledEventOnly(order);
-        }
-
-        @Test
-        @DisplayName("AC-101 承認のイベントは、前の状態がキャンセル申請中で、種類が申請の承認で、在庫に戻す")
-        void registersApprovedEvent() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：承認する
-            order.approveCancellation(OPERATOR, LATER);
-
-            // 確認：イベントの前の状態・種類・在庫に戻すか
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
+            // 確認：登録されたイベントは全体で 1 件だけで、キャンセル申請中からキャンセルへの状態の変化。前の状態・種類・在庫に戻すか（イベントを見るので最後）
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
                     OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.REQUEST_APPROVED, true);
         }
 

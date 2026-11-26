@@ -34,6 +34,7 @@ import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -402,6 +403,42 @@ public class OrderTestData {
         paidPageIds.put(orderId, pageId);
         gateway.pay(pageId);
         OrderPayments.accept(applicationContext, orderId);
+    }
+
+    /**
+     * 会員として、注文のキャンセルを申請し、204 を確認する（理由は付けない）。
+     *
+     * @param orderId 注文 ID
+     */
+    public void requestCancellation(UUID orderId) throws Exception {
+        requestCancellation(orderId, null);
+    }
+
+    /**
+     * 会員として、理由を付けて注文のキャンセルを申請し、204 を確認する。
+     *
+     * <p>申請の時刻はサーバーの時計で決まるので、引数に取らない。
+     *
+     * @param orderId 注文 ID
+     * @param reason  申請の理由（{@code null} なら理由を付けない）
+     */
+    public void requestCancellation(UUID orderId, String reason) throws Exception {
+        requestCancellation(orderId, member, reason);
+    }
+
+    /**
+     * 指定した要求者で、理由を付けて注文のキャンセルを申請し、204 を確認する。
+     *
+     * @param orderId   注文 ID
+     * @param requester token などを付ける後処理
+     * @param reason    申請の理由（{@code null} なら理由を付けない）
+     */
+    public void requestCancellation(UUID orderId, RequestPostProcessor requester, String reason) throws Exception {
+        var body = reason == null ? "{}" : """
+                {"reason": "%s"}""".formatted(reason);
+        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(requester)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isNoContent());
     }
 
     /**

@@ -66,19 +66,6 @@ class OrderShipmentTest {
     class Ship {
 
         @Test
-        @DisplayName("AC-168 「受付」の注文を出荷すると「出荷済み」になる")
-        void becomesShipped() {
-            // 準備：受付の注文
-            var order = TestOrders.accepted(ORDERED_AT);
-
-            // 操作：出荷する
-            order.ship(Carrier.YAMATO, TRACKING_NUMBER, LATER);
-
-            // 確認：出荷済み
-            assertThat(order.status()).isEqualTo(OrderStatus.SHIPPED);
-        }
-
-        @Test
         @DisplayName("AC-168 出荷すると、出荷通知に使う注文の出荷のイベントが登録される")
         void registersShippedEvent() {
             // 準備：受付の注文
@@ -92,13 +79,16 @@ class OrderShipmentTest {
         }
 
         @Test
-        @DisplayName("AC-168 出荷すると、「受付 → 出荷済み」の状態の変化のイベントが登録される")
+        @DisplayName("AC-168 出荷すると注文は「出荷済み」になり、「受付 → 出荷済み」の状態の変化のイベントが登録される")
         void registersStatusChangedEvent() {
             // 準備：受付の注文
             var order = TestOrders.accepted(ORDERED_AT);
 
             // 操作：出荷する
             order.ship(Carrier.YAMATO, TRACKING_NUMBER, LATER);
+
+            // 確認：出荷済み
+            assertThat(order.status()).isEqualTo(OrderStatus.SHIPPED);
 
             // 確認：受付から出荷済みへのイベントだけで、キャンセルの項目を持たない
             assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.ACCEPTED,

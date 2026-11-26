@@ -250,7 +250,7 @@ class OrderCancellationTest {
             order.approveCancellation(OPERATOR, LATER);
 
             // 確認：キャンセルへの状態の変化のイベントだけ
-            assertCancelledEventOnly(order);
+            OrderEventAssertions.assertCancelledEventOnly(order);
         }
 
         @Test
@@ -408,7 +408,7 @@ class OrderCancellationTest {
             order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
 
             // 確認：キャンセルへの状態の変化のイベントだけ
-            assertCancelledEventOnly(order);
+            OrderEventAssertions.assertCancelledEventOnly(order);
         }
 
         @Test
@@ -637,24 +637,6 @@ class OrderCancellationTest {
             // 操作と確認：キャンセルできない
             assertThat(cancelled.isCancellableByOperator(false)).isFalse();
         }
-    }
-
-    // ============================== 確認の補助 ==============================
-
-    /**
-     * キャンセルへの状態の変化のイベントだけが登録されていることを確認する。
-     *
-     * <p>確認すること：
-     * <ul>
-     *   <li>登録されたイベントが 1 件だけで、種類が {@link OrderStatusChanged}</li>
-     *   <li>後の状態がキャンセル</li>
-     * </ul>
-     *
-     * @param order 確認する注文
-     */
-    private static void assertCancelledEventOnly(Order order) {
-        assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
-                event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
     }
 
     // ============================== 準備の補助 ==============================

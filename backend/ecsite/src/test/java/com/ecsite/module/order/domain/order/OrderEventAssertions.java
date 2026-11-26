@@ -54,4 +54,20 @@ public final class OrderEventAssertions {
                     assertThat(event.restocked()).isEqualTo(restocked);
                 });
     }
+
+    /**
+     * キャンセルへの状態の変化のイベントだけが登録されていることを確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>登録されたイベントが 1 件だけで、種類が {@link OrderStatusChanged}</li>
+     *   <li>後の状態がキャンセル</li>
+     * </ul>
+     *
+     * @param order 確認する注文
+     */
+    public static void assertCancelledEventOnly(Order order) {
+        assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
+                event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
+    }
 }

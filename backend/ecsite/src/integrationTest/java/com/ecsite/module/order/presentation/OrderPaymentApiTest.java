@@ -679,9 +679,7 @@ class OrderPaymentApiTest {
         void voidsOnApproval() throws Exception {
             // 準備：支払って受付にし、キャンセルを申請する
             var orderId = accepted();
-            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
-                            .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                    .andExpect(status().isNoContent());
+            orders.requestCancellation(orderId);
 
             // 操作：申請を承認する
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/approve"))

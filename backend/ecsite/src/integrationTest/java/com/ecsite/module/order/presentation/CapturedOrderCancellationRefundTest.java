@@ -151,6 +151,11 @@ class CapturedOrderCancellationRefundTest {
     private UUID orderId;
 
     /**
+     * 注文の補助（申請の準備に使う）
+     */
+    private OrderTestData orders;
+
+    /**
      * 注文の与信の参照
      */
     private String authorizationRef;
@@ -169,7 +174,7 @@ class CapturedOrderCancellationRefundTest {
         inventory.stock(variantId, product.id, STOCKED);
         // コミットするので、他のテストとカートを共有しないよう、テストごとの会員で注文する
         owner = TestTokens.member().subject(UUID.randomUUID()).email("captured-" + UUID.randomUUID() + "@example.com").bearer();
-        var orders = new OrderTestData(mockMvc, gateway, applicationContext, owner);
+        orders = new OrderTestData(mockMvc, gateway, applicationContext, owner);
         orderId = orders.placeOrder(variantId, ORDERED);
         authorizationRef = gateway.authorizationRefOf(orders.paidPageId(orderId));
         // 支払うとリスナーが非同期で注文を受け付け直す。終わる前に出荷すると、楽観ロックで衝突することがある
@@ -286,9 +291,7 @@ class CapturedOrderCancellationRefundTest {
      */
     private void requestCancellationQuietly() {
         try {
-            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner)
-                            .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                    .andExpect(status().isNoContent());
+            orders.requestCancellation(orderId);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

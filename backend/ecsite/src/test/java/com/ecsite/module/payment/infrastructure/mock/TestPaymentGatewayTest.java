@@ -93,8 +93,6 @@ class TestPaymentGatewayTest {
      */
     private static final String UNKNOWN_PAGE_ID = "mock_page_unknown";
 
-    // ============================== 対象 ==============================
-
     /**
      * mock が支払を済ませた時刻を読む時計
      */
@@ -1012,6 +1010,11 @@ class TestPaymentGatewayTest {
             assertThat(scenario.act().test(gateway)).isTrue();
         }
 
+        /**
+         * 回数で指定する失敗の、操作ごとの指定と呼び出しの組
+         *
+         * @return 操作ごとの組
+         */
         static Stream<Scenario> failureScenarios() {
             return Stream.of(
                     new Scenario("支払画面の作成",
@@ -1096,6 +1099,11 @@ class TestPaymentGatewayTest {
             assertThat(runs).hasValue(1);
         }
 
+        /**
+         * 差し込む処理の、差し込む時点ごとの指定と呼び出しの組
+         *
+         * @return 差し込む時点ごとの組
+         */
         static Stream<Injection> injectionScenarios() {
             return Stream.of(
                     new Injection("支払画面の作成の最中",
@@ -1195,6 +1203,11 @@ class TestPaymentGatewayTest {
             assertThat(scenario.read().apply(gateway)).hasSize(sizeBefore + 1);
         }
 
+        /**
+         * 返す一覧の、一覧ごとの読み取りと追加の組
+         *
+         * @return 一覧ごとの組
+         */
         static Stream<ListScenario> listScenarios() {
             return Stream.of(
                     new ListScenario("確定した注文 ID",

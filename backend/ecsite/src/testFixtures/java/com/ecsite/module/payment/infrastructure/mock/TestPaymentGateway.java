@@ -16,11 +16,11 @@ import java.util.UUID;
 /**
  * テストで使う決済サービス
  *
- * <p>本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。
- * 失敗の指定は {@link TestPaymentFailures} が持つ。
- * 呼ばれた操作の記録は {@link TestPaymentCalls}、操作の途中に差し込む処理は {@link TestPaymentActions} が持つ。
- * このクラスは、各操作でそれらを呼ぶ順序を決める。
- * 本番の jar に入れないため、テストで共有するソースに置く。
+ * <p>本番の mock（{@link MockPaymentGateway}）を包み、失敗の指定、呼び出しの記録、差し込む処理をテストのために加える。
+ *
+ * <p>各操作でそれらを呼ぶ順序と、例外・結果の選択は、このクラスが決める。
+ *
+ * <p>本番の jar に入れないため、テストで共有するソースに置く。
  */
 public class TestPaymentGateway implements PaymentGateway {
 
@@ -495,7 +495,8 @@ public class TestPaymentGateway implements PaymentGateway {
      * テストだけで使う状態を最初に戻す。
      *
      * <p>本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
-     * 操作の途中で初期化されたときも、その後の呼び出しと記録は新しい状態に入る。
+     *
+     * <p>操作の途中で初期化されたときも、その後の呼び出しと記録は新しい状態に入る。
      */
     public void reset() {
         state = State.empty();

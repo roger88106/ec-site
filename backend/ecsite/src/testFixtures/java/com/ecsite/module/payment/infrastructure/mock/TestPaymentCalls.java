@@ -13,7 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * テストで決済サービスに対して呼ばれた操作の記録
  *
- * <p>何を、いつ記録するかは決めず、渡されたものを記録して読み取りに答える。複数のスレッドから呼んでよい。
+ * <p>いつ記録するかは決めない。同じ注文の売上確定と返金は 1 回だけ記録する。読み取りに答える。複数のスレッドから呼んでよい。
  */
 final class TestPaymentCalls {
 

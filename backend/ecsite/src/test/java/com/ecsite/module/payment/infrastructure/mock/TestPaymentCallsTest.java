@@ -29,8 +29,6 @@ class TestPaymentCallsTest {
      */
     private static final int RECORDS_PER_THREAD = 50;
 
-    // ============================== 対象 ==============================
-
     /**
      * 確認する呼び出しの記録
      */

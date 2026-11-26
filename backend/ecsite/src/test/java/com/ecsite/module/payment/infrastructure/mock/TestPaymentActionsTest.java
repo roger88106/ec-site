@@ -26,7 +26,10 @@ class TestPaymentActionsTest {
      */
     private static final int THREADS = 8;
 
-    // ============================== 対象 ==============================
+    /**
+     * 1 つのスレッドが呼ぶ回数
+     */
+    private static final int CALLS_PER_THREAD = 10;
 
     /**
      * 確認する処理の差し込み
@@ -205,7 +208,7 @@ class TestPaymentActionsTest {
         actions.once(timing, count::incrementAndGet);
 
         // 操作：全てのスレッドで同時に呼ぶ
-        runConcurrently(timing, 10);
+        runConcurrently(timing, CALLS_PER_THREAD);
 
         // 確認：1 回だけ動く
         assertThat(count).hasValue(1);
@@ -219,10 +222,10 @@ class TestPaymentActionsTest {
         actions.always(timing, count::incrementAndGet);
 
         // 操作：全てのスレッドで同時に呼ぶ
-        runConcurrently(timing, 10);
+        runConcurrently(timing, CALLS_PER_THREAD);
 
         // 確認：呼んだ回数だけ動く
-        assertThat(count).hasValue(THREADS * 10);
+        assertThat(count).hasValue(THREADS * CALLS_PER_THREAD);
     }
 
     // ============================== 確認の補助 ==============================

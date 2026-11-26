@@ -30,7 +30,10 @@ class TestPaymentFailuresTest {
      */
     private static final int THREADS = 8;
 
-    // ============================== 対象 ==============================
+    /**
+     * 1 つのスレッドが確認する回数
+     */
+    private static final int CALLS_PER_THREAD = 20;
 
     /**
      * 確認する失敗の注入
@@ -191,12 +194,12 @@ class TestPaymentFailuresTest {
     @DisplayName("同時に確認しても、失敗する数は指定した回数とちょうど同じになる")
     void failsExactlyGivenTimesWhenConsumedConcurrently() throws Exception {
         // 準備：全てのスレッドが確認する合計より少ない回数を指定する
-        var times = 50;
+        var times = THREADS * CALLS_PER_THREAD / 2;
         failures.failNext(Kind.CAPTURE_CONNECTION, times);
 
         // 操作：全てのスレッドを同時に始めて、終わりを待つ
         var failedCounts = Concurrently.run(THREADS, thread ->
-                consumeTimes(Kind.CAPTURE_CONNECTION, 20).stream().filter(Boolean::booleanValue).count());
+                consumeTimes(Kind.CAPTURE_CONNECTION, CALLS_PER_THREAD).stream().filter(Boolean::booleanValue).count());
 
         // 確認：失敗した数が指定した回数とちょうど同じ
         assertThat(failedCounts.stream().mapToLong(Long::longValue).sum()).isEqualTo(times);

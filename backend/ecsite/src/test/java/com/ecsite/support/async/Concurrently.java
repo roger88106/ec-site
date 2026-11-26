@@ -21,7 +21,7 @@ public final class Concurrently {
     /**
      * 待つ時間の上限
      *
-     * <p>{@code com.ecsite.support.async.AsyncEvents#TIMEOUT} と同じ値にしている。片方を変えるときは、他方も見る。
+     * <p>{@code com.ecsite.support.async.AsyncEvents#TIMEOUT} は、この値を使う。
      */
     public static final Duration TIMEOUT = Duration.ofSeconds(10);
 

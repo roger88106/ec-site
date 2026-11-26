@@ -226,18 +226,21 @@
   - 依存：T522-01-20
   - 範囲：対象の 6 ファイル、`ModulithTest.java`（確認のために読む。変えない）、`docs/08-spec/522-test-dedup/plan.md`
   - 確認方法：差の一覧に、ファイルごとの準備の行番号を書く。依存の向きの結果を 1 行で書く。
-- [ ] **T522-01-22** `OrderTestData` に、受付の注文の準備、運営者のキャンセル、支払の状態の読み取りを追加する（DC-522-4）。
+- [x] **T522-01-22** `OrderTestData` に、受付の注文の準備、運営者のキャンセル、支払の状態の読み取りを追加する（DC-522-4）。
   - 依存：T522-01-21
   - 範囲：`OrderTestData.java`
   - 確認方法：T522-01-23 で使うテストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。
-- [ ] **T522-01-23** 次の 4 ファイルの準備を、`OrderTestData` の呼び出しに置き換える（DC-522-4）：`CapturedOrderCancellationRefundTest`（T522-01-19 の後に続けて変える）、`ReportFlowTest`、`ReturnedOrderRefundTest`、`CancellationAtomicityTest`。
+  - 結果：追加したのは `acceptedOrder`（待ちを含む。コミットするテストだけで使う）、`cancelByOperator`、`paymentStatus`。在庫、税区分、商品の作成は呼び出し側に残す（値が 4 ファイルで異なるため）。
+- [x] **T522-01-23** 次の 4 ファイルの準備を、`OrderTestData` の呼び出しに置き換える（DC-522-4）：`CapturedOrderCancellationRefundTest`（T522-01-19 の後に続けて変える）、`ReportFlowTest`、`ReturnedOrderRefundTest`、`CancellationAtomicityTest`。
   - 依存：T522-01-22
   - 範囲：上の 4 ファイル
   - 確認方法：絞り込んだ統合テストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`acceptedOrder` と同じ準備の定義が残らない。
+  - 結果：絞り込んだ統合テスト 14 件が通る。break-check は `ReportFlowTest` の販売数量の期待値を 1 つずらし、失敗（exit 1）を確認して元に戻した。
 - [ ] **T522-01-24** `CancellationApiTest` と `ReturnedOrderCancellationApiTest` の準備を、`OrderTestData` の呼び出しに置き換える。申請の確認は残す（DC-522-4）。
   - 依存：T522-01-23
   - 範囲：上の 2 ファイル（`module/order/presentation/` の下）
   - 確認方法：絞り込んだ統合テストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の確認の検査が残る。
+  - 注意：両方とも `@Transactional`（ロールバック）で、`acceptedOrder` は待つため使えない。準備は既に `OrderTestData.placeOrder` を使っているので、置き換えは無いと見込む。issue 担当に確認する。
 - [ ] **T522-01-25** [実行] `./gradlew check` を 1 回実行する（`backend/ecsite/`）。実行の前に、issue 担当のセッションの合図を待つ（DC-522-8）。
   - 依存：T522-01-24
   - 範囲：`backend/ecsite/`

@@ -245,8 +245,8 @@ class OrderCancellationTest {
     class Reject {
 
         @Test
-        @DisplayName("AC-102 申請を却下すると「受付」に戻り、キャンセルの記録はない")
-        void returnsToAccepted() {
+        @DisplayName("AC-102、申請を却下すると「受付」に戻ってキャンセルの記録はなく、却下の結果と判断の日時と運営者を記録し、「キャンセル申請中 → 受付」の状態の変化のイベントが 1 件登録される")
+        void registersRejectedEvent() {
             // 準備：キャンセル申請中の注文
             var order = TestOrders.requested(ORDERED_AT);
 
@@ -256,34 +256,14 @@ class OrderCancellationTest {
             // 確認：受付で、キャンセルしていない
             assertThat(order.status()).isEqualTo(OrderStatus.ACCEPTED);
             assertThat(order.cancellation()).isNull();
-        }
-
-        @Test
-        @DisplayName("AC-102 却下すると、申請に却下の結果と、判断の日時と運営者を記録する")
-        void recordsRejection() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：却下する
-            order.rejectCancellation(OPERATOR, LATER);
 
             // 確認：却下の結果、日時、運営者
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.REJECTED);
             assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
             assertThat(order.cancellationRequest().decidedBy()).isEqualTo(OPERATOR);
-        }
 
-        @Test
-        @DisplayName("AC-102 却下すると、「キャンセル申請中 → 受付」の状態の変化のイベントが登録される")
-        void registersRejectedEvent() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：却下する
-            order.rejectCancellation(OPERATOR, LATER);
-
-            // 確認：キャンセル申請中から受付へのイベントだけで、キャンセルの項目を持たない
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
+            // 確認：登録されたイベントは全体で 1 件だけで、キャンセル申請中から受付への状態の変化。キャンセルの項目を持たない（イベントを見るので最後）
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
                     OrderStatusChanged.Status.ACCEPTED, null, null);
         }
 

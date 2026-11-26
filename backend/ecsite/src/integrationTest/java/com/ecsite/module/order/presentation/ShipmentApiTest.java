@@ -549,7 +549,7 @@ class ShipmentApiTest {
         @DisplayName("AC-170 「キャンセル申請中」の注文は 409 で、売上を確定しない")
         void rejectsCancellationRequested() throws Exception {
             // 準備：消費者がキャンセルを申請する
-            requestCancellation();
+            orders.requestCancellation(orderId);
 
             // 操作：出荷を登録する
             ship("YAMATO", tracking).andExpect(status().isConflict())
@@ -563,7 +563,7 @@ class ShipmentApiTest {
         @DisplayName("AC-170 「キャンセル申請中」の注文は、申請を却下すると出荷できる")
         void shipsAfterRejectingRequest() throws Exception {
             // 準備：申請中に出荷の登録に失敗してから、申請を却下する
-            requestCancellation();
+            orders.requestCancellation(orderId);
             ship("YAMATO", tracking).andExpect(status().isConflict());
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject"))
                     .andExpect(status().isNoContent());
@@ -758,21 +758,12 @@ class ShipmentApiTest {
     }
 
     /**
-     * 消費者がキャンセルを申請する。
-     */
-    private void requestCancellation() throws Exception {
-        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
-                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isNoContent());
-    }
-
-    /**
      * 次の売上確定の最中に、消費者がキャンセルを申請するようにする。
      */
     private void requestCancellationDuringNextCapture() {
         gateway.duringNextCapture(() -> {
             try {
-                requestCancellation();
+                orders.requestCancellation(orderId);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }

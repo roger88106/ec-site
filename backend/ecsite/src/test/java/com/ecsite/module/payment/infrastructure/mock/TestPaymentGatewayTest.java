@@ -22,8 +22,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -1041,6 +1044,48 @@ class TestPaymentGatewayTest {
 
             // 確認：mock の画面は残る
             assertThat(gateway.page(pageId)).isPresent();
+        }
+
+        @Test
+        @DisplayName("消す状態は 1 つの項目にまとまっていて、reset で消し忘れる項目がない")
+        void keepsResettableStateInSingleField() {
+            // 操作：インスタンスの項目の名前を集める（static の項目と合成の項目を除く）
+            var fieldNames = Arrays.stream(TestPaymentGateway.class.getDeclaredFields())
+                    .filter(field -> !Modifier.isStatic(field.getModifiers()) && !field.isSynthetic())
+                    .map(Field::getName)
+                    .toList();
+
+            // 確認：包む mock と、reset で入れ替える状態だけ。項目を直接加えたときは、state に移す（reset が入れ替えるのは state だけで、直接の項目は消し忘れる）
+            assertThat(fieldNames).containsExactlyInAnyOrder("mock", "state");
+        }
+
+        @Test
+        @DisplayName("取消の差し込みの中で初期化しても、その取消は新しい記録に残る")
+        void recordsVoidIntoNewStateWhenResetInsideInjection() {
+            // 準備：取消の記録より前に動く処理の中で、初期化する
+            gateway.onRefundOrVoid(gateway::reset);
+
+            // 操作：取り消す
+            gateway.voidAuthorization(REF_A);
+
+            // 確認：初期化の後の記録に、その取消が入る
+            assertThat(gateway.voided()).containsExactly(REF_A);
+        }
+
+        @Test
+        @DisplayName("取消の差し込みの中で初期化した後に失敗を指定すると、その取消が失敗する")
+        void appliesFailureSetInsideInjectionToSameCall() {
+            // 準備：処理の中で、初期化してから 1 回の失敗を指定する
+            gateway.onRefundOrVoid(() -> {
+                gateway.reset();
+                gateway.failNextVoids(1);
+            });
+
+            // 操作と確認：その取消が失敗する
+            assertSystemFailure(() -> gateway.voidAuthorization(REF_A));
+
+            // 確認：記録に入らない
+            assertThat(gateway.voided()).isEmpty();
         }
     }
 

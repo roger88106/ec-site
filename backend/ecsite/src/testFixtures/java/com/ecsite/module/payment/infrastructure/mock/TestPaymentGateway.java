@@ -16,7 +16,8 @@ import java.util.UUID;
 /**
  * テストで使う決済サービス
  *
- * <p>本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。通知の遅れ・重複・順序の入れ替わりや、取消・売上確定・返金の失敗を起こし、呼ばれた操作を記録する。
+ * <p>本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。
+ * 失敗の指定は {@link TestPaymentFailures}、呼ばれた操作の記録は {@link TestPaymentCalls}、操作の途中に差し込む処理は {@link TestPaymentActions} が持ち、このクラスは各操作でそれらを呼ぶ順序を決める。
  * 本番の jar に入れないため、テストで共有するソースに置く。
  */
 public class TestPaymentGateway implements PaymentGateway {
@@ -27,25 +28,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final MockPaymentGateway mock;
 
     /**
-     * 操作の途中に差し込む処理の指定
+     * テストだけで使う状態
      *
-     * <p>{@link #reset()} で新しいものに替える。
+     * <p>{@link #reset()} で新しい状態に入れ替える。項目を追加するときは、{@link State} に追加する。
      */
-    private volatile TestPaymentActions actions = new TestPaymentActions();
-
-    /**
-     * 失敗の注入の指定
-     *
-     * <p>{@link #reset()} で新しいものに替える。
-     */
-    private volatile TestPaymentFailures failures = new TestPaymentFailures();
-
-    /**
-     * 呼ばれた操作の記録
-     *
-     * <p>{@link #reset()} で新しいものに替える。
-     */
-    private volatile TestPaymentCalls calls = new TestPaymentCalls();
+    private volatile State state = State.empty();
 
     /**
      * 本番の mock を包む。
@@ -60,21 +47,21 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public PaymentPage openPage(PageRequest request) {
-        calls.recordAmount(Operation.OPEN_PAGE, request.orderId().value(), request.amount());
-        if (failures.consume(Kind.OPEN)) {
+        state.calls().recordAmount(Operation.OPEN_PAGE, request.orderId().value(), request.amount());
+        if (state.failures().consume(Kind.OPEN)) {
             throw SystemException.of("mock：支払画面を作れなくする: " + request.paymentId(), null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
         var page = mock.openPage(request);
-        calls.recordOpenedPage(page.id());
-        actions.run(Timing.AFTER_OPEN);
+        state.calls().recordOpenedPage(page.id());
+        state.actions().run(Timing.AFTER_OPEN);
         return page;
     }
 
     @Override
     public CloseResult closePage(String pageId) {
-        calls.recordClose(pageId);
-        if (failures.consume(Kind.CLOSE)) {
+        state.calls().recordClose(pageId);
+        if (state.failures().consume(Kind.CLOSE)) {
             throw SystemException.of("mock：支払画面を閉じる操作を接続の失敗にする: " + pageId, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
@@ -83,13 +70,13 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public Authorization fetchAuthorization(String pageId) {
-        calls.recordAuthorizationFetch(pageId);
-        actions.run(Timing.ON_FETCH_AUTHORIZATION);
-        if (failures.consume(Kind.AUTHORIZATION_FETCH)) {
+        state.calls().recordAuthorizationFetch(pageId);
+        state.actions().run(Timing.ON_FETCH_AUTHORIZATION);
+        if (state.failures().consume(Kind.AUTHORIZATION_FETCH)) {
             throw SystemException.of("mock：与信の取得を接続の失敗にする: " + pageId, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
-        if (failures.isAuthorizationFetchRejected(pageId)) {
+        if (state.failures().isAuthorizationFetchRejected(pageId)) {
             throw SystemException.of("mock：与信の取得を失敗させる: " + pageId, null);
         }
         return mock.fetchAuthorization(pageId);
@@ -97,30 +84,30 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public VoidResult voidAuthorization(String authorizationRef) {
-        actions.run(Timing.ON_REFUND_OR_VOID);
-        if (failures.consume(Kind.VOID)) {
+        state.actions().run(Timing.ON_REFUND_OR_VOID);
+        if (state.failures().consume(Kind.VOID)) {
             throw SystemException.of("mock：与信の取消に失敗させる: " + authorizationRef, null);
         }
         var result = mock.voidAuthorization(authorizationRef);
         if (result == VoidResult.VOIDED) {
-            calls.recordVoid(authorizationRef);
+            state.calls().recordVoid(authorizationRef);
         }
         return result;
     }
 
     @Override
     public CaptureResult capture(CaptureRequest request) {
-        calls.recordAmount(Operation.CAPTURE, request.orderId().value(), request.amount());
-        if (failures.consume(Kind.CAPTURE_CONNECTION)) {
+        state.calls().recordAmount(Operation.CAPTURE, request.orderId().value(), request.amount());
+        if (state.failures().consume(Kind.CAPTURE_CONNECTION)) {
             return CaptureResult.UNREACHABLE;
         }
-        if (failures.isExpired(request.authorizationRef())) {
+        if (state.failures().isExpired(request.authorizationRef())) {
             return CaptureResult.AUTHORIZATION_EXPIRED;
         }
         var result = mock.capture(request);
-        calls.recordCapture(request.orderId().value(), request.authorizationRef());
-        actions.run(Timing.AFTER_CAPTURE);
-        if (failures.consume(Kind.CAPTURE_RESPONSE)) {
+        state.calls().recordCapture(request.orderId().value(), request.authorizationRef());
+        state.actions().run(Timing.AFTER_CAPTURE);
+        if (state.failures().consume(Kind.CAPTURE_RESPONSE)) {
             return CaptureResult.UNREACHABLE;
         }
         return result;
@@ -128,29 +115,29 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public CaptureState fetchCaptureState(String authorizationRef) {
-        calls.recordCaptureStateFetch(authorizationRef);
-        if (failures.consume(Kind.CAPTURE_STATE_FETCH)) {
+        state.calls().recordCaptureStateFetch(authorizationRef);
+        if (state.failures().consume(Kind.CAPTURE_STATE_FETCH)) {
             throw SystemException.of("mock：売上確定の状態の取得を接続の失敗にする: " + authorizationRef, null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
-        var state = mock.fetchCaptureState(authorizationRef);
+        var captureState = mock.fetchCaptureState(authorizationRef);
         // 確定していない与信が切れていれば、与信期限切れ
-        if (state == CaptureState.NOT_CAPTURED && failures.isExpired(authorizationRef)) {
-            state = CaptureState.AUTHORIZATION_EXPIRED;
+        if (captureState == CaptureState.NOT_CAPTURED && state.failures().isExpired(authorizationRef)) {
+            captureState = CaptureState.AUTHORIZATION_EXPIRED;
         }
-        actions.run(Timing.AFTER_CAPTURE_STATE_FETCH);
-        return state;
+        state.actions().run(Timing.AFTER_CAPTURE_STATE_FETCH);
+        return captureState;
     }
 
     @Override
     public void refund(RefundRequest request) {
-        calls.recordAmount(Operation.REFUND, request.orderId().value(), request.amount());
-        actions.run(Timing.ON_REFUND_OR_VOID);
-        if (failures.consume(Kind.REFUND)) {
+        state.calls().recordAmount(Operation.REFUND, request.orderId().value(), request.amount());
+        state.actions().run(Timing.ON_REFUND_OR_VOID);
+        if (state.failures().consume(Kind.REFUND)) {
             throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
         }
         mock.refund(request);
-        calls.recordRefund(request.orderId().value());
+        state.calls().recordRefund(request.orderId().value());
     }
 
     // ============================== 支払画面の操作（本番の mock に渡す） ==============================
@@ -214,7 +201,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 失敗させる回数
      */
     public void failNextVoids(int times) {
-        failures.failNext(Kind.VOID, times);
+        state.failures().failNext(Kind.VOID, times);
     }
 
     /**
@@ -223,7 +210,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続できなくする回数
      */
     public void failNextOpens(int times) {
-        failures.failNext(Kind.OPEN, times);
+        state.failures().failNext(Kind.OPEN, times);
     }
 
     /**
@@ -232,7 +219,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続の失敗にする回数
      */
     public void failNextCloses(int times) {
-        failures.failNext(Kind.CLOSE, times);
+        state.failures().failNext(Kind.CLOSE, times);
     }
 
     /**
@@ -241,7 +228,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続の失敗にする回数
      */
     public void failNextAuthorizationFetches(int times) {
-        failures.failNext(Kind.AUTHORIZATION_FETCH, times);
+        state.failures().failNext(Kind.AUTHORIZATION_FETCH, times);
     }
 
     /**
@@ -252,7 +239,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param pageId 支払画面 ID
      */
     public void rejectAuthorizationFetch(String pageId) {
-        failures.rejectAuthorizationFetch(pageId);
+        state.failures().rejectAuthorizationFetch(pageId);
     }
 
     /**
@@ -263,7 +250,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param authorizationRef 与信の参照
      */
     public void expireAuthorization(String authorizationRef) {
-        failures.expireAuthorization(authorizationRef);
+        state.failures().expireAuthorization(authorizationRef);
     }
 
     /**
@@ -272,7 +259,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続できなくする回数
      */
     public void failNextCaptures(int times) {
-        failures.failNext(Kind.CAPTURE_CONNECTION, times);
+        state.failures().failNext(Kind.CAPTURE_CONNECTION, times);
     }
 
     /**
@@ -283,7 +270,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 応答を届かなくする回数
      */
     public void loseNextCaptureResponses(int times) {
-        failures.failNext(Kind.CAPTURE_RESPONSE, times);
+        state.failures().failNext(Kind.CAPTURE_RESPONSE, times);
     }
 
     /**
@@ -292,7 +279,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 接続の失敗にする回数
      */
     public void failNextCaptureStateFetches(int times) {
-        failures.failNext(Kind.CAPTURE_STATE_FETCH, times);
+        state.failures().failNext(Kind.CAPTURE_STATE_FETCH, times);
     }
 
     /**
@@ -301,7 +288,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理（売上確定の再実行、時計を進めるなど）
      */
     public void duringNextCaptureStateFetch(Runnable action) {
-        actions.once(Timing.AFTER_CAPTURE_STATE_FETCH, action);
+        state.actions().once(Timing.AFTER_CAPTURE_STATE_FETCH, action);
     }
 
     /**
@@ -310,7 +297,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理（同じ注文の支払画面のリクエスト、時計を進めるなど）
      */
     public void duringNextOpen(Runnable action) {
-        actions.once(Timing.AFTER_OPEN, action);
+        state.actions().once(Timing.AFTER_OPEN, action);
     }
 
     /**
@@ -319,7 +306,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理（注文のキャンセルなど）
      */
     public void duringNextCapture(Runnable action) {
-        actions.once(Timing.AFTER_CAPTURE, action);
+        state.actions().once(Timing.AFTER_CAPTURE, action);
     }
 
     /**
@@ -328,7 +315,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param times 失敗させる回数
      */
     public void failNextRefunds(int times) {
-        failures.failNext(Kind.REFUND, times);
+        state.failures().failNext(Kind.REFUND, times);
     }
 
     /**
@@ -337,7 +324,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理
      */
     public void onRefundOrVoid(Runnable action) {
-        actions.always(Timing.ON_REFUND_OR_VOID, action);
+        state.actions().always(Timing.ON_REFUND_OR_VOID, action);
     }
 
     /**
@@ -346,7 +333,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @param action 行う処理
      */
     public void onFetchAuthorization(Runnable action) {
-        actions.always(Timing.ON_FETCH_AUTHORIZATION, action);
+        state.actions().always(Timing.ON_FETCH_AUTHORIZATION, action);
     }
 
     /**
@@ -355,7 +342,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 売上を確定した注文 ID（確定した順。同じ注文は 1 回）
      */
     public List<UUID> captured() {
-        return calls.captured();
+        return state.calls().captured();
     }
 
     /**
@@ -364,7 +351,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 売上確定を呼ばれた回数（失敗と重複を含む）
      */
     public int captureCalls() {
-        return calls.captureCalls();
+        return state.calls().captureCalls();
     }
 
     /**
@@ -376,7 +363,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 売上確定を呼ばれた回数（失敗と重複を含む）
      */
     public int captureCallsOf(UUID orderId) {
-        return calls.captureCallsOf(orderId);
+        return state.calls().captureCallsOf(orderId);
     }
 
     /**
@@ -386,7 +373,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 与信の参照。売上確定を呼ばれていなければ空
      */
     public Optional<String> capturedAuthorizationRef(UUID orderId) {
-        return calls.capturedAuthorizationRef(orderId);
+        return state.calls().capturedAuthorizationRef(orderId);
     }
 
     /**
@@ -395,7 +382,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 与信の取得を呼ばれた回数（失敗を含む）
      */
     public int fetchAuthorizationCalls() {
-        return calls.fetchAuthorizationCalls();
+        return state.calls().fetchAuthorizationCalls();
     }
 
     /**
@@ -407,7 +394,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 画面を閉じる操作を呼ばれた回数（失敗と重複を含む）
      */
     public int closeCallsOf(String pageId) {
-        return calls.closeCallsOf(pageId);
+        return state.calls().closeCallsOf(pageId);
     }
 
     /**
@@ -416,7 +403,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 売上確定の状態の取得を呼ばれた回数（失敗を含む）
      */
     public int fetchCaptureStateCalls() {
-        return calls.fetchCaptureStateCalls();
+        return state.calls().fetchCaptureStateCalls();
     }
 
     /**
@@ -428,7 +415,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 売上確定の状態の取得を呼ばれた回数（失敗を含む）
      */
     public int fetchCaptureStateCallsOf(String authorizationRef) {
-        return calls.fetchCaptureStateCallsOf(authorizationRef);
+        return state.calls().fetchCaptureStateCallsOf(authorizationRef);
     }
 
     /**
@@ -437,7 +424,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 返金した注文 ID（返金した順。同じ注文は 1 回）
      */
     public List<UUID> refunded() {
-        return calls.refunded();
+        return state.calls().refunded();
     }
 
     /**
@@ -449,7 +436,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 返金した回数（同じ注文は 1 回）
      */
     public int refundsOf(UUID orderId) {
-        return calls.refundsOf(orderId);
+        return state.calls().refundsOf(orderId);
     }
 
     /**
@@ -458,7 +445,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 取り消した与信の参照（取り消した順）
      */
     public List<String> voided() {
-        return calls.voided();
+        return state.calls().voided();
     }
 
     /**
@@ -470,7 +457,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 取り消した回数
      */
     public int voidsOf(String authorizationRef) {
-        return calls.voidsOf(authorizationRef);
+        return state.calls().voidsOf(authorizationRef);
     }
 
     /**
@@ -481,7 +468,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 渡した金額（呼ばれた順。失敗と重複を含む）
      */
     public List<Money> amountsOf(Operation operation, UUID orderId) {
-        return calls.amountsOf(operation, orderId);
+        return state.calls().amountsOf(operation, orderId);
     }
 
     /**
@@ -490,7 +477,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 作った支払画面の数（最後に状態を消してから）
      */
     public int openedPages() {
-        return calls.openedPages();
+        return state.calls().openedPages();
     }
 
     /**
@@ -499,18 +486,36 @@ public class TestPaymentGateway implements PaymentGateway {
      * @return 作った順の支払画面 ID（最後に状態を消してから）
      */
     public List<String> openedPageIds() {
-        return calls.openedPageIds();
+        return state.calls().openedPageIds();
     }
 
     /**
      * テストだけで使う状態を最初に戻す。
      *
      * <p>本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
+     * 操作の途中で初期化されたときも、その後の呼び出しと記録は新しい状態に入る。
      */
     public void reset() {
-        failures = new TestPaymentFailures();
-        calls = new TestPaymentCalls();
-        actions = new TestPaymentActions();
+        state = State.empty();
+    }
+
+    /**
+     * テストだけで使う状態
+     *
+     * @param failures 失敗の注入の指定
+     * @param calls    呼ばれた操作の記録
+     * @param actions  操作の途中に差し込む処理の指定
+     */
+    private record State(TestPaymentFailures failures, TestPaymentCalls calls, TestPaymentActions actions) {
+
+        /**
+         * 何も指定も記録もない状態を作る。
+         *
+         * @return 空の状態
+         */
+        static State empty() {
+            return new State(new TestPaymentFailures(), new TestPaymentCalls(), new TestPaymentActions());
+        }
     }
 
     /**

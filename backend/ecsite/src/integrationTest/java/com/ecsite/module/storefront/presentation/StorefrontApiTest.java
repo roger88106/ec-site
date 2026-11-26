@@ -459,7 +459,7 @@ class StorefrontApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(strings = {"minPrice", "maxPrice"})
-        @DisplayName("価格の範囲の端が負なら、リクエストの誤り")
+        @DisplayName("価格の範囲の端が負なら 400")
         void rejectsNegativePrice(String param) throws Exception {
             // 操作と確認：-1 円は 400
             mockMvc.perform(get(BASE + "/products").param(param, "-1"))
@@ -468,7 +468,7 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("並び順が決められた値でなければ、リクエストの誤り")
+        @DisplayName("並び順が決められた値でなければ 400")
         void rejectsUnknownSort() throws Exception {
             // 操作と確認：決められていない並び順は 400
             mockMvc.perform(get(BASE + "/products").param("sort", "popular"))
@@ -510,7 +510,7 @@ class StorefrontApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {1, 100})
-        @DisplayName("1 ページの大きさが範囲の端なら取得できる")
+        @DisplayName("1 ページの件数が範囲の端なら取得できる")
         void acceptsPageSizeAtBoundary(int size) throws Exception {
             // 操作と確認：取得できる
             mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(size))).andExpect(status().isOk());
@@ -518,7 +518,7 @@ class StorefrontApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {0, 101})
-        @DisplayName("1 ページの大きさが範囲の外なら、リクエストの誤り")
+        @DisplayName("1 ページの件数が範囲の外なら 400")
         void rejectsPageSizeOutOfRange(int size) throws Exception {
             // 操作と確認：400
             mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(size)))
@@ -534,7 +534,7 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("ページの番号が 0 なら、リクエストの誤り")
+        @DisplayName("ページの番号が 0 なら 400")
         void rejectsZeroPage() throws Exception {
             // 操作と確認：400
             mockMvc.perform(get(BASE + "/products").param("page", "0"))
@@ -617,7 +617,7 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("キーワードがなければ、リクエストの誤り")
+        @DisplayName("キーワードがなければ 400")
         void requiresKeyword() throws Exception {
             // 操作と確認：400
             mockMvc.perform(get(BASE + "/products/search"))
@@ -635,7 +635,7 @@ class StorefrontApiTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {0, 101})
-        @DisplayName("キーワードが範囲の外の文字数なら、リクエストの誤り")
+        @DisplayName("キーワードが範囲の外の文字数なら 400")
         void rejectsKeywordOutOfRange(int length) throws Exception {
             // 操作と確認：400
             mockMvc.perform(search("あ".repeat(length)))

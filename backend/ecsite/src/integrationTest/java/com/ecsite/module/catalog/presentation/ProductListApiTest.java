@@ -406,7 +406,7 @@ class ProductListApiTest {
         @Test
         @DisplayName("1 ページの件数が 100 を超えれば 400")
         void rejectsTooLargePageSize() throws Exception {
-            // 操作と確認：101 件は、リクエストの誤りで拒否される
+            // 操作と確認：101 件は、400 で拒否される
             mockMvc.perform(get(BASE).param("size", "101"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -423,7 +423,7 @@ class ProductListApiTest {
         @Test
         @DisplayName("1 ページの件数が 0 なら 400")
         void rejectsZeroPageSize() throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             mockMvc.perform(get(BASE).param("size", "0"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -439,7 +439,7 @@ class ProductListApiTest {
         @Test
         @DisplayName("ページの番号が 0 なら 400")
         void rejectsZeroPage() throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             mockMvc.perform(get(BASE).param("page", "0"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -460,7 +460,7 @@ class ProductListApiTest {
         @Test
         @DisplayName("品番の条件が 33 文字なら 400")
         void rejectsCodeOverMaximum() throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             mockMvc.perform(get(BASE).param("code", "A".repeat(33)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -476,7 +476,7 @@ class ProductListApiTest {
         @Test
         @DisplayName("商品名の条件が 201 文字なら 400")
         void rejectsNameOverMaximum() throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             mockMvc.perform(get(BASE).param("name", "あ".repeat(201)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));

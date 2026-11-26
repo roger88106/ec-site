@@ -75,6 +75,20 @@
 
 理由：同じ準備が 6 ファイルに複製されているため。依存の向きが未確認なので、境界のテストで確認してから補助を使う。
 
+準備の差（T522-01-21 の結果）：
+
+| ファイル（準備の行） | 税区分と商品 | 在庫 | 会員 | 注文と支払 | 支払後の待ち | 上の補助に続く準備 |
+|----------------------|--------------|------|------|------------|--------------|--------------------|
+| `CapturedOrderCancellationRefundTest`（166〜182） | 名前に UUID、`catalog.product` と `publish` | `STOCKED` | テストごとの bearer、`OrderTestData` に渡す | `placeOrder(ORDERED)` | `awaitHandled` | 認可の参照 `authorizationRefOf` を読む |
+| `ReportFlowTest`（169〜195、`acceptedOrder` は 246〜251） | 名前に UUID、`publish` | `STOCKED` | テストごとの会員（builder） | `placeOrder` を 3 回（数量を変える） | `awaitHandled` | なし（配達、キャンセル、返送は別の準備） |
+| `ReturnedOrderRefundTest`（124〜144） | 名前に UUID、`publish` | 数値 `5`（定数なし） | テストごとの会員（builder、メールを付ける） | `placeOrder` | `awaitHandled` | 出荷と「返品」の通知 |
+| `CancellationAtomicityTest`（128〜142） | 名前に UUID、価格 `1000` の直書き | `STOCKED` | テストごとの会員（フィールド） | `placeOrder` | `awaitHandled` | なし |
+| `CancellationApiTest`（116〜125） | 名前 `標準`、商品 `商品`、価格 `1000` の直書き | `STOCKED` | 既定の会員 | `placeOrder` | なし | なし |
+| `ReturnedOrderCancellationApiTest`（127〜138） | 名前 `標準`、商品 `商品`、価格 `1000` の直書き | `STOCKED` | 既定の会員 | `placeOrder` | なし | 出荷（`TRACKING_NUMBER`） |
+
+- 差は、会員の作り方（既定の会員か、テストごとか、bearer か builder か）、在庫と価格の値（定数か直書きか）、支払後の待ちの有無、続く準備の 4 つ。補助に入れるのは、定数と支払後の待ちを揃えた受付の注文の準備。続く準備（認可の参照、出荷、返品の通知）は、テストの中に残すか、補助の別の操作にする（T522-01-22 で決める）。
+- 依存の向き：`ModulithTest` は `ProductionClasses.applicationModules()` で本番のクラスだけを見るため、`com.ecsite.support.data`（統合テストの補助）は検査の対象にならない。`ReportFlowTest` は既に `CatalogTestData` などを同じパッケージから使っており、向きは変わらない。
+
 ## 設定の範囲の検証（DS-522-1：DC-522-5）
 
 | 何を | どこに | 確認方法 |

@@ -222,7 +222,7 @@
   - 依存：T522-01-19
   - 範囲：上の 3 ファイル（`module/order/presentation/` の下）
   - 確認方法：絞り込んだ統合テストが通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。準備として使う申請の HTTP の呼び出しを置き換える。`StoreOrderShipmentApiTest` は変えない。理由：`rejectsRequest` が申請の応答（400 と `CANCELLATION_NOT_REQUESTABLE`）を確認しているため。
-- [ ] **T522-01-21** [調査] 受付の注文の 6 ファイルの準備の差（在庫、税区分、商品、会員、注文、与信の待ち、運営者のキャンセル、支払の読み取り）を確認する。`ReportFlowTest` から `com.ecsite.support.data` を使う依存の向きを、`ModulithTest` で確認する。結果を [plan](plan.md)の「受付の注文の準備」に書き追加する（DC-522-4）。
+- [x] **T522-01-21** [調査] 受付の注文の 6 ファイルの準備の差（在庫、税区分、商品、会員、注文、与信の待ち、運営者のキャンセル、支払の読み取り）を確認する。`ReportFlowTest` から `com.ecsite.support.data` を使う依存の向きを、`ModulithTest` で確認する。結果を [plan](plan.md)の「受付の注文の準備」に書き追加する（DC-522-4）。
   - 依存：T522-01-20
   - 範囲：対象の 6 ファイル、`ModulithTest.java`（確認のために読む。変えない）、`docs/08-spec/522-test-dedup/plan.md`
   - 確認方法：差の一覧に、ファイルごとの準備の行番号を書く。依存の向きの結果を 1 行で書く。

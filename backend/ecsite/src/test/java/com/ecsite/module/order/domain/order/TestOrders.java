@@ -55,4 +55,92 @@ public final class TestOrders {
         order.pullEvents();
         return order;
     }
+
+    /**
+     * 「受付」の注文を作る。受付は注文の 30 秒後とする。
+     *
+     * <p>受付のイベントは取り出してあるので、後の操作で登録されたイベントだけが残る。
+     *
+     * @param orderedAt 注文の日時
+     * @return 受付の注文
+     */
+    public static Order accepted(Instant orderedAt) {
+        return accepted(orderedAt, orderedAt.plusSeconds(30));
+    }
+
+    /**
+     * 「受付」の注文を作る。受付の時刻を指定する。
+     *
+     * <p>受付のイベントは取り出してあるので、後の操作で登録されたイベントだけが残る。
+     *
+     * @param orderedAt 注文の日時
+     * @param acceptedAt 受付の日時
+     * @return 受付の注文
+     */
+    public static Order accepted(Instant orderedAt, Instant acceptedAt) {
+        var order = pending(orderedAt);
+        order.acceptPayment(acceptedAt);
+        order.pullEvents();
+        return order;
+    }
+
+    /**
+     * 「キャンセル申請中」の注文を作る。受付は注文の 30 秒後、申請は注文の 60 秒後で、理由は「理由」とする。
+     *
+     * <p>状態の変化のイベントは取り出してあるので、後の操作で登録されたイベントだけが残る。
+     *
+     * @param orderedAt 注文の日時
+     * @return キャンセル申請中の注文
+     */
+    public static Order requested(Instant orderedAt) {
+        return requested(orderedAt, orderedAt.plusSeconds(30), "理由", orderedAt.plusSeconds(60));
+    }
+
+    /**
+     * 「キャンセル申請中」の注文を作る。受付の時刻・申請の理由と時刻を指定する。
+     *
+     * <p>状態の変化のイベントは取り出してあるので、後の操作で登録されたイベントだけが残る。
+     *
+     * @param orderedAt  注文の日時
+     * @param acceptedAt 受付の日時
+     * @param reason     申請の理由（null なら理由なし）
+     * @param requestedAt 申請の日時
+     * @return キャンセル申請中の注文
+     */
+    public static Order requested(Instant orderedAt, Instant acceptedAt, String reason, Instant requestedAt) {
+        var order = accepted(orderedAt, acceptedAt);
+        order.requestCancellation(reason, requestedAt);
+        order.pullEvents();
+        return order;
+    }
+
+    /**
+     * 「出荷済み」の注文を作る。受付は注文の 30 秒後、出荷は注文の 1 時間後で、送り状番号は「123456789012」とする。
+     *
+     * <p>状態の変化と出荷のイベントは取り出してあるので、後の操作で登録されたイベントだけが残る。
+     *
+     * @param orderedAt 注文の日時
+     * @return 出荷済みの注文
+     */
+    public static Order shipped(Instant orderedAt) {
+        return shipped(orderedAt, orderedAt.plusSeconds(30), "123456789012", orderedAt.plusSeconds(3600));
+    }
+
+    /**
+     * 「出荷済み」の注文を作る。受付の時刻・送り状番号と出荷の時刻を指定する。
+     *
+     * <p>状態の変化と出荷のイベントは取り出してあるので、後の操作で登録されたイベントだけが残る。
+     *
+     * @param orderedAt      注文の日時
+     * @param acceptedAt     受付の日時
+     * @param trackingNumber 送り状番号（ハイフンを除いた数字）
+     * @param shippedAt      出荷の日時
+     * @return 出荷済みの注文
+     */
+    public static Order shipped(Instant orderedAt, Instant acceptedAt, String trackingNumber, Instant shippedAt) {
+        var order = accepted(orderedAt, acceptedAt);
+        order.ship(Carrier.YAMATO, trackingNumber, shippedAt);
+        order.pullEvents();
+        return order;
+    }
 }

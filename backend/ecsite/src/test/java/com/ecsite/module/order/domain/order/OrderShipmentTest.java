@@ -210,20 +210,6 @@ class OrderShipmentTest {
         }
 
         @Test
-        @DisplayName("AC-191 返送された注文を在庫に戻さずにキャンセルすると、戻さないことを記録する")
-        void recordsNotRestocked() {
-            // 準備：出荷済みの注文
-            var order = TestOrders.shipped(ORDERED_AT);
-
-            // 操作：返送されたので、在庫に戻さずにキャンセルする
-            var cancelled = order.cancelByOperator(RETURNED_REASON, false, true, OPERATOR, LATER);
-
-            // 確認：キャンセルし、在庫に戻さない
-            assertThat(cancelled).isTrue();
-            assertThat(order.cancellation().restocked()).isFalse();
-        }
-
-        @Test
         @DisplayName("AC-190 返送された注文のキャンセルで、注文キャンセルのイベントが登録される")
         void registersCancelledEvent() {
             // 準備：出荷済みの注文
@@ -238,15 +224,20 @@ class OrderShipmentTest {
         }
 
         @Test
-        @DisplayName("AC-191 返送された注文を在庫に戻さずにキャンセルしたイベントは、前の状態が出荷済みで、在庫に戻さない")
+        @DisplayName("AC-191 返送された注文を在庫に戻さずにキャンセルすると、キャンセルして在庫に戻さないことを記録し、前の状態が出荷済みで在庫に戻さないイベントが登録される")
         void registersNotRestockedEvent() {
             // 準備：出荷済みの注文
             var order = TestOrders.shipped(ORDERED_AT);
 
             // 操作：返送されたので、在庫に戻さずにキャンセルする
-            order.cancelByOperator(RETURNED_REASON, false, true, OPERATOR, LATER);
+            var cancelled = order.cancelByOperator(RETURNED_REASON, false, true, OPERATOR, LATER);
 
-            // 確認：イベントの前の状態・種類と、在庫に戻さないこと
+            // 確認：キャンセルし、在庫に戻さないことを記録する
+            assertThat(cancelled).isTrue();
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(order.cancellation().restocked()).isFalse();
+
+            // 確認：前の状態が出荷済みで、キャンセルの種類と在庫に戻さないことを持つイベントが 1 件
             assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.SHIPPED,
                     OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, false);
         }

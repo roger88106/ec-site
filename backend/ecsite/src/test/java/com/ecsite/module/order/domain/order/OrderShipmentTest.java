@@ -148,7 +148,7 @@ class OrderShipmentTest {
         @DisplayName("AC-170 「支払待ち」の注文は出荷できない")
         void rejectsPending() {
             // 操作と確認：業務のエラー ORDER_NOT_SHIPPABLE で拒否される
-            assertNotShippable(pendingOrder());
+            assertNotShippable(TestOrders.pending(ORDERED_AT));
         }
 
         @Test
@@ -287,7 +287,7 @@ class OrderShipmentTest {
         @DisplayName("AC-170 「支払待ち」の注文は、出荷を登録できる操作に出さない")
         void pendingIsNotShippable() {
             // 操作と確認：出荷できない
-            assertThat(pendingOrder().isShippable()).isFalse();
+            assertThat(TestOrders.pending(ORDERED_AT).isShippable()).isFalse();
         }
 
         @Test
@@ -334,7 +334,7 @@ class OrderShipmentTest {
         @DisplayName("AC-158 「支払待ち」の注文は、返送の指定があっても運営者がキャンセルできる操作に出さない")
         void pendingIsNotCancellable() {
             // 操作と確認：キャンセルできない
-            assertThat(pendingOrder().isCancellableByOperator(true)).isFalse();
+            assertThat(TestOrders.pending(ORDERED_AT).isCancellableByOperator(true)).isFalse();
         }
     }
 
@@ -451,16 +451,4 @@ class OrderShipmentTest {
         assertThat(order.pullEvents()).isEmpty();
     }
 
-    // ============================== 準備の補助 ==============================
-
-    /**
-     * 「支払待ち」の注文を作る。
-     *
-     * <p>成立のイベントは取り出してある。
-     *
-     * @return 支払待ちの注文
-     */
-    private static Order pendingOrder() {
-        return TestOrders.pending(ORDERED_AT);
-    }
 }

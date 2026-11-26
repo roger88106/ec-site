@@ -29,7 +29,7 @@
 - **DC-522-1** 注文の状態（`pending`・`accepted`・`requested`・`shipped`）の準備は補助のクラスだけにあり、テストごとの private の作り方は無い。
 - **DC-522-2** 同じ準備と同じ操作の既存のテストの組だけを統合し、統合の後も確認するイベントの件数と種類を変えない。
 - **DC-522-3** 変える範囲の申請のテストは、申請の手順を補助の申請の操作で行い、HTTP の呼び出しを直接書かない。
-- **DC-522-4** 受付の注文の準備は補助にまとめられ、対象の 6 ファイルが使う。
+- **DC-522-4** 受付の注文の準備は補助にまとめられ、コミットするテストの 4 ファイルが使う。ロールバックするテストの 2 ファイルは、補助の待ちが使えないため置き換えない（Non-goals）。
 - **DC-522-5** 範囲の検証（上限・下限・必須）は全て、テスト用の範囲検証の補助で確認する。
 - **DC-522-6** 境界のテストは、下限と上限を別のテストにし、「ちょうど」と「1 つ外」の両方を確認する。
 - **DC-522-7** 置き換えと統合の前後で、各テストが確認する項目（結果の値、DB の状態、イベントの件数）が減らない。
@@ -84,6 +84,8 @@
 | `FlywayConnectionConfigTest`（integrationTest） | 承認された範囲に入っていないため。 |
 | `JooqOrderRepositoryTest` と `MemberOrderApiTest` の `acceptedOrder`、`JooqReportOrderRepositoryTest` の `shippedOrder` | 別の意味の準備（戻り値の型、対象の集約が違う）のため。 |
 | `CancellationApiTest` の申請の確認 | 申請そのものを確認するテストのため（DC-522-3）。 |
+| `CancellationApiTest` と `ReturnedOrderCancellationApiTest` の準備 | 両方ともロールバックするテストで、補助の `acceptedOrder` の待ちが使えないため（T522-01-24）。準備は既に `OrderTestData.placeOrder` を使っている。 |
+| `OrderTest` の `accepted`・`requested`・`rejected`（private） | 見積もりから組み立てる別の準備で、`TestOrders` の状態ごとの作り方と意味が違うため。 |
 | 本番のコードの「リクエストの誤り」（`GlobalExceptionHandler`・`StripePaymentGateway`） | 名前をそろえる対象はテストだけのため。本番のコードは DN-522-1 で変えない。 |
 | 本番のコードの変更 | DN-522-1。 |
 
@@ -104,11 +106,11 @@
 
 実装は汎用の `implementer` に 1 タスクずつ任せる。1 タスク 1 commit にする。変えたクラスの統合テストを絞って実行する。`./gradlew check` は段階の最後に 1 回（T522-01-25）。
 
-- [ ] **T522-01-01** [テスト] `ValidationErrorTranslatorTest` の長さの境界（175・182 行付近）を、下限と上限の別の `@Test` に分け、「ちょうど」の確認を追加する（DC-522-6）。
+- [x] **T522-01-01** [テスト] `ValidationErrorTranslatorTest` の長さの境界（175・182 行付近）を、下限と上限の別の `@Test` に分け、「ちょうど」の確認を追加する（DC-522-6）。
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/common/error/handler/ValidationErrorTranslatorTest.java`
   - 確認方法：通る（本番は変えない）。上限の定数を 1 つずらすと失敗することを確認し、元に戻す（break-check）。
-- [ ] **T522-01-02** [調査] 境界の対象を確定する。対象は次の 13 ファイル（単体テスト 12、統合テスト 1）。一覧は下に書く（文書の更新だけ）（DC-522-6）。
+- [x] **T522-01-02** [調査] 境界の対象を確定する。対象は次の 13 ファイル（単体テスト 12、統合テスト 1）。一覧は下に書く（文書の更新だけ）（DC-522-6）。
   - 依存：T522-01-01
   - 範囲：`backend/ecsite/src/test/java/` と `backend/ecsite/src/integrationTest/java/` の境界の確認。`OrderTest` は文字列を作る補助で、境界の確認ではないため除く。`docs/08-spec/522-test-dedup/spec.md` の「tasks」
   - 確認方法：確定した一覧を、この節に書く（送り直さない。承認済み）。
@@ -134,51 +136,52 @@
     ```
 
   - 除外：`OrderTest`（文字列の補助で、境界の確認ではない）。
-- [ ] **T522-01-03** [テスト] T522-01-02 の一覧のテストを、「ちょうど」と「1 つ外」の別の `@Test` にする（DC-522-6）。
+- [x] **T522-01-03** [テスト] T522-01-02 の一覧のテストを、「ちょうど」と「1 つ外」の別の `@Test` にする（DC-522-6）。
   - 依存：T522-01-02（一覧の確認を受けたもの）
   - 範囲：T522-01-02 の一覧のファイル
   - 確認方法：通る。各上限・下限の値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。
-- [ ] **T522-01-04** 境界の上限・下限の値を、本番の定数から作るように書き換える（DC-522-9）。
+- [x] **T522-01-04** 境界の上限・下限の値を、本番の定数から作るように書き換える（DC-522-9）。
   - 依存：T522-01-03
   - 範囲：T522-01-02 の一覧のファイル
   - 確認方法：通る。`repeat` の数字のリテラルが境界の値に残らない。
-- [ ] **T522-01-05** 拒否のテストの名前を「400」にそろえ、ページの件数の呼び名を「1 ページの件数」にそろえる（DC-522-10）。
+- [x] **T522-01-05** 拒否のテストの名前を「400」にそろえ、ページの件数の呼び名を「1 ページの件数」にそろえる（DC-522-10）。
   - 依存：T522-01-04
   - 範囲：名前が「リクエストの誤り」「1 ページの大きさ」のテスト（T522-01-02 の一覧のファイル）。統合テストは、「リクエストの誤り」を含む 5 ファイル（`module/catalog/presentation/` の `ProductApiTest.java`・`ProductImageApiTest.java`・`ProductListApiTest.java`・`ProductVariantApiTest.java`、`module/storefront/presentation/` の `StorefrontApiTest.java`）の `@DisplayName` とコメント。本番の `src/main` の同じ語は変えない（spec の Non-goals）
   - 確認方法：`DisplayName` とコメントの grep で、「リクエストの誤り」の拒否と「1 ページの大きさ」が対象から消える。
-- [ ] **T522-01-06** `docs/05-開発規則/test-writing-backend.md` に、境界の形を 1 節で書く（DC-522-6）。
+- [x] **T522-01-06** `docs/05-開発規則/test-writing-backend.md` に、境界の形を 1 節で書く（DC-522-6）。
   - 依存：T522-01-05
   - 範囲：`docs/05-開発規則/test-writing-backend.md`
   - 確認方法：`node scripts/ci/docs/doc-refs.mjs` と `node scripts/ci/ja/ja-text.mjs` が通る。
-- [ ] **T522-01-07** [テスト] `OrderPropertiesTest`・`PaymentPropertiesTest`・`ImgproxyPropertiesTest`・`ReportingPropertiesTest` の範囲の検証（上限・下限・必須）を、`TestSettings.bindValidated` のテストとして書く（DC-522-5）。
+- [x] **T522-01-07** [テスト] `OrderPropertiesTest`・`PaymentPropertiesTest`・`ImgproxyPropertiesTest`・`ReportingPropertiesTest` の範囲の検証（上限・下限・必須）を、`TestSettings.bindValidated` のテストとして書く（DC-522-5）。
   - 依存：T522-01-06
   - 範囲：上の 4 ファイル
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。
-- [ ] **T522-01-08** 同じ 4 ファイルで、`ApplicationContextRunner` に残す確認（Bean、条件、型の登録）の理由をテストのコメントに書き、移した範囲の検証を `ApplicationContextRunner` 側から削除する（DC-522-5）。
+- [x] **T522-01-08** 同じ 4 ファイルで、`ApplicationContextRunner` に残す確認（Bean、条件、型の登録）の理由をテストのコメントに書き、移した範囲の検証を `ApplicationContextRunner` 側から削除する（DC-522-5）。
   - 依存：T522-01-07
   - 範囲：上の 4 ファイル
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`ApplicationContextRunner` の範囲の検証が残らない。
-- [ ] **T522-01-09** [調査] `OrderPaymentTest`・`OrderShipmentTest`・`OrderCancellationTest` の private の作り方（8 箇所）と `TestOrders` の差（イベントの取り出し、受付の時刻）を確認する。差を、[spec](spec.md)の「変える範囲」の注に書き追加する（文書の更新だけ）（DC-522-1）。
+  - 結果（レビューの指摘で修正）：`ApplicationContextRunner` の範囲の検証は 4 ファイルとも消した。`bindValidated` は `@Validated` を見ずに検証するため、起動のときの検証の前提（設定の型に `@Validated` があること）を `ConfigurationPropertiesValidatedTest` で本番の全件について確認する。
+- [x] **T522-01-09** [調査] `OrderPaymentTest`・`OrderShipmentTest`・`OrderCancellationTest` の private の作り方（8 箇所）と `TestOrders` の差（イベントの取り出し、受付の時刻）を確認する。差を、[spec](spec.md)の「変える範囲」の注に書き追加する（文書の更新だけ）（DC-522-1）。
   - 依存：T522-01-08
   - 範囲：上の 3 ファイル、`TestOrders.java`、`docs/08-spec/522-test-dedup/spec.md`
   - 確認方法：差の一覧の各行に、確認した行番号を書く。
-- [ ] **T522-01-10** `TestOrders` に `accepted`・`requested`・`shipped` を追加する（DC-522-1）。
+- [x] **T522-01-10** `TestOrders` に `accepted`・`requested`・`shipped` を追加する（DC-522-1）。
   - 依存：T522-01-09
   - 範囲：`TestOrders.java`
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。
-- [ ] **T522-01-11** `OrderPaymentTest` の private の `acceptedOrder`・`requestedOrder`・`shippedOrder` を `TestOrders` の呼び出しに置き換える（DC-522-1）。
+- [x] **T522-01-11** `OrderPaymentTest` の private の `acceptedOrder`・`requestedOrder`・`shippedOrder` を `TestOrders` の呼び出しに置き換える（DC-522-1）。
   - 依存：T522-01-10
   - 範囲：`OrderPaymentTest.java`
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`private static Order` の定義が残らない。
-- [ ] **T522-01-12** `OrderShipmentTest` の private の 3 つを、`TestOrders` の呼び出しに置き換える（DC-522-1）。
+- [x] **T522-01-12** `OrderShipmentTest` の private の 3 つを、`TestOrders` の呼び出しに置き換える（DC-522-1）。
   - 依存：T522-01-11
   - 範囲：`OrderShipmentTest.java`
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`private static Order` の定義が残らない。
-- [ ] **T522-01-13** `OrderCancellationTest` の private の `acceptedOrder`・`requestedOrder` を、`TestOrders` の呼び出しに置き換える（DC-522-1）。
+- [x] **T522-01-13** `OrderCancellationTest` の private の `acceptedOrder`・`requestedOrder` を、`TestOrders` の呼び出しに置き換える（DC-522-1）。
   - 依存：T522-01-12
   - 範囲：`OrderCancellationTest.java`
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`private static Order` の定義が残らない。break-check は、申請の遷移を省くと 19 件が失敗することで確認した。申請の理由の文字列は、このクラスのどのテストも確認していない（記録に残す）。
-- [ ] **T522-01-14** [調査] `assertStatusChangedEventOnly` の 9 件の呼び出しと、`OrderEventAssertions` の使う側（3 ファイル）を基に、重なる既存テストの組（ファイルとメソッド名）を特定する。組の一覧を、このファイルの T522-01-16 の範囲に書き追加する（文書の更新だけ）（DC-522-2）。
+- [x] **T522-01-14** [調査] `assertStatusChangedEventOnly` の 9 件の呼び出しと、`OrderEventAssertions` の使う側（3 ファイル）を基に、重なる既存テストの組（ファイルとメソッド名）を特定する。組の一覧を、このファイルの T522-01-16 の範囲に書き追加する（文書の更新だけ）（DC-522-2）。
   - 依存：T522-01-13
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/module/order/domain/order/` の 3 ファイルと `OrderEventAssertions.java`、`docs/08-spec/522-test-dedup/spec.md` の「tasks」
   - 確認方法：組ごとに、同じ準備と同じ操作であることを、準備と操作の行を並べて確認する。
@@ -198,27 +201,27 @@
 
     - 9 件の呼び出しは、組 1〜9 のそれぞれに 1 件ずつ入る（★）。
     - 表に入れない参考（9 件を含まない同じ準備・操作の組）：`OrderShipmentTest` の `cancelsReturnedOrder`・`recordsRestocked`・`registersCancelledEvent`（出荷済みの注文、返送、在庫に戻す指定の運営者のキャンセル）。統合するかは、T522-01-16 の前に決める。
-- [ ] **T522-01-15** `OrderCancellationTest` の private の `assertCancelledEventOnly` を、`OrderEventAssertions` に移す（DC-522-2）。
+- [x] **T522-01-15** `OrderCancellationTest` の private の `assertCancelledEventOnly` を、`OrderEventAssertions` に移す（DC-522-2）。
   - 依存：T522-01-14
   - 範囲：`OrderCancellationTest.java`、`OrderEventAssertions.java`
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。private の定義が残らない。
-- [ ] **T522-01-16** 重なる既存テストを、組ごとに 1 commit で統合する（DC-522-2、DC-522-7）。組は T522-01-14 の一覧の順に、1 組ずつ行う。
+- [x] **T522-01-16** 重なる既存テストを、組ごとに 1 commit で統合する（DC-522-2、DC-522-7）。組は T522-01-14 の一覧の順に、1 組ずつ行う。
   - 依存：T522-01-15
   - 範囲：T522-01-14 の一覧の組
   - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。統合の前後で、確認するイベントの件数と種類が同じ。統合の基準（同じ準備と同じ操作の組だけを統合する）に合う。
-- [ ] **T522-01-17** `OrderTestData` に、キャンセル申請の操作を追加する（DC-522-3）。
+- [x] **T522-01-17** `OrderTestData` に、キャンセル申請の操作を追加する（DC-522-3）。
   - 依存：T522-01-16
   - 範囲：`backend/ecsite/src/integrationTest/java/com/ecsite/support/data/OrderTestData.java`
   - 確認方法：T522-01-18 で使うテストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。
-- [ ] **T522-01-18** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`OrderStatusChangedEventTest`、`CheckoutCleanupJobTest`、`AdminOrderApiTest`。
+- [x] **T522-01-18** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`OrderStatusChangedEventTest`、`CheckoutCleanupJobTest`、`AdminOrderApiTest`。
   - 依存：T522-01-17
   - 範囲：上の 3 ファイル（`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/` の下）
   - 確認方法：絞り込んだ統合テストが通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の HTTP の呼び出しが残らない。`CheckoutCleanupJobTest` は変えない。理由：そのテストは申請が今どおりできること自体が対象のため、申請の呼び出しを準備ではなく操作として残す。
-- [ ] **T522-01-19** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`CapturedOrderCancellationRefundTest`、`MemberOrderApiTest`、`OrderPaymentApiTest`。
+- [x] **T522-01-19** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`CapturedOrderCancellationRefundTest`、`MemberOrderApiTest`、`OrderPaymentApiTest`。
   - 依存：T522-01-18
   - 範囲：上の 3 ファイル（`module/order/presentation/` の下、`OrderPaymentApiTest` と `MemberOrderApiTest`）
   - 確認方法：絞り込んだ統合テストが通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。準備として使う申請の HTTP の呼び出しを置き換える。`MemberOrderApiTest` の申請の呼び出しは、キャンセル申請そのものの確認（持ち主の 204、他の会員の 404、token なしの 401）なので変えない。理由：その確認は、操作の 204 だけでは表せないため。
-- [ ] **T522-01-20** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`OrderPaymentCartRemovalApiTest`、`ShipmentApiTest`、`StoreOrderShipmentApiTest`。
+- [x] **T522-01-20** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`OrderPaymentCartRemovalApiTest`、`ShipmentApiTest`、`StoreOrderShipmentApiTest`。
   - 依存：T522-01-19
   - 範囲：上の 3 ファイル（`module/order/presentation/` の下）
   - 確認方法：絞り込んだ統合テストが通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。準備として使う申請の HTTP の呼び出しを置き換える。`StoreOrderShipmentApiTest` は変えない。理由：`rejectsRequest` が申請の応答（400 と `CANCELLATION_NOT_REQUESTABLE`）を確認しているため。

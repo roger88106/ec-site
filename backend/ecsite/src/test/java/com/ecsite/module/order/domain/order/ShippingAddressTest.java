@@ -59,14 +59,14 @@ class ShippingAddressTest {
     private static final String MOBILE_PHONE_DIGITS = "09012345678";
 
     /**
-     * 氏名の上限の長さ（NAME_MAX は vo パッケージの非公開のため、ここで決める）
+     * 氏名の上限の長さ（NAME_MAX_LENGTH は vo パッケージの非公開のため、ここで決める）
      */
-    private static final int NAME_MAX = 50;
+    private static final int NAME_MAX_LENGTH = 50;
 
     /**
-     * 住所の上限の長さ（ADDRESS_MAX は vo パッケージの非公開のため、ここで決める）
+     * 住所の上限の長さ（ADDRESS_MAX_LENGTH は vo パッケージの非公開のため、ここで決める）
      */
-    private static final int ADDRESS_MAX = 200;
+    private static final int ADDRESS_MAX_LENGTH = 200;
 
     // ============================== テスト ==============================
 
@@ -197,7 +197,7 @@ class ShippingAddressTest {
         @DisplayName("AC-86 51 文字の氏名は拒否される")
         void rejectsTooLongName() {
             // 操作と確認：業務のエラー INVALID_RECIPIENT_NAME で拒否される
-            assertBusinessError(() -> ShippingAddress.of("あ".repeat(NAME_MAX + 1), POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
+            assertBusinessError(() -> ShippingAddress.of("あ".repeat(NAME_MAX_LENGTH + 1), POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
                     OrderErrorCode.INVALID_RECIPIENT_NAME);
         }
 
@@ -214,7 +214,7 @@ class ShippingAddressTest {
         @DisplayName("AC-86 201 文字の住所は拒否される")
         void rejectsTooLongAddress() {
             // 操作と確認：業務のエラー INVALID_ADDRESS で拒否される
-            assertBusinessError(() -> ShippingAddress.of(NAME, POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX + 1), PHONE_DIGITS),
+            assertBusinessError(() -> ShippingAddress.of(NAME, POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX_LENGTH + 1), PHONE_DIGITS),
                     OrderErrorCode.INVALID_ADDRESS);
         }
 
@@ -222,11 +222,11 @@ class ShippingAddressTest {
         @DisplayName("AC-86 50 文字の氏名と 200 文字の住所は受け付ける")
         void acceptsLongestNameAndAddress() {
             // 操作：上限の長さの氏名と住所でお届け先を作る
-            var address = ShippingAddress.of("あ".repeat(NAME_MAX), POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX), PHONE_DIGITS);
+            var address = ShippingAddress.of("あ".repeat(NAME_MAX_LENGTH), POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX_LENGTH), PHONE_DIGITS);
 
             // 確認：切り詰めずに持つ
-            assertThat(address.name()).hasSize(NAME_MAX);
-            assertThat(address.address()).hasSize(ADDRESS_MAX);
+            assertThat(address.name()).hasSize(NAME_MAX_LENGTH);
+            assertThat(address.address()).hasSize(ADDRESS_MAX_LENGTH);
         }
     }
 
@@ -247,7 +247,7 @@ class ShippingAddressTest {
         @DisplayName("51 文字の氏名は、コンストラクターでも拒否される")
         void rejectsTooLongName() {
             // 操作と確認：業務のエラー INVALID_RECIPIENT_NAME で拒否される
-            assertBusinessError(() -> new ShippingAddress("あ".repeat(NAME_MAX + 1), POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
+            assertBusinessError(() -> new ShippingAddress("あ".repeat(NAME_MAX_LENGTH + 1), POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
                     OrderErrorCode.INVALID_RECIPIENT_NAME);
         }
 
@@ -273,7 +273,7 @@ class ShippingAddressTest {
         @DisplayName("201 文字の住所は、コンストラクターでも拒否される")
         void rejectsTooLongAddress() {
             // 操作と確認：業務のエラー INVALID_ADDRESS で拒否される
-            assertBusinessError(() -> new ShippingAddress(NAME, POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX + 1), PHONE_DIGITS),
+            assertBusinessError(() -> new ShippingAddress(NAME, POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX_LENGTH + 1), PHONE_DIGITS),
                     OrderErrorCode.INVALID_ADDRESS);
         }
 
@@ -291,12 +291,12 @@ class ShippingAddressTest {
         @DisplayName("上限の長さの氏名と住所、数字 7 桁の郵便番号、10 桁と 11 桁の電話番号は、コンストラクターで受け付ける")
         void acceptsNormalizedBoundaryValues(String phone) {
             // 操作：上限の長さの氏名と住所、正規化した後の形の番号で作る
-            var address = new ShippingAddress("あ".repeat(NAME_MAX), POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX), phone);
+            var address = new ShippingAddress("あ".repeat(NAME_MAX_LENGTH), POSTAL_CODE_DIGITS, CHIYODA, "あ".repeat(ADDRESS_MAX_LENGTH), phone);
 
             // 確認：値をそのまま持つ
-            assertThat(address.name()).hasSize(NAME_MAX);
+            assertThat(address.name()).hasSize(NAME_MAX_LENGTH);
             assertThat(address.postalCode()).isEqualTo(POSTAL_CODE_DIGITS);
-            assertThat(address.address()).hasSize(ADDRESS_MAX);
+            assertThat(address.address()).hasSize(ADDRESS_MAX_LENGTH);
             assertThat(address.phone()).isEqualTo(phone);
         }
     }

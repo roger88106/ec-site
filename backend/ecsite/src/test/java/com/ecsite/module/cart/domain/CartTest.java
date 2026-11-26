@@ -345,6 +345,7 @@ class CartTest {
         void changesToMinQuantity() {
             // 準備：白 2 個、黒 1 個のカート
             var cart = whiteAndBlack();
+
             // 操作：白の数量を 1 にする
             cart.changeQuantity(WHITE, 1, NOW);
 
@@ -358,6 +359,7 @@ class CartTest {
         void changesToMaxQuantity() {
             // 準備：白 2 個、黒 1 個のカート
             var cart = whiteAndBlack();
+
             // 操作：白の数量を 10 にする
             cart.changeQuantity(WHITE, Cart.MAX_QUANTITY, NOW);
 

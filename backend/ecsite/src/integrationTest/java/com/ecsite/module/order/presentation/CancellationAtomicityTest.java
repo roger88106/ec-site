@@ -5,7 +5,6 @@ import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
-import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;
 import com.ecsite.support.data.InventoryTestData;
@@ -88,9 +87,6 @@ class CancellationAtomicityTest {
 
     @Autowired
     DSLContext dsl;
-
-    @Autowired
-    AsyncEvents asyncEvents;
 
     @MockitoSpyBean
     StockDirectory stockDirectory;

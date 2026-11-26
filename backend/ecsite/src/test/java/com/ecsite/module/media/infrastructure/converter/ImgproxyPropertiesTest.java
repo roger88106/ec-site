@@ -74,27 +74,53 @@ class ImgproxyPropertiesTest {
     @DisplayName("品質の範囲")
     class QualityRange {
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {1, 100})
-        @DisplayName("品質が範囲の端なら、値の検証を通り、その品質になる")
-        void acceptsQualityAtBounds(int quality) {
-            // 操作：範囲の端の品質を検証付きで当てはめる
-            var properties = TestSettings.bindValidated("ecsite.media.converter", ImgproxyProperties.class,
-                    Map.of("base-url", BASE_URL, "key", KEY, "salt", SALT, "quality", String.valueOf(quality)));
+        @Test
+        @DisplayName("品質が下限の 1 なら、値の検証を通り、その品質になる")
+        void acceptsQualityAtMinimum() {
+            // 操作：下限の品質を検証付きで当てはめる
+            var properties = bindQuality(1);
 
             // 確認：設定した品質を持つ
-            assertThat(properties.quality()).isEqualTo(quality);
+            assertThat(properties.quality()).isEqualTo(1);
         }
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {0, 101})
-        @DisplayName("品質が範囲の外なら、値の検証で拒否され、quality が知らされる")
-        void rejectsQualityOutOfBounds(int quality) {
+        @Test
+        @DisplayName("品質が上限の 100 なら、値の検証を通り、その品質になる")
+        void acceptsQualityAtMaximum() {
+            // 操作：上限の品質を検証付きで当てはめる
+            var properties = bindQuality(100);
+
+            // 確認：設定した品質を持つ
+            assertThat(properties.quality()).isEqualTo(100);
+        }
+
+        @Test
+        @DisplayName("品質が下限の 1 より小さい 0 なら、値の検証で拒否され、quality が知らされる")
+        void rejectsQualityBelowMinimum() {
             // 操作と確認：値の検証で拒否され、原因に設定の名前がある
-            assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.media.converter", ImgproxyProperties.class,
-                    Map.of("base-url", BASE_URL, "key", KEY, "salt", SALT, "quality", String.valueOf(quality))))
+            assertThatThrownBy(() -> bindQuality(0))
                     .isInstanceOf(BindException.class)
                     .rootCause().hasMessageContaining("quality");
+        }
+
+        @Test
+        @DisplayName("品質が上限の 100 より大きい 101 なら、値の検証で拒否され、quality が知らされる")
+        void rejectsQualityAboveMaximum() {
+            // 操作と確認：値の検証で拒否され、原因に設定の名前がある
+            assertThatThrownBy(() -> bindQuality(101))
+                    .isInstanceOf(BindException.class)
+                    .rootCause().hasMessageContaining("quality");
+        }
+
+        /**
+         * 品質を指定して、検証付きで変換の設定を当てはめる。
+         *
+         * @param quality 品質
+         * @return 当てはめた設定
+         */
+        private ImgproxyProperties bindQuality(int quality) {
+            return TestSettings.bindValidated("ecsite.media.converter", ImgproxyProperties.class,
+                    Map.of("base-url", BASE_URL, "key", KEY, "salt", SALT, "quality", String.valueOf(quality)));
         }
     }
 

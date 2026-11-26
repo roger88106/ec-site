@@ -116,7 +116,7 @@ class StockAdjustmentTest {
         @DisplayName("AC-42 運営者の 1 回の増やす量は、上限ちょうどの 1,000,000 まで作れる")
         void acceptsDeltaAtMax() {
             // 操作：上限ちょうどの調整を作る
-            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), StockAdjustment.MAX_MANUAL_DELTA,StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW);
+            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), StockAdjustment.MAX_MANUAL_DELTA, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW);
 
             // 確認：増減量がそのまま
             assertThat(adjustment.delta()).isEqualTo(StockAdjustment.MAX_MANUAL_DELTA);
@@ -126,7 +126,7 @@ class StockAdjustmentTest {
         @DisplayName("AC-42 運営者の 1 回の減らす量は、下限ちょうどの -1,000,000 まで作れる")
         void acceptsDeltaAtMin() {
             // 操作：下限ちょうどの調整を作る
-            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), -StockAdjustment.MAX_MANUAL_DELTA,StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW);
+            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), -StockAdjustment.MAX_MANUAL_DELTA, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW);
 
             // 確認：増減量がそのまま
             assertThat(adjustment.delta()).isEqualTo(-StockAdjustment.MAX_MANUAL_DELTA);
@@ -143,7 +143,7 @@ class StockAdjustmentTest {
 
         @ParameterizedTest(name = "「{0}」")
         @ValueSource(ints = {-StockAdjustment.MAX_MANUAL_DELTA - 1, Integer.MIN_VALUE})
-        @DisplayName("AC-42 運営者の 1 回の減らす量が下限の -1,000,000 を超えれば拒否される")
+        @DisplayName("AC-42 運営者の 1 回の減らす量が下限の -1,000,000 を下回れば拒否される")
         void rejectsDeltaUnderMin(int delta) {
             // 操作と確認：業務のエラー INVALID_STOCK_DELTA で拒否される
             assertBusinessError(() -> StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), delta, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW),

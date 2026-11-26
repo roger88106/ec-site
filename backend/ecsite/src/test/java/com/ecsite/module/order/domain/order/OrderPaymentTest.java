@@ -66,7 +66,7 @@ class OrderPaymentTest {
         @DisplayName("AC-143 成立した注文は「支払待ち」で、支払を待っている")
         void isPendingPayment() {
             // 操作：注文を作る
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 確認：支払待ち
             assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
@@ -82,7 +82,7 @@ class OrderPaymentTest {
         @DisplayName("AC-146 支払待ちの注文は、与信の成功で「受付」になり、支払待ちからの状態の変化のイベントが 1 件登録される")
         void acceptsPendingOrder() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作：与信の成功を受ける
             var changed = order.acceptPayment(LATER);
@@ -115,7 +115,7 @@ class OrderPaymentTest {
         @DisplayName("期限切れでキャンセルになった注文が与信の成功を受けても、キャンセルのまま")
         void ignoresWhenCancelled() {
             // 準備：期限切れでキャンセルになった注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
             order.expirePayment(LATER);
 
             // 操作：与信の成功を受ける
@@ -180,7 +180,7 @@ class OrderPaymentTest {
         @DisplayName("NFR-7 支払の期限切れを重ねて受けても、イベントは 1 回だけ")
         void expiresOnlyOnce() {
             // 準備：期限切れでキャンセルになり、イベントを取り出した注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
             order.expirePayment(LATER);
             order.pullEvents();
 
@@ -196,7 +196,7 @@ class OrderPaymentTest {
         @DisplayName("AC-153、AC-155 支払待ちの注文は、支払の期限切れでキャンセルになり、種類が支払期限切れの記録と、在庫に戻すイベントが 1 件だけ登録される")
         void registersPaymentExpiredEvent() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
@@ -252,14 +252,14 @@ class OrderPaymentTest {
         @DisplayName("AC-158 支払待ちの注文は、消費者がキャンセルを申請できる操作に出さない")
         void isNotRequestable() {
             // 操作と確認：申請できない
-            assertThat(pendingOrder().isCancellationRequestable()).isFalse();
+            assertThat(TestOrders.pending(ORDERED_AT).isCancellationRequestable()).isFalse();
         }
 
         @Test
         @DisplayName("AC-158 支払待ちの注文へのキャンセルの申請は拒否される")
         void rejectsRequest() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー CANCELLATION_NOT_REQUESTABLE で拒否される
             assertBusinessError(() -> order.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
@@ -269,14 +269,14 @@ class OrderPaymentTest {
         @DisplayName("AC-158 支払待ちの注文は、運営者がキャンセルできる操作に出さない")
         void isNotCancellableByOperator() {
             // 操作と確認：運営者はキャンセルできない
-            assertThat(pendingOrder().isCancellableByOperator(false)).isFalse();
+            assertThat(TestOrders.pending(ORDERED_AT).isCancellableByOperator(false)).isFalse();
         }
 
         @Test
         @DisplayName("AC-158 支払待ちの注文への運営者のキャンセルは拒否され、支払待ちのまま")
         void rejectsOperatorCancellation() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー AWAITING_PAYMENT で拒否される
             assertBusinessError(() -> order.cancelByOperator("理由", true, false, OPERATOR, LATER), OrderErrorCode.AWAITING_PAYMENT);
@@ -289,7 +289,7 @@ class OrderPaymentTest {
         @DisplayName("支払待ちの注文は、申請がないので承認できず、支払待ちのまま")
         void rejectsApproval() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー CANCELLATION_NOT_PENDING で拒否される
             assertBusinessError(() -> order.approveCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
@@ -302,7 +302,7 @@ class OrderPaymentTest {
         @DisplayName("支払待ちの注文は、申請がないので却下できず、支払待ちのまま")
         void rejectsRejection() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー CANCELLATION_NOT_PENDING で拒否される
             assertBusinessError(() -> order.rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
@@ -373,19 +373,6 @@ class OrderPaymentTest {
         assertThat(order.cancellationRequest()).isNull();
         assertThat(order.cancellation()).isNull();
         assertThat(order.pullEvents()).isEmpty();
-    }
-
-    // ============================== 準備の補助 ==============================
-
-    /**
-     * 「支払待ち」の注文を作る。
-     *
-     * <p>成立のイベントは取り出してある。
-     *
-     * @return 支払待ちの注文
-     */
-    private static Order pendingOrder() {
-        return TestOrders.pending(ORDERED_AT);
     }
 
 }

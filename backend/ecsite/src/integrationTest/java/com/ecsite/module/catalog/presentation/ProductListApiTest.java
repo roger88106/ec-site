@@ -412,12 +412,18 @@ class ProductListApiTest {
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {1, 100})
-        @DisplayName("1 ページの件数が範囲の端なら取得できる")
-        void acceptsPageSizeAtBoundary(int size) throws Exception {
+        @Test
+        @DisplayName("1 ページの件数が下限の 1 なら取得できる")
+        void acceptsPageSizeAtMinimum() throws Exception {
             // 操作と確認：取得できる
-            mockMvc.perform(get(BASE).param("size", String.valueOf(size))).andExpect(status().isOk());
+            mockMvc.perform(get(BASE).param("size", "1")).andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("1 ページの件数が上限の 100 なら取得できる")
+        void acceptsPageSizeAtMaximum() throws Exception {
+            // 操作と確認：取得できる
+            mockMvc.perform(get(BASE).param("size", "100")).andExpect(status().isOk());
         }
 
         @Test
@@ -450,34 +456,44 @@ class ProductListApiTest {
     @DisplayName("絞り込みの条件の文字数")
     class FilterLengths {
 
+        /**
+         * 品番の条件の上限の文字数（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+         */
+        private static final int CODE_MAX_LENGTH = 32;
+
+        /**
+         * 商品名の条件の上限の文字数（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+         */
+        private static final int NAME_MAX_LENGTH = 200;
+
         @Test
-        @DisplayName("品番の条件は 32 文字まで指定できる")
-        void acceptsCodeUpToMaximum() throws Exception {
+        @DisplayName("品番の条件は上限の 32 文字まで指定できる")
+        void acceptsCodeAtMaximum() throws Exception {
             // 操作と確認：取得できる
-            mockMvc.perform(get(BASE).param("code", "A".repeat(32))).andExpect(status().isOk());
+            mockMvc.perform(get(BASE).param("code", "A".repeat(CODE_MAX_LENGTH))).andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("品番の条件が 33 文字なら 400")
-        void rejectsCodeOverMaximum() throws Exception {
+        @DisplayName("品番の条件が上限の 32 文字より多い 33 文字なら 400")
+        void rejectsCodeAboveMaximum() throws Exception {
             // 操作と確認：400 で拒否される
-            mockMvc.perform(get(BASE).param("code", "A".repeat(33)))
+            mockMvc.perform(get(BASE).param("code", "A".repeat(CODE_MAX_LENGTH + 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test
-        @DisplayName("商品名の条件は 200 文字まで指定できる")
-        void acceptsNameUpToMaximum() throws Exception {
+        @DisplayName("商品名の条件は上限の 200 文字まで指定できる")
+        void acceptsNameAtMaximum() throws Exception {
             // 操作と確認：取得できる
-            mockMvc.perform(get(BASE).param("name", "あ".repeat(200))).andExpect(status().isOk());
+            mockMvc.perform(get(BASE).param("name", "あ".repeat(NAME_MAX_LENGTH))).andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("商品名の条件が 201 文字なら 400")
-        void rejectsNameOverMaximum() throws Exception {
+        @DisplayName("商品名の条件が上限の 200 文字より多い 201 文字なら 400")
+        void rejectsNameAboveMaximum() throws Exception {
             // 操作と確認：400 で拒否される
-            mockMvc.perform(get(BASE).param("name", "あ".repeat(201)))
+            mockMvc.perform(get(BASE).param("name", "あ".repeat(NAME_MAX_LENGTH + 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }

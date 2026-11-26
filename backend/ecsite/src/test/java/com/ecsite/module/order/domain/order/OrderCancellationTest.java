@@ -304,20 +304,27 @@ class OrderCancellationTest {
             // 確認：運営者のキャンセルの記録（種類、理由、運営者）
             assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, OPERATOR_REASON, OPERATOR));
 
-            // 準備と操作：在庫に戻す指定でキャンセルする注文（指定の違いで結果が変わらないことを確認する）
-            var restockOrder = TestOrders.accepted(ORDERED_AT);
-            restockOrder.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
-
-            // 確認：在庫に戻す指定の注文も、キャンセルと運営者のキャンセルの記録
-            assertThat(restockOrder.status()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(restockOrder.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, OPERATOR_REASON, OPERATOR));
-
             // 確認：登録されたイベントは全体で 1 件だけで、受付からキャンセルへの状態の変化。種類は運営者、在庫に戻す（イベントを見るので最後）
             assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.ACCEPTED,
                     OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
+        }
 
-            // 確認：在庫に戻す指定の注文も、同じ中身のイベントが全体で 1 件
-            assertSingleEventWithStatusChange(restockOrder, LATER, OrderStatusChanged.Status.ACCEPTED,
+        @Test
+        @DisplayName("AC-103、運営者は在庫に戻す指定で「受付」の注文をキャンセルでき、キャンセルは成立し、運営者のキャンセルの記録と、在庫に戻すイベントが全体で 1 件残る")
+        void restocksOnOperatorCancel() {
+            // 準備：受付の注文
+            var order = TestOrders.accepted(ORDERED_AT);
+
+            // 操作：在庫に戻す指定でキャンセルする
+            var cancelled = order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
+
+            // 確認：キャンセルが成立し、運営者のキャンセルの記録がある
+            assertThat(cancelled).isTrue();
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, OPERATOR_REASON, OPERATOR));
+
+            // 確認：登録されたイベントは全体で 1 件（受付からキャンセル、種類は運営者、在庫に戻す）
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.ACCEPTED,
                     OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
         }
 

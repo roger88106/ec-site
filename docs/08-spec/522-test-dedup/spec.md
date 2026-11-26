@@ -257,6 +257,8 @@
     | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
     |------|------|--------|------|-------|------|----|------|------|------|
     | 段階 1 | 網羅性と規則（1 役） | 高性能 | 1 | 195475 | 4m36s | 2 | 7 | 9 | 13 |
+| pull request の前 | 組み込み（medium 指定、high 表示） | 組み込み | 1 | — | — | 0 | 0 | 5 | 4 |
+pull request の組み込みのレビューは、指摘 5 件のうち 4 件を直した（直書きの境界値、AC の表記、JSON のエスケープ、空振りの下限）。残りの 1 件（両端を 1 つのテストに入れた既存の形）は、spec の Non-goals に理由を書き、pull request の既存の指摘に回した。
 
     検証役は使わなかった。理由：レビュー役は 1 つで、指摘の場所（file:line）を spec 担当が読んで確認した。高と必須の指摘は全て修正した。推奨は 4 件を修正し、5 件を次の pull request の「推奨の指摘の扱い」に残す（`@Nullable` の付け忘れ、`CapturedOrderCancellationRefundTest` の `adminOrder` の整理、`test-writing-backend.md` の補助の表、plan の計画からの変更の追記、AC 番号の後の読点）。レビューの記録：`.local/review/202611270325-522-stage/result-main.md`。
 - [ ] **T522-01-27** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。

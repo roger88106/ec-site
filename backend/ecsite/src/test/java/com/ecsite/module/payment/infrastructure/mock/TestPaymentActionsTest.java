@@ -185,6 +185,26 @@ class TestPaymentActionsTest {
 
     @ParameterizedTest(name = "「{0}」")
     @EnumSource(Timing.class)
+    @DisplayName("両方を設定して次の 1 回だけの処理が例外を投げると、その回の呼ばれるたびの処理は動かず、次の回は呼ばれるたびの処理だけが動く")
+    void alwaysDoesNotRunWhenOnceThrows(Timing timing) {
+        // 準備：同じ時点に、例外を投げる次の 1 回だけの処理と、呼ばれるたびの処理を設定する
+        var failure = new IllegalStateException("once");
+        List<String> order = new ArrayList<>();
+        actions.once(timing, () -> {
+            order.add("once");
+            throw failure;
+        });
+        actions.always(timing, () -> order.add("always"));
+
+        // 操作と確認：最初の呼び出しは例外が伝わって always は動かず、2 回目は always だけが動く
+        assertThatThrownBy(() -> actions.run(timing)).isSameAs(failure);
+        assertThat(order).containsExactly("once");
+        actions.run(timing);
+        assertThat(order).containsExactly("once", "always");
+    }
+
+    @ParameterizedTest(name = "「{0}」")
+    @EnumSource(Timing.class)
     @DisplayName("呼ばれるたびの処理が例外を投げると、そのまま伝わり、次も動く")
     void alwaysExceptionPropagatesAndKeepsRunning(Timing timing) {
         // 準備：例外を投げる処理を設定する

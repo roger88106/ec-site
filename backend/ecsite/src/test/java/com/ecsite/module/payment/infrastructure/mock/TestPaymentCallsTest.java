@@ -186,10 +186,11 @@ class TestPaymentCallsTest {
         var snapshot = calls.captured();
 
         // 操作：さらに記録する
-        calls.recordCapture(UUID.randomUUID(), "auth-3");
+        var third = UUID.randomUUID();
+        calls.recordCapture(third, "auth-3");
 
         // 確認：順が合い、同じ注文は 1 回で、取った一覧は変わらない
-        assertThat(calls.captured()).hasSize(3).startsWith(first, second);
+        assertThat(calls.captured()).containsExactly(first, second, third);
         assertThat(snapshot).containsExactly(first, second);
     }
 
@@ -218,10 +219,11 @@ class TestPaymentCallsTest {
         var snapshot = calls.refunded();
 
         // 操作：さらに記録する
-        calls.recordRefund(UUID.randomUUID());
+        var third = UUID.randomUUID();
+        calls.recordRefund(third);
 
         // 確認：順と注文ごとの回数が合い、記録のない注文は 0 で、取った一覧は変わらない
-        assertThat(calls.refunded()).hasSize(3).startsWith(first, second);
+        assertThat(calls.refunded()).containsExactly(first, second, third);
         assertThat(calls.refundsOf(first)).isEqualTo(1);
         assertThat(calls.refundsOf(second)).isEqualTo(1);
         assertThat(calls.refundsOf(UUID.randomUUID())).isZero();

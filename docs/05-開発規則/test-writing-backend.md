@@ -50,7 +50,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 - 作成の応答の ID（UUID）は、`TestJson.createdId` で読む。
 - `CatalogTestData` を入れる変数の名前は `catalog` にする。
 - 結果の一覧を作る繰り返しは `IntStream…toList()`、副作用の繰り返しは for 文で書く。
-- 全てのスレッドを同時に始めるテストは `Concurrently` を使って書く。行のロックを待たせて処理の順を決めるテスト（`CheckoutStartConcurrencyTest`、`PlaceOrderConcurrencyTest`）は、Executor を直接使い、結果を `AsyncEvents.TIMEOUT` で待つ。タイムアウトの規則は[テストの書き方](test-writing.md)の「待ち方」。
+- 全てのスレッドを同時に始めるテストは `Concurrently` を使って書く。行ロックでスレッドを待たせて処理の順を決めるテストは、Executor を直接使い、結果を `AsyncEvents.TIMEOUT` で待つ。タイムアウトの規則は[テストの書き方](test-writing.md)の「待ち方」。
 
 次の 3 つは手順に含めず、テストが直接書いてよい。
 

@@ -29,7 +29,7 @@ final class TestPaymentActions {
      * <p>前に設定した、まだ行っていない処理は置き換える。
      *
      * @param timing 処理を行う時点
-     * @param action 行う処理
+     * @param action 行う処理。null は渡せない。取り消すことはできず、行うか置き換えるまで残る
      */
     void once(Timing timing, Runnable action) {
         onceActions.put(timing, action);
@@ -41,7 +41,7 @@ final class TestPaymentActions {
      * <p>前に設定した処理は置き換える。
      *
      * @param timing 処理を行う時点
-     * @param action 行う処理
+     * @param action 行う処理。null は渡せない。取り消すことはできず、置き換えるまで残る
      */
     void always(Timing timing, Runnable action) {
         alwaysActions.put(timing, action);

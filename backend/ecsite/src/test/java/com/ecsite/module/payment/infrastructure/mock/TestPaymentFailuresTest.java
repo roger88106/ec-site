@@ -76,6 +76,21 @@ class TestPaymentFailuresTest {
     }
 
     @ParameterizedTest(name = "「{0}」")
+    @ValueSource(ints = {0, -1})
+    @DisplayName("残りがあるときに 0 回か負の回数を指定し直すと、失敗しなくなる")
+    void stopsFailingWhenReplacedWithNotPositiveTimes(int times) {
+        // 準備：3 回指定した後に、0 回か負の回数を指定し直す
+        failures.failNext(Kind.CLOSE, 3);
+        failures.failNext(Kind.CLOSE, times);
+
+        // 操作：確認する
+        var results = consumeTimes(Kind.CLOSE, 4);
+
+        // 確認：失敗しない
+        assertThat(results).containsOnly(false);
+    }
+
+    @ParameterizedTest(name = "「{0}」")
     @EnumSource(Kind.class)
     @DisplayName("1 回を指定すると、1 回だけ失敗する")
     void failsOnceWhenOne(Kind kind) {

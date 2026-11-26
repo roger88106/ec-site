@@ -287,7 +287,7 @@ public class TestPaymentGateway implements PaymentGateway {
     /**
      * 次の売上確定の状態の取得で、決済サービスが状態を読んだ後、応答を返す前に処理を行う。
      *
-     * @param action 行う処理（売上確定の再実行、時計を進めるなど）
+     * @param action 行う処理（売上確定の再実行、時計を進めるなど）。null は渡せない。解除はできず、reset で消える
      */
     public void duringNextCaptureStateFetch(Runnable action) {
         state.actions().once(Timing.AFTER_CAPTURE_STATE_FETCH, action);
@@ -296,7 +296,7 @@ public class TestPaymentGateway implements PaymentGateway {
     /**
      * 次の支払画面の作成で、決済サービスが画面を作った後、応答を返す前に処理を行う。
      *
-     * @param action 行う処理（同じ注文の支払画面のリクエスト、時計を進めるなど）
+     * @param action 行う処理（同じ注文の支払画面のリクエスト、時計を進めるなど）。null は渡せない。解除はできず、reset で消える
      */
     public void duringNextOpen(Runnable action) {
         state.actions().once(Timing.AFTER_OPEN, action);
@@ -305,7 +305,7 @@ public class TestPaymentGateway implements PaymentGateway {
     /**
      * 次の売上確定で、決済サービスが確定した後、応答を返す前に処理を行う。
      *
-     * @param action 行う処理（注文のキャンセルなど）
+     * @param action 行う処理（注文のキャンセルなど）。null は渡せない。解除はできず、reset で消える
      */
     public void duringNextCapture(Runnable action) {
         state.actions().once(Timing.AFTER_CAPTURE, action);
@@ -323,7 +323,7 @@ public class TestPaymentGateway implements PaymentGateway {
     /**
      * これからの返金と与信の取消で、呼ばれた時点に処理を行う（呼ばれた時点のトランザクションの有無の記録など）。
      *
-     * @param action 行う処理
+     * @param action 行う処理。null は渡せない。解除はできず、reset で消える
      */
     public void onRefundOrVoid(Runnable action) {
         state.actions().always(Timing.ON_REFUND_OR_VOID, action);
@@ -332,7 +332,7 @@ public class TestPaymentGateway implements PaymentGateway {
     /**
      * これからの与信の取得で、呼ばれた時点に処理を行う（呼ばれた時点のトランザクションの有無の記録など）。
      *
-     * @param action 行う処理
+     * @param action 行う処理。null は渡せない。解除はできず、reset で消える
      */
     public void onFetchAuthorization(Runnable action) {
         state.actions().always(Timing.ON_FETCH_AUTHORIZATION, action);

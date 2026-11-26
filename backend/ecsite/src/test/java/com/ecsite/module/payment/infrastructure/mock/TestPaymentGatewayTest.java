@@ -965,10 +965,8 @@ class TestPaymentGatewayTest {
             gateway.fetchCaptureState(REF_B);
             gateway.refund(new RefundRequest(orderId, REF_B, AMOUNT));
 
-            // 確認（前提）：全ての操作で、同じ注文の金額が記録されている
-            for (var operation : Operation.values()) {
-                assertThat(gateway.amountsOf(operation, orderId.value())).isNotEmpty();
-            }
+            // 確認（前提）：後で空を確認する全ての読み取りが、空でない
+            assertAllRecordsPresent(orderId, pageId);
 
             // 操作：初期化する
             gateway.reset();
@@ -990,6 +988,43 @@ class TestPaymentGatewayTest {
             assertThat(gateway.refundsOf(orderId.value())).isZero();
             for (var operation : Operation.values()) {
                 assertThat(gateway.amountsOf(operation, orderId.value())).isEmpty();
+            }
+        }
+
+        /**
+         * 全ての操作を 1 回ずつ呼んだ後に、初期化の後で空を確認する全ての読み取りが、空でないことを確認する。
+         *
+         * <p>確認する内容は次のとおり。
+         * <ul>
+         *   <li>支払画面の作成の回数と、作成した画面 ID の一覧</li>
+         *   <li>画面を閉じた回数、与信の取得の回数</li>
+         *   <li>与信の取消の一覧と、与信ごとの取消の回数</li>
+         *   <li>売上確定の回数、注文ごとの回数、確定した注文の一覧、注文ごとの与信の参照</li>
+         *   <li>売上確定の状態の取得の回数と、与信ごとの回数</li>
+         *   <li>返金した注文の一覧と、注文ごとの返金の回数</li>
+         *   <li>全ての操作の、同じ注文の金額</li>
+         * </ul>
+         *
+         * @param orderId 全ての操作で使った注文 ID
+         * @param pageId  閉じた画面の ID
+         */
+        private void assertAllRecordsPresent(OrderId orderId, String pageId) {
+            assertThat(gateway.openedPages()).isNotZero();
+            assertThat(gateway.openedPageIds()).isNotEmpty();
+            assertThat(gateway.closeCallsOf(pageId)).isNotZero();
+            assertThat(gateway.fetchAuthorizationCalls()).isNotZero();
+            assertThat(gateway.voided()).isNotEmpty();
+            assertThat(gateway.voidsOf(REF_A)).isNotZero();
+            assertThat(gateway.captureCalls()).isNotZero();
+            assertThat(gateway.captureCallsOf(orderId.value())).isNotZero();
+            assertThat(gateway.captured()).isNotEmpty();
+            assertThat(gateway.capturedAuthorizationRef(orderId.value())).isNotEmpty();
+            assertThat(gateway.fetchCaptureStateCalls()).isNotZero();
+            assertThat(gateway.fetchCaptureStateCallsOf(REF_B)).isNotZero();
+            assertThat(gateway.refunded()).isNotEmpty();
+            assertThat(gateway.refundsOf(orderId.value())).isNotZero();
+            for (var operation : Operation.values()) {
+                assertThat(gateway.amountsOf(operation, orderId.value())).isNotEmpty();
             }
         }
 

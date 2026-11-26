@@ -213,7 +213,7 @@
 - [ ] **T522-01-18** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`OrderStatusChangedEventTest`、`CheckoutCleanupJobTest`、`AdminOrderApiTest`。
   - 依存：T522-01-17
   - 範囲：上の 3 ファイル（`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/` の下）
-  - 確認方法：絞り込んだ統合テストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の HTTP の呼び出しが残らない。
+  - 確認方法：絞り込んだ統合テストが通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の HTTP の呼び出しが残らない。`CheckoutCleanupJobTest` は変えない。理由：そのテストは申請が今どおりできること自体が対象のため、申請の呼び出しを準備ではなく操作として残す。
 - [ ] **T522-01-19** 次の 3 ファイルの申請の手順を、`OrderTestData` の呼び出しに置き換える（DC-522-3）：`CapturedOrderCancellationRefundTest`、`MemberOrderApiTest`、`OrderPaymentApiTest`。
   - 依存：T522-01-18
   - 範囲：上の 3 ファイル（`module/order/presentation/` の下、`OrderPaymentApiTest` と `MemberOrderApiTest`）

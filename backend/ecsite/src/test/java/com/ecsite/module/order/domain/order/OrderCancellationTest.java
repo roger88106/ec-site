@@ -20,7 +20,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertSingleEventWithStatusChange;
-import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertStatusChangedEventOnly;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -323,44 +322,24 @@ class OrderCancellationTest {
         }
 
         @Test
-        @DisplayName("AC-103 「キャンセル申請中」の注文を運営者がキャンセルしたイベントは、前の状態がキャンセル申請中で、種類が運営者")
-        void registersOperatorEventFromRequested() {
+        @DisplayName("AC-103、運営者は「キャンセル申請中」の注文もキャンセルでき、申請は承認になり、キャンセルの記録を残し、前の状態がキャンセル申請中で種類が運営者、在庫に戻す注文キャンセルのイベントが全体で 1 件登録される")
+        void cancelsRequestedOrder() {
             // 準備：キャンセル申請中の注文
             var order = TestOrders.requested(ORDERED_AT);
 
             // 操作：理由を記録してキャンセルする
             order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
 
-            // 確認：イベントの前の状態・種類・在庫に戻すか
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
-                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
-        }
-
-        @Test
-        @DisplayName("AC-103 運営者は「キャンセル申請中」の注文もキャンセルできる")
-        void cancelsRequestedOrder() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：理由を記録してキャンセルする
-            order.cancelByOperator("お客様の申請による", true, false, OPERATOR, LATER);
-
             // 確認：運営者のキャンセル
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.cancellation().kind()).isEqualTo(CancellationKind.OPERATOR);
-        }
-
-        @Test
-        @DisplayName("AC-103 「キャンセル申請中」の注文を運営者がキャンセルすると、申請は承認されたものとする")
-        void approvesPendingRequest() {
-            // 準備：キャンセル申請中の注文
-            var order = TestOrders.requested(ORDERED_AT);
-
-            // 操作：理由を記録してキャンセルする
-            order.cancelByOperator("お客様の申請による", true, false, OPERATOR, LATER);
 
             // 確認：申請が承認
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
+
+            // 確認：登録されたイベントは全体で 1 件だけで、キャンセル申請中からキャンセルへの状態の変化。種類は運営者、在庫に戻す（イベントを見るので最後）
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.CANCELLATION_REQUESTED,
+                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
         }
 
         @ParameterizedTest(name = "「{0}」")

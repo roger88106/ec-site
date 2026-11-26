@@ -409,10 +409,7 @@ class AdminOrderApiTest {
             clock.setInstant(DEC_8_LATE);
             orderId = orders.placeOrder(variantId, 2);
             clock.setInstant(DEC_9);
-            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
-                            .contentType(MediaType.APPLICATION_JSON).content("""
-                                    {"reason": "%s"}""".formatted(REQUEST_REASON)))
-                    .andExpect(status().isNoContent());
+            orders.requestCancellation(orderId, REQUEST_REASON);
             cancel(orderId);
         }
 

@@ -96,7 +96,7 @@ class OrderPaymentTest {
         @DisplayName("BR-17 受付の注文が与信の成功を重ねて受けても、何も変わらない")
         void ignoresWhenAccepted() {
             // 準備：受付の注文
-            var order = acceptedOrder();
+            var order = TestOrders.accepted(ORDERED_AT, ORDERED_AT.plusSeconds(60));
 
             // 操作：与信の成功をもう一度受ける
             var changed = order.acceptPayment(LATER);
@@ -139,7 +139,7 @@ class OrderPaymentTest {
         @DisplayName("BR-17 キャンセル申請中の注文が与信の成功を受けても、状態とイベントを変えない")
         void ignoresWhenCancellationRequested() {
             // 準備：キャンセル申請中の注文
-            var order = requestedOrder();
+            var order = TestOrders.requested(ORDERED_AT, ORDERED_AT.plusSeconds(60), REQUEST_REASON, REQUESTED_AT);
 
             // 操作：与信の成功を受ける
             var changed = order.acceptPayment(LATER);
@@ -154,7 +154,7 @@ class OrderPaymentTest {
         @DisplayName("BR-17 出荷済みの注文が与信の成功を受けても、状態とイベントを変えない")
         void ignoresWhenShipped() {
             // 準備：出荷済みの注文
-            var order = shippedOrder();
+            var order = TestOrders.shipped(ORDERED_AT, ORDERED_AT.plusSeconds(60), "123456789012", ORDERED_AT.plusSeconds(120));
 
             // 操作：与信の成功を受ける
             var changed = order.acceptPayment(LATER);
@@ -215,7 +215,7 @@ class OrderPaymentTest {
         @DisplayName("受付の注文は、支払の期限切れを受けても状態とイベントを変えない")
         void ignoresWhenAccepted() {
             // 準備：受付の注文
-            var order = acceptedOrder();
+            var order = TestOrders.accepted(ORDERED_AT, ORDERED_AT.plusSeconds(60));
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
@@ -260,7 +260,7 @@ class OrderPaymentTest {
         @DisplayName("キャンセル申請中の注文は、支払の期限切れを受けても状態・申請・イベントを変えない")
         void ignoresWhenCancellationRequested() {
             // 準備：キャンセル申請中の注文
-            var order = requestedOrder();
+            var order = TestOrders.requested(ORDERED_AT, ORDERED_AT.plusSeconds(60), REQUEST_REASON, REQUESTED_AT);
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
@@ -274,7 +274,7 @@ class OrderPaymentTest {
         @DisplayName("出荷済みの注文は、支払の期限切れを受けてもキャンセルにならない")
         void ignoresWhenShipped() {
             // 準備：出荷済みの注文
-            var order = shippedOrder();
+            var order = TestOrders.shipped(ORDERED_AT, ORDERED_AT.plusSeconds(60), "123456789012", ORDERED_AT.plusSeconds(120));
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
@@ -378,7 +378,7 @@ class OrderPaymentTest {
     }
 
     /**
-     * 操作の後も、注文が {@link #requestedOrder} の申請中のままであることを確認する。
+     * 操作の後も、注文が {@link TestOrders#requested} の申請中のままであることを確認する。
      *
      * <p>確認すること：
      * <ul>
@@ -431,45 +431,4 @@ class OrderPaymentTest {
         return TestOrders.pending(ORDERED_AT);
     }
 
-    /**
-     * 「受付」の注文を作る。
-     *
-     * <p>与信の成功の後で、状態の変化のイベントは取り出してある。
-     *
-     * @return 受付の注文
-     */
-    private static Order acceptedOrder() {
-        var order = pendingOrder();
-        order.acceptPayment(ORDERED_AT.plusSeconds(60));
-        order.pullEvents();
-        return order;
-    }
-
-    /**
-     * 「キャンセル申請中」の注文を作る。
-     *
-     * <p>状態の変化のイベントは取り出してある。
-     *
-     * @return キャンセル申請中の注文
-     */
-    private static Order requestedOrder() {
-        var order = acceptedOrder();
-        order.requestCancellation(REQUEST_REASON, REQUESTED_AT);
-        order.pullEvents();
-        return order;
-    }
-
-    /**
-     * 「出荷済み」の注文を作る。
-     *
-     * <p>状態の変化と出荷のイベントは取り出してある。
-     *
-     * @return 出荷済みの注文
-     */
-    private static Order shippedOrder() {
-        var order = acceptedOrder();
-        order.ship(Carrier.YAMATO, "123456789012", ORDERED_AT.plusSeconds(120));
-        order.pullEvents();
-        return order;
-    }
 }

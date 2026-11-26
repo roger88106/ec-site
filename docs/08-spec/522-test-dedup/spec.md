@@ -43,7 +43,8 @@
 |----------|----------|
 | 単体テスト（注文の状態、イベントの確認） | `backend/ecsite/src/test/java/com/ecsite/module/order/domain/order/` の `TestOrders.java`、`OrderPaymentTest.java`、`OrderShipmentTest.java`、`OrderCancellationTest.java`、`OrderEventAssertions.java` |
 | 単体テスト（設定の範囲の検証） | `OrderPropertiesTest.java`（`module/order/application/`）、`PaymentPropertiesTest.java`（`module/payment/application/`）、`ImgproxyPropertiesTest.java`（`module/media/infrastructure/converter/`）、`ReportingPropertiesTest.java`（`module/reporting/application/`）、`TestSettings.java`（`support/`） |
-| 単体テスト（境界の値） | `ValidationErrorTranslatorTest.java`（`common/error/handler/`）と、候補の 11 クラス（一覧は tasks の T522-01-02。確定は同タスクの [調査] の結果） |
+| 単体テスト（境界の値） | `backend/ecsite/src/test/java/com/ecsite/` の下の 12 ファイル（確定。一覧は tasks の T522-01-02）。11 クラスに `CartTest.java`（`module/cart/domain/`、品目の数の上限と数量の上限の境界）を加えた |
+| 統合テスト（境界の値と拒否の名前） | `backend/ecsite/src/integrationTest/java/com/ecsite/` の下の 5 ファイル（確定）：`module/catalog/presentation/` の `ProductApiTest.java`・`ProductImageApiTest.java`・`ProductListApiTest.java`（品番と商品名の境界）・`ProductVariantApiTest.java`、`module/storefront/presentation/` の `StorefrontApiTest.java`。拒否の「リクエストの誤り」を「400」にそろえる |
 | 統合テストの補助 | `backend/ecsite/src/integrationTest/java/com/ecsite/support/data/OrderTestData.java` |
 | 統合テスト（キャンセル申請の準備） | `backend/ecsite/src/integrationTest/java/com/ecsite/` の 9 ファイル（一覧は tasks） |
 | 統合テスト（受付の注文の準備） | `CapturedOrderCancellationRefundTest`、`ReportFlowTest`（`module/reporting/presentation/`）、`ReturnedOrderRefundTest`、`CancellationAtomicityTest`、`CancellationApiTest`、`ReturnedOrderCancellationApiTest`（`module/order/presentation/` ほか） |
@@ -73,6 +74,7 @@
 | `FlywayConnectionConfigTest`（integrationTest） | 承認された範囲に入っていないため。 |
 | `JooqOrderRepositoryTest` と `MemberOrderApiTest` の `acceptedOrder`、`JooqReportOrderRepositoryTest` の `shippedOrder` | 別の意味の準備（戻り値の型、対象の集約が違う）のため。 |
 | `CancellationApiTest` の申請の確認 | 申請そのものを確認するテストのため（DC-522-3）。 |
+| 本番のコードの「リクエストの誤り」（`GlobalExceptionHandler`・`StripePaymentGateway`） | 名前をそろえる対象はテストだけのため。本番のコードは DN-522-1 で変えない。 |
 | 本番のコードの変更 | DN-522-1。 |
 
 ## Open questions
@@ -90,16 +92,38 @@
 - 完了条件：DC-522-1〜10 を満たし、`./gradlew check` が通る（タスク T522-01-25）。
 - 参照：[plan](plan.md)の「境界の値」「注文の状態ごとの作り方」「注文のイベントの確認」「キャンセル申請の準備」「受付の注文の準備」「設定の範囲の検証」「既存の確認の維持と検査」、[spec](spec.md)の DS-522-1。
 
-実装は汎用の `implementer` に 1 タスクずつ任せる。1 タスク 1 commit にする。統合テストは、変えたテストのクラスだけを絞り込んで実行する。`./gradlew check` は、T522-01-25 でだけ実行する。
+実装は汎用の `implementer` に 1 タスクずつ任せる。1 タスク 1 commit にする。変えたクラスの統合テストを絞って実行する。`./gradlew check` は段階の最後に 1 回（T522-01-25）。
 
 - [ ] **T522-01-01** [テスト] `ValidationErrorTranslatorTest` の長さの境界（175・182 行付近）を、下限と上限の別の `@Test` に分け、「ちょうど」の確認を追加する（DC-522-6）。
   - 依存：なし
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/common/error/handler/ValidationErrorTranslatorTest.java`
   - 確認方法：通る（本番は変えない）。上限の定数を 1 つずらすと失敗することを確認し、元に戻す（break-check）。
-- [ ] **T522-01-02** [調査] `repeat` を使う単体テストのうち境界に関わるクラスを特定し、クラスの一覧を、このファイルの T522-01-03 の範囲に書き追加する（文書の更新だけ）（DC-522-6）。
+- [ ] **T522-01-02** [調査] 境界の対象を確定する。対象は次の 13 ファイル（単体テスト 12、統合テスト 1）。一覧は下に書く（文書の更新だけ）（DC-522-6）。
   - 依存：T522-01-01
-  - 範囲：`backend/ecsite/src/test/java/` の `repeat` の使用箇所。候補は次の 11 クラス（件数 11。確定は本タスクで行う）：`ValidationErrorTranslatorTest`、`BoundedTextTest`、`CodePointSizeValidatorTest`、`CategoryTest`、`ProductTest`、`ProductVariantTest`、`StockAdjustmentTest`、`OrderCancellationTest`、`ShippingAddressTest`、`TrackingNumberTest`、`TaxCategoryTest`。`OrderTest` は文字列を作る補助で、境界の確認ではないため除く。統合テストは、spec の「変える範囲」が単体テストの境界に限るため除く。`docs/08-spec/522-test-dedup/spec.md` の「tasks」
-  - 確認方法：一覧の各クラスを、境界の確認かどうかを読んで判定した根拠を 1 行で書く。一覧を issue 担当のセッション（local_e0511222-eab3-4a97-809d-95211ab7382a）に送り、確認を受けてから次のタスク（境界の書き換え）を始める。
+  - 範囲：`backend/ecsite/src/test/java/` と `backend/ecsite/src/integrationTest/java/` の境界の確認。`OrderTest` は文字列を作る補助で、境界の確認ではないため除く。`docs/08-spec/522-test-dedup/spec.md` の「tasks」
+  - 確認方法：確定した一覧を、この節に書く（送り直さない。承認済み）。
+  - 対象の一覧（確定）。パスは `backend/ecsite/src/test/java/com/ecsite/`（単体）と `backend/ecsite/src/integrationTest/java/com/ecsite/`（統合）の下：
+
+    ```text
+    単体テスト
+    common/error/handler/ValidationErrorTranslatorTest.java
+    common/model/value/BoundedTextTest.java
+    common/validation/CodePointSizeValidatorTest.java
+    module/cart/domain/CartTest.java
+    module/catalog/domain/category/CategoryTest.java
+    module/catalog/domain/product/ProductTest.java
+    module/catalog/domain/product/ProductVariantTest.java
+    module/inventory/domain/stock/StockAdjustmentTest.java
+    module/order/domain/order/OrderCancellationTest.java
+    module/order/domain/order/ShippingAddressTest.java
+    module/shipping/domain/TrackingNumberTest.java
+    module/tax/domain/taxcategory/TaxCategoryTest.java
+
+    統合テスト
+    module/catalog/presentation/ProductListApiTest.java
+    ```
+
+  - 除外：`OrderTest`（文字列の補助で、境界の確認ではない）。
 - [ ] **T522-01-03** [テスト] T522-01-02 の一覧のテストを、「ちょうど」と「1 つ外」の別の `@Test` にする（DC-522-6）。
   - 依存：T522-01-02（一覧の確認を受けたもの）
   - 範囲：T522-01-02 の一覧のファイル
@@ -110,8 +134,8 @@
   - 確認方法：通る。`repeat` の数字のリテラルが境界の値に残らない。
 - [ ] **T522-01-05** 拒否のテストの名前を「400」にそろえ、ページの件数の呼び名を「1 ページの件数」にそろえる（DC-522-10）。
   - 依存：T522-01-04
-  - 範囲：名前が「リクエストの誤り」「1 ページの大きさ」のテスト（T522-01-02 の一覧のファイル）
-  - 確認方法：`DisplayName` の名前の grep で、「リクエストの誤り」の拒否と「1 ページの大きさ」が対象から消える。
+  - 範囲：名前が「リクエストの誤り」「1 ページの大きさ」のテスト（T522-01-02 の一覧のファイル）。統合テストは、「リクエストの誤り」を含む 5 ファイル（`module/catalog/presentation/` の `ProductApiTest.java`・`ProductImageApiTest.java`・`ProductListApiTest.java`・`ProductVariantApiTest.java`、`module/storefront/presentation/` の `StorefrontApiTest.java`）の `@DisplayName` とコメント。本番の `src/main` の同じ語は変えない（spec の Non-goals）
+  - 確認方法：`DisplayName` とコメントの grep で、「リクエストの誤り」の拒否と「1 ページの大きさ」が対象から消える。
 - [ ] **T522-01-06** `docs/05-開発規則/test-writing-backend.md` に、境界の形を 1 節で書く（DC-522-6）。
   - 依存：T522-01-05
   - 範囲：`docs/05-開発規則/test-writing-backend.md`

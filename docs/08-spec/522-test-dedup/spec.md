@@ -59,7 +59,7 @@
 - 受付の時刻：注文の日時から、`OrderPaymentTest.java` 443 行は +60 秒、`OrderShipmentTest.java` 495 行は +30 秒、`OrderCancellationTest.java` 671 行は +30 秒。
 - 受付のイベント：`OrderPaymentTest.java` 444 行、`OrderShipmentTest.java` 496 行、`OrderCancellationTest.java` 672 行で取り出す。
 - 申請の時刻と理由：`OrderPaymentTest.java` 457 行は +120 秒と `REQUEST_REASON`、`OrderShipmentTest.java` 507 行は 1 日後と理由なし、`OrderCancellationTest.java` 685 行は +60 秒と「理由」。
-- 申請のイベント：`OrderPaymentTest.java` 458 行、`OrderCancellationTest.java` 686 行で取り出す。`OrderShipmentTest.java` 505〜508 行は取り出さず、申請のイベントが残る。
+- 申請のイベント：置き換え前は、`OrderPaymentTest.java` 458 行と `OrderCancellationTest.java` 686 行が取り出し、`OrderShipmentTest.java` 505〜508 行は取り出さなかった。`TestOrders.requested` はいずれも取り出すので、置き換え後は 3 つとも取り出す。既存の確認は変わらなかった（T522-01-11〜13 で確認）。
 - 出荷の時刻と追跡番号：`OrderPaymentTest.java` 471 行は +120 秒と番号の直書き、`OrderShipmentTest.java` 520 行は +1 時間と `TRACKING_NUMBER`。
 - 出荷のイベント：`OrderPaymentTest.java` 472 行、`OrderShipmentTest.java` 521 行で取り出す。
 - `pendingOrder`：`OrderPaymentTest.java` 431 行・`OrderShipmentTest.java` 483 行は `TestOrders.pending` に委譲し、`OrderCancellationTest.java` 670 行は直接呼ぶ。
@@ -182,6 +182,22 @@
   - 依存：T522-01-13
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/module/order/domain/order/` の 3 ファイルと `OrderEventAssertions.java`、`docs/08-spec/522-test-dedup/spec.md` の「tasks」
   - 確認方法：組ごとに、同じ準備と同じ操作であることを、準備と操作の行を並べて確認する。
+    - 組の一覧（★は `assertStatusChangedEventOnly` の 9 件の呼び出し。番号は T522-01-16 で 1 組ずつ行う順。ファイルの順は、支払・出荷・キャンセル）：
+
+    | 組 | テスト（ファイル・メソッド） | 準備 | 操作 | 確認 | 統合か別々か（根拠） |
+    |----|------|------|------|------|------|
+    | 1 | `OrderPaymentTest.acceptsPendingOrder`、`OrderPaymentTest.registersAcceptedEvent`（★） | 支払待ちの注文（`pendingOrder`） | `acceptPayment(LATER)` | 受付になり、支払を待たない ／ 状態の変化のイベント 1 件（支払待ち → 受付、キャンセルの項目なし） | 統合。準備と操作が同じで、確認は状態とイベント。`registersAcceptedEvent` に状態の確認を入れ、`acceptsPendingOrder` を消す。 |
+    | 2 | `OrderPaymentTest.cancelsPendingOrder`、`OrderPaymentTest.recordsPaymentExpired`、`OrderPaymentTest.registersCancelledEvent`、`OrderPaymentTest.registersPaymentExpiredEvent`（★） | 支払待ちの注文 | `expirePayment(LATER)` | キャンセル、戻り値 true ／ キャンセルの記録（支払期限切れ、理由と運営者なし） ／ イベント 1 件（支払待ち → キャンセル、支払期限切れ、在庫に戻す）と、イベント全体が 1 件 | 統合。準備と操作が同じで、確認は状態・記録・イベント。`registersPaymentExpiredEvent` に入れ、残り 3 件を消す。`assertStatusChangedEventOnly` は種類で絞るため、`registersCancelledEvent` の「イベント全体が 1 件」は統合後も残す。 |
+    | 3 | `OrderShipmentTest.becomesShipped`、`OrderShipmentTest.registersShippedEvent`、`OrderShipmentTest.registersStatusChangedEvent`（★） | 受付の注文 | `ship(YAMATO, 送り状番号, LATER)` | 出荷済み ／ 出荷通知のイベント 1 件（注文 ID、日時、注文番号、配送業者、送り状番号） ／ 状態の変化のイベント 1 件（受付 → 出荷済み） | 一部統合。`becomesShipped` は `registersStatusChangedEvent` に状態の確認を入れて消す（同じ準備・操作で、確認が状態とイベント）。`registersShippedEvent` は別々に残す（確認する種類が出荷通知で、状態の変化のイベントと違うため）。 |
+    | 4 | `OrderShipmentTest.recordsNotRestocked`、`OrderShipmentTest.registersNotRestockedEvent`（★） | 出荷済みの注文 | `cancelByOperator(返送の理由, 在庫に戻さない, 返送, 運営者, LATER)` | 戻り値 true、キャンセルの記録は在庫に戻さない ／ 状態の変化のイベント 1 件（出荷済み → キャンセル、運営者、在庫に戻さない） | 統合。準備と操作が同じで、確認は記録とイベント。`registersNotRestockedEvent` に記録の確認を入れ、`recordsNotRestocked` を消す。 |
+    | 5 | `OrderCancellationTest.becomesRequested`、`OrderCancellationTest.recordsRequest`、`OrderCancellationTest.registersRequestedEvent`（★） | 受付の注文 | `requestCancellation(申請の理由, LATER)` | 戻り値 true、キャンセル申請中 ／ 申請の記録（日時、理由、判断を待つ） ／ 状態の変化のイベント 1 件（受付 → キャンセル申請中） | 統合。準備と操作が同じで、確認は状態・記録・イベント。`registersRequestedEvent` に入れ、2 件を消す。 |
+    | 6 | `OrderCancellationTest.becomesCancelled`、`OrderCancellationTest.recordsApproval`、`OrderCancellationTest.recordsApprovedCancellation`、`OrderCancellationTest.registersCancelledEvent`、`OrderCancellationTest.registersApprovedEvent`（★） | キャンセル申請中の注文 | `approveCancellation(運営者, LATER)` | 戻り値 true、キャンセル ／ 申請の結果が承認、判断の日時 ／ キャンセルの記録（申請の承認、運営者） ／ 状態の変化のイベント 1 件（キャンセル申請中 → キャンセル、申請の承認、在庫に戻す）と、イベント全体が 1 件 | 統合。準備と操作が同じで、確認は状態・申請・記録・イベント。`registersApprovedEvent` に入れ、残り 4 件を消す。`registersCancelledEvent` の「イベント全体が 1 件」は統合後も残す。 |
+    | 7 | `OrderCancellationTest.returnsToAccepted`、`OrderCancellationTest.recordsRejection`、`OrderCancellationTest.registersRejectedEvent`（★） | キャンセル申請中の注文 | `rejectCancellation(運営者, LATER)` | 受付、キャンセルの記録なし ／ 申請の結果が却下、判断の日時と運営者 ／ 状態の変化のイベント 1 件（キャンセル申請中 → 受付） | 統合。準備と操作が同じで、確認は状態・申請・イベント。`registersRejectedEvent` に入れ、2 件を消す。 |
+    | 8 | `OrderCancellationTest.cancelsAcceptedOrder`、`OrderCancellationTest.recordsOperatorCancellation`、`OrderCancellationTest.registersCancelledEvent`、`OrderCancellationTest.registersOperatorEvent`（★） | 受付の注文 | `cancelByOperator(在庫の不備, 在庫に戻す指定, 返送でない, 運営者, LATER)`。在庫に戻す指定の値は、受付では結果が変わらない（`alwaysRestocksNotShipped`）ので、組の中で違ってよい | 戻り値 true、キャンセル ／ キャンセルの記録（運営者、理由、運営者） ／ 状態の変化のイベント 1 件（受付 → キャンセル、運営者、在庫に戻す）と、イベント全体が 1 件 | 統合。準備と操作の種類が同じで、確認は状態・記録・イベント。`registersOperatorEvent` に入れ、残り 3 件を消す。`registersCancelledEvent` の「イベント全体が 1 件」は統合後も残す。 |
+    | 9 | `OrderCancellationTest.cancelsRequestedOrder`、`OrderCancellationTest.approvesPendingRequest`、`OrderCancellationTest.registersOperatorEventFromRequested`（★） | キャンセル申請中の注文 | `cancelByOperator(理由, 在庫に戻す, 返送でない, 運営者, LATER)`。3 件の理由の文は違うが、どれも確認しない値なので、統合後は 1 つにそろえる | キャンセル、キャンセルの種類が運営者 ／ 申請の結果が承認 ／ 状態の変化のイベント 1 件（キャンセル申請中 → キャンセル、運営者、在庫に戻す） | 統合。準備と操作が同じで、確認は状態・申請・イベント。`registersOperatorEventFromRequested` に入れ、2 件を消す。 |
+
+    - 9 件の呼び出しは、組 1〜9 のそれぞれに 1 件ずつ入る（★）。
+    - 表に入れない参考（9 件を含まない同じ準備・操作の組）：`OrderShipmentTest` の `cancelsReturnedOrder`・`recordsRestocked`・`registersCancelledEvent`（出荷済みの注文、返送、在庫に戻す指定の運営者のキャンセル）。統合するかは、T522-01-16 の前に決める。
 - [ ] **T522-01-15** `OrderCancellationTest` の private の `assertCancelledEventOnly` を、`OrderEventAssertions` に移す（DC-522-2）。
   - 依存：T522-01-14
   - 範囲：`OrderCancellationTest.java`、`OrderEventAssertions.java`

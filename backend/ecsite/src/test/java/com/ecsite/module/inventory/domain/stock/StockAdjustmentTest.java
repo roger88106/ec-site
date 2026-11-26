@@ -112,21 +112,39 @@ class StockAdjustmentTest {
                     InventoryErrorCode.INVALID_STOCK_DELTA);
         }
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {1_000_000, -1_000_000})
-        @DisplayName("AC-42 運営者の 1 回の増減量は、上限の ±1,000,000 ちょうどまで作れる")
-        void acceptsDeltaUpToOneMillion(int delta) {
+        @Test
+        @DisplayName("AC-42 運営者の 1 回の増やす量は、上限ちょうどの 1,000,000 まで作れる")
+        void acceptsDeltaAtMax() {
             // 操作：上限ちょうどの調整を作る
-            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), delta, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW);
+            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), 1_000_000, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW);
 
             // 確認：増減量がそのまま
-            assertThat(adjustment.delta()).isEqualTo(delta);
+            assertThat(adjustment.delta()).isEqualTo(1_000_000);
+        }
+
+        @Test
+        @DisplayName("AC-42 運営者の 1 回の減らす量は、下限ちょうどの -1,000,000 まで作れる")
+        void acceptsDeltaAtMin() {
+            // 操作：下限ちょうどの調整を作る
+            var adjustment = StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), -1_000_000, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW);
+
+            // 確認：増減量がそのまま
+            assertThat(adjustment.delta()).isEqualTo(-1_000_000);
         }
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {1_000_001, -1_000_001, Integer.MAX_VALUE, Integer.MIN_VALUE})
-        @DisplayName("AC-42 運営者の 1 回の増減量が ±1,000,000 を超えれば拒否される")
-        void rejectsDeltaOverOneMillion(int delta) {
+        @ValueSource(ints = {1_000_001, Integer.MAX_VALUE})
+        @DisplayName("AC-42 運営者の 1 回の増やす量が上限の 1,000,000 を超えれば拒否される")
+        void rejectsDeltaOverMax(int delta) {
+            // 操作と確認：業務のエラー INVALID_STOCK_DELTA で拒否される
+            assertBusinessError(() -> StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), delta, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW),
+                    InventoryErrorCode.INVALID_STOCK_DELTA);
+        }
+
+        @ParameterizedTest(name = "「{0}」")
+        @ValueSource(ints = {-1_000_001, Integer.MIN_VALUE})
+        @DisplayName("AC-42 運営者の 1 回の減らす量が下限の -1,000,000 を超えれば拒否される")
+        void rejectsDeltaUnderMin(int delta) {
             // 操作と確認：業務のエラー INVALID_STOCK_DELTA で拒否される
             assertBusinessError(() -> StockAdjustment.create(new StockAdjustmentId(UUID.randomUUID()), delta, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW),
                     InventoryErrorCode.INVALID_STOCK_DELTA);

@@ -110,7 +110,7 @@ class ShippingAddressTest {
     class NumberValidation {
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(strings = {"100000", "10000011", "100-00a1", "1000-001", ""})
+        @ValueSource(strings = {"100-00a1", "1000-001", ""})
         @DisplayName("AC-86 数字 7 桁（ハイフンは 3 桁目の後だけ）でない郵便番号は拒否される")
         void rejectsInvalidPostalCode(String postalCode) {
             // 操作と確認：業務のエラー INVALID_POSTAL_CODE で拒否される
@@ -118,9 +118,51 @@ class ShippingAddressTest {
                     OrderErrorCode.INVALID_POSTAL_CODE);
         }
 
+        @Test
+        @DisplayName("AC-86 数字 7 桁より 1 桁少ない 6 桁の郵便番号は拒否される")
+        void rejectsPostalCodeOneUnderLength() {
+            // 操作と確認：業務のエラー INVALID_POSTAL_CODE で拒否される
+            assertBusinessError(() -> ShippingAddress.of(NAME, "100000", CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
+                    OrderErrorCode.INVALID_POSTAL_CODE);
+        }
+
+        @Test
+        @DisplayName("AC-86 数字 7 桁より 1 桁多い 8 桁の郵便番号は拒否される")
+        void rejectsPostalCodeOneOverLength() {
+            // 操作と確認：業務のエラー INVALID_POSTAL_CODE で拒否される
+            assertBusinessError(() -> ShippingAddress.of(NAME, "10000011", CHIYODA, ADDRESS_LINE, PHONE_DIGITS),
+                    OrderErrorCode.INVALID_POSTAL_CODE);
+        }
+
+        @Test
+        @DisplayName("AC-86 数字 10 桁の電話番号は、下限ちょうどとして受け付ける")
+        void acceptsTenDigitPhoneAtMin() {
+            // 操作：数字 10 桁の電話番号でお届け先を作る
+            var address = ShippingAddress.of(NAME, POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, PHONE_DIGITS);
+
+            // 確認：入力のまま
+            assertThat(address.phone()).isEqualTo(PHONE_DIGITS);
+        }
+
+        @Test
+        @DisplayName("AC-86 数字 9 桁の電話番号は、下限を 1 桁下回るので拒否される")
+        void rejectsPhoneOneUnderMin() {
+            // 操作と確認：業務のエラー INVALID_PHONE_NUMBER で拒否される
+            assertBusinessError(() -> ShippingAddress.of(NAME, POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, "031234567"),
+                    OrderErrorCode.INVALID_PHONE_NUMBER);
+        }
+
+        @Test
+        @DisplayName("AC-86 数字 12 桁の電話番号は、上限を 1 桁超えるので拒否される")
+        void rejectsPhoneOneOverMax() {
+            // 操作と確認：業務のエラー INVALID_PHONE_NUMBER で拒否される
+            assertBusinessError(() -> ShippingAddress.of(NAME, POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, "031234567890"),
+                    OrderErrorCode.INVALID_PHONE_NUMBER);
+        }
+
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(strings = {"031234567", "031234567890", "03-1234-567a", "+81312345678", ""})
-        @DisplayName("AC-86 数字 10〜11 桁（ハイフンは任意）でない電話番号は拒否される")
+        @ValueSource(strings = {"03-1234-567a", "+81312345678", ""})
+        @DisplayName("AC-86 数字でない文字を含む、または空の電話番号は拒否される")
         void rejectsInvalidPhone(String phone) {
             // 操作と確認：業務のエラー INVALID_PHONE_NUMBER で拒否される
             assertBusinessError(() -> ShippingAddress.of(NAME, POSTAL_CODE_DIGITS, CHIYODA, ADDRESS_LINE, phone),

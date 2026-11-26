@@ -6,12 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.BindException;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
-import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 import java.util.Map;
@@ -35,23 +30,11 @@ class OrderPropertiesTest {
     private static final String PREFIX = "ecsite.order";
 
     /**
-     * 起動に必要な、送料の税区分の設定
-     */
-    private static final String TAX_CATEGORY_ID = "ecsite.order.shipping-tax-category-id=00000000-0000-0000-0000-000000000001";
-
-    /**
      * 既定の値を読む設定ファイルの profile
      *
      * <p>{@code application.yml} だけでは、必須の送料の税区分がなく検証に失敗するので、それを書く profile を重ねる。
      */
     private static final String SETTINGS_PROFILE = "local";
-
-    /**
-     * 検証つきで注文の設定を読み込む、Spring のコンテキストの起動
-     */
-    private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
-            .withUserConfiguration(Enabled.class);
 
     // ============================== テスト ==============================
 
@@ -85,25 +68,24 @@ class OrderPropertiesTest {
     class Validation {
 
         @Test
-        @DisplayName("NFR-411-2 支払待ちの注文の上限が 1 未満なら、起動に失敗する")
+        @DisplayName("NFR-411-2 支払待ちの注文の上限が 1 未満なら、値の検証で拒否され、pendingOrderLimit が知らされる")
         void rejectsLimitBelowOne() {
-            // 操作：上限を 0 件にして起動する
-            runner.withPropertyValues(TAX_CATEGORY_ID, "ecsite.order.pending-order-limit=0").run(context -> {
-                // 確認：上限の項目の検証で失敗する
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("pendingOrderLimit");
-            });
+            // 操作と確認：上限が 0 件は、値の検証で拒否され、原因に設定の名前がある
+            assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, OrderProperties.class,
+                    Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "pending-order-limit", "0")))
+                    .isInstanceOf(BindException.class)
+                    .rootCause().hasMessageContaining("pendingOrderLimit");
         }
 
         @Test
-        @DisplayName("NFR-411-2 支払待ちの注文の上限が 1 なら、起動できる")
-        void startsWithLimitOfOne() {
-            // 操作：上限を 1 件にして起動する
-            runner.withPropertyValues(TAX_CATEGORY_ID, "ecsite.order.pending-order-limit=1").run(context -> {
-                // 確認：起動し、上限が 1 件
-                assertThat(context).hasNotFailed();
-                assertThat(context.getBean(OrderProperties.class).pendingOrderLimit()).isEqualTo(1);
-            });
+        @DisplayName("NFR-411-2 支払待ちの注文の上限が下限の 1 なら、値の検証を通り、1 件になる")
+        void acceptsLimitOfOne() {
+            // 操作：上限を 1 件に、検証付きで当てはめる
+            var properties = TestSettings.bindValidated(PREFIX, OrderProperties.class,
+                    Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "pending-order-limit", "1"));
+
+            // 確認：1 件
+            assertThat(properties.pendingOrderLimit()).isEqualTo(1);
         }
     }
 
@@ -126,15 +108,5 @@ class OrderPropertiesTest {
 
         // 確認：1ms になる
         assertThat(properties.reservationTtl()).isEqualTo(Duration.ofMillis(1));
-    }
-
-    // ============================== 準備の補助 ==============================
-
-    /**
-     * 注文の設定を有効にする設定
-     */
-    @Configuration(proxyBeanMethods = false)
-    @EnableConfigurationProperties(OrderProperties.class)
-    static class Enabled {
     }
 }

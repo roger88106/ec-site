@@ -103,7 +103,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 - 決まった時間だけ見て「起きないこと」を確認しない（Awaitility の `during`）。バックエンドでは、`AsyncEvents` でイベントのリスナーが終わる（または失敗する）のを待ってから、起きた数を確認する。
 - E2E で 1 回だけ読む確認（`page.evaluate`、`boundingBox()`、`textContent()`）は、`expect.poll` か web-first の `expect`（`toBeVisible` など）で、条件を満たすまで待ってから確認する。
 - E2E は、通信がなくなるまで待つ `networkidle` で待たない。画面の状態（要素が見えるなど）を条件にして待つ。
-- タイムアウトは、バックエンドは `AsyncEvents.TIMEOUT`、E2E は `e2e/src/waits.ts` の定数を使う。E2E は、定数を定義する `waits.ts` の外で、`timeout` などのタイムアウトを数字のリテラル（`10_000`、`5 * 1000` など）で書かない。長く待つ必要がある場合は、`waits.ts` に理由を書いた定数を加えて使う。
+- タイムアウトは、バックエンドは `AsyncEvents.TIMEOUT`（単体テストの同時実行で使う `Concurrently` は、`AsyncEvents` を参照できないので、同じ値の `Concurrently.TIMEOUT` で待つ）、E2E は `e2e/src/waits.ts` の定数を使う。E2E は、定数を定義する `waits.ts` の外で、`timeout` などのタイムアウトを数字のリテラル（`10_000`、`5 * 1000` など）で書かない。長く待つ必要がある場合は、`waits.ts` に理由を書いた定数を加えて使う。
 - E2E で裏の処理の結果を画面を再度開きながら待つときは、`e2e/src/waits.ts` の `reopenUntil` を使う。
 - 同じイベントを連続して発行するテストは、前の発行の処理が終わるのを待ってから次を発行する。Spring Modulith は処理中の発行を（イベント、リスナー）の組で持つので、同じイベントの処理が重なると発行の記録が完了にならないことがある。
 

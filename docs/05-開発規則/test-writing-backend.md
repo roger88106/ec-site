@@ -25,7 +25,7 @@
 
 複数のテストで使うデータは、統合テストの補助（次の表）で作る。テストのクラスで同じ手順を再定義しない。補助の置き場所は次のとおり。`com.ecsite` の直下には、テストだけを置く。
 
-- 複数のモジュールのテストで使う補助：`src/integrationTest` の `com.ecsite.support` の下の、用途のパッケージ（`data`：テストデータ、`config`：コンテキストの設定、`security`：token と署名の鍵、`async`：非同期と並行の待ち、`http`：応答の確認と JSON、Mailpit）
+- 複数のモジュールのテストで使う補助：`src/integrationTest` の `com.ecsite.support` の下の、用途のパッケージ（`data`：テストデータ、`config`：コンテキストの設定、`security`：token と署名の鍵、`async`：非同期と並行の待ち、`http`：応答の確認と JSON、Mailpit）。ただし、`async` の `Concurrently` は、単体テストからも使うので、`src/test` の同じパッケージに置く
 - 1 つのモジュールの複数のパッケージのテストで使う補助：そのモジュールの `support`（例：`module.reporting.support`）
 - 1 つのパッケージのテストだけが使う補助：そのパッケージ
 
@@ -50,7 +50,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 - 作成の応答の ID（UUID）は、`TestJson.createdId` で読む。
 - `CatalogTestData` を入れる変数の名前は `catalog` にする。
 - 結果の一覧を作る繰り返しは `IntStream…toList()`、副作用の繰り返しは for 文で書く。
-- 同時実行は `Concurrently` で行い、待つ時間に上限（`AsyncEvents.TIMEOUT`）を付ける。
+- 全てのスレッドを同時に始めるテストは `Concurrently` を使って書く。行ロックでスレッドを待たせて処理の順を決めるテストは、Executor を直接使い、結果を `AsyncEvents.TIMEOUT` で待つ。タイムアウトの規則は[テストの書き方](test-writing.md)の「待ち方」。
 
 次の 3 つは手順に含めず、テストが直接書いてよい。
 

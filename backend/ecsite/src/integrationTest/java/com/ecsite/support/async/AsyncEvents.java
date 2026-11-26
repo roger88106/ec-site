@@ -34,8 +34,10 @@ public class AsyncEvents {
      * 非同期の処理を待つ時間の上限
      *
      * <p>長く待つ必要があるテストだけ、理由を書いて別の値を使う。
+     *
+     * <p>値は {@link Concurrently#TIMEOUT} と同じにする。単体テストから使う {@code Concurrently} は、{@code AsyncEvents} を参照できないため。
      */
-    public static final Duration TIMEOUT = Duration.ofSeconds(10);
+    public static final Duration TIMEOUT = Concurrently.TIMEOUT;
 
     /**
      * 再発行のジョブが対象にする、発行からの時間

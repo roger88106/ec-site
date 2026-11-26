@@ -1,5 +1,6 @@
 package com.ecsite.support.async;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -13,9 +14,16 @@ import java.util.concurrent.TimeoutException;
  *
  * <p>同じ処理を複数のスレッドで同時に始め、全ての結果を待つ。
  *
- * <p>待つ時間の上限は {@link AsyncEvents#TIMEOUT}。デッドロックなどで終わらないときは、テストを失敗させて止める。
+ * <p>待つ時間の上限は {@link #TIMEOUT}。デッドロックなどで終わらないときは、テストを失敗させて止める。
  */
 public final class Concurrently {
+
+    /**
+     * 待つ時間の上限
+     *
+     * <p>{@code com.ecsite.support.async.AsyncEvents#TIMEOUT} は、この値を使う。
+     */
+    public static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private Concurrently() {
     }
@@ -61,13 +69,13 @@ public final class Concurrently {
                     return task.call(index);
                 }));
             }
-            if (!ready.await(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
+            if (!ready.await(TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
                 throw new TimeoutException("スレッドの準備が上限の時間までに終わらない");
             }
             start.countDown();
             var results = new ArrayList<T>();
             for (var future : futures) {
-                results.add(future.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+                results.add(future.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
             }
             return results;
         } finally {

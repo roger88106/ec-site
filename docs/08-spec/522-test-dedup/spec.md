@@ -177,7 +177,7 @@
 - [ ] **T522-01-13** `OrderCancellationTest` の private の `acceptedOrder`・`requestedOrder` を、`TestOrders` の呼び出しに置き換える（DC-522-1）。
   - 依存：T522-01-12
   - 範囲：`OrderCancellationTest.java`
-  - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`private static Order` の定義が残らない。
+  - 確認方法：通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`private static Order` の定義が残らない。break-check は、申請の遷移を省くと 19 件が失敗することで確認した。申請の理由の文字列は、このクラスのどのテストも確認していない（記録に残す）。
 - [ ] **T522-01-14** [調査] `assertStatusChangedEventOnly` の 9 件の呼び出しと、`OrderEventAssertions` の使う側（3 ファイル）を基に、重なる既存テストの組（ファイルとメソッド名）を特定する。組の一覧を、このファイルの T522-01-16 の範囲に書き追加する（文書の更新だけ）（DC-522-2）。
   - 依存：T522-01-13
   - 範囲：`backend/ecsite/src/test/java/com/ecsite/module/order/domain/order/` の 3 ファイルと `OrderEventAssertions.java`、`docs/08-spec/522-test-dedup/spec.md` の「tasks」

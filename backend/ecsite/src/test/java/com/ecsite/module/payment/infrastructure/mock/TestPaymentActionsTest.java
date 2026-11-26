@@ -1,15 +1,13 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentActions.Timing;
+import com.ecsite.support.async.Concurrently;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,6 +75,22 @@ class TestPaymentActionsTest {
         // 操作と確認：設定せずに呼んでも、例外にならず何も動かない
         runTimes(timing, 2);
         assertThat(count).hasValue(0);
+    }
+
+    @ParameterizedTest(name = "「{0}」")
+    @EnumSource(Timing.class)
+    @DisplayName("同じ時点に両方の処理を設定すると、次の 1 回だけの処理、呼ばれるたびの処理の順に動く")
+    void onceRunsBeforeAlways(Timing timing) {
+        // 準備：同じ時点に、動いた順を残す 2 つの処理を設定する
+        List<String> order = new ArrayList<>();
+        actions.once(timing, () -> order.add("once"));
+        actions.always(timing, () -> order.add("always"));
+
+        // 操作と確認：最初の呼び出しは once、always の順に動き、2 回目は always だけが動く
+        actions.run(timing);
+        assertThat(order).containsExactly("once", "always");
+        actions.run(timing);
+        assertThat(order).containsExactly("once", "always", "always");
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -233,35 +247,9 @@ class TestPaymentActionsTest {
      * @throws Exception スレッドの処理が失敗したとき
      */
     private void runConcurrently(Timing timing, int timesPerThread) throws Exception {
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(THREADS);
-        try {
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            for (var i = 0; i < THREADS; i++) {
-                futures.add(CompletableFuture.runAsync(() -> {
-                    awaitQuietly(start);
-                    runTimes(timing, timesPerThread);
-                }, executor));
-            }
-            start.countDown();
-            for (var future : futures) {
-                future.get();
-            }
-        } finally {
-            executor.shutdownNow();
-        }
-    }
-
-    /**
-     * 合図を待つ。割り込まれたら、割り込みの状態を戻して戻る。
-     *
-     * @param latch 合図
-     */
-    private static void awaitQuietly(CountDownLatch latch) {
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        Concurrently.run(THREADS, thread -> {
+            runTimes(timing, timesPerThread);
+            return null;
+        });
     }
 }

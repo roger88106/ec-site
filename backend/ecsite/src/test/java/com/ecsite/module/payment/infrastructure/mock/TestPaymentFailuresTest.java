@@ -1,17 +1,19 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentFailures.Kind;
+import com.ecsite.support.async.Concurrently;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
+import java.util.OptionalInt;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,28 +54,22 @@ class TestPaymentFailuresTest {
     }
 
     @ParameterizedTest(name = "「{0}」")
-    @EnumSource(Kind.class)
-    @DisplayName("回数を指定しないと、失敗しない")
-    void doesNotFailWhenNotSpecified(Kind kind) {
-        // 操作：指定せずに確認する
-        var results = consumeTimes(kind, 2);
+    @MethodSource("timesThatDoNotFail")
+    @DisplayName("回数を指定しない、0 回、負の回数のいずれでも、失敗しない")
+    void doesNotFailWhenTimesIsNotPositive(String description, OptionalInt times) {
+        // 準備：全ての種類に、回数を指定する（指定しない場合は何もしない）
+        for (var kind : Kind.values()) {
+            times.ifPresent(value -> failures.failNext(kind, value));
+        }
+
+        // 操作：全ての種類を確認する
+        var results = new ArrayList<Boolean>();
+        for (var kind : Kind.values()) {
+            results.addAll(consumeTimes(kind, 2));
+        }
 
         // 確認：失敗しない
-        assertThat(results).containsExactly(false, false);
-    }
-
-    @ParameterizedTest(name = "「{0}」")
-    @EnumSource(Kind.class)
-    @DisplayName("0 回を指定すると、失敗しない")
-    void doesNotFailWhenZero(Kind kind) {
-        // 準備：0 回を指定する
-        failures.failNext(kind, 0);
-
-        // 操作：確認する
-        var results = consumeTimes(kind, 2);
-
-        // 確認：失敗しない
-        assertThat(results).containsExactly(false, false);
+        assertThat(results).containsOnly(false);
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -88,20 +84,6 @@ class TestPaymentFailuresTest {
 
         // 確認：最初だけ失敗する
         assertThat(results).containsExactly(true, false);
-    }
-
-    @ParameterizedTest(name = "「{0}」")
-    @EnumSource(Kind.class)
-    @DisplayName("負の回数を指定すると、失敗しない")
-    void doesNotFailWhenNegative(Kind kind) {
-        // 準備：負の回数を指定する
-        failures.failNext(kind, -1);
-
-        // 操作：確認する
-        var results = consumeTimes(kind, 2);
-
-        // 確認：失敗しない
-        assertThat(results).containsExactly(false, false);
     }
 
     @ParameterizedTest(name = "「{0}」")
@@ -211,32 +193,28 @@ class TestPaymentFailuresTest {
         // 準備：全てのスレッドが確認する合計より少ない回数を指定する
         var times = 50;
         failures.failNext(Kind.CAPTURE_CONNECTION, times);
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(THREADS);
-        try {
-            List<CompletableFuture<Long>> futures = new ArrayList<>();
-            for (var i = 0; i < THREADS; i++) {
-                futures.add(CompletableFuture.supplyAsync(() -> {
-                    awaitQuietly(start);
-                    return consumeTimes(Kind.CAPTURE_CONNECTION, 20).stream().filter(Boolean::booleanValue).count();
-                }, executor));
-            }
 
-            // 操作：全てのスレッドを同時に始めて、終わりを待つ
-            start.countDown();
-            var failedCount = 0L;
-            for (var future : futures) {
-                failedCount += future.get();
-            }
+        // 操作：全てのスレッドを同時に始めて、終わりを待つ
+        var failedCounts = Concurrently.run(THREADS, thread ->
+                consumeTimes(Kind.CAPTURE_CONNECTION, 20).stream().filter(Boolean::booleanValue).count());
 
-            // 確認：失敗した数が指定した回数とちょうど同じ
-            assertThat(failedCount).isEqualTo(times);
-        } finally {
-            executor.shutdownNow();
-        }
+        // 確認：失敗した数が指定した回数とちょうど同じ
+        assertThat(failedCounts.stream().mapToLong(Long::longValue).sum()).isEqualTo(times);
     }
 
     // ============================== 確認の補助 ==============================
+
+    /**
+     * 失敗しない回数の指定
+     *
+     * @return 名前と、指定する回数（指定しないときは空）
+     */
+    private static Stream<Arguments> timesThatDoNotFail() {
+        return Stream.of(
+                Arguments.of("指定しない", OptionalInt.empty()),
+                Arguments.of("0 回", OptionalInt.of(0)),
+                Arguments.of("負の回数", OptionalInt.of(-1)));
+    }
 
     /**
      * 指定した回数だけ続けて確認し、結果を順に返す。
@@ -251,18 +229,5 @@ class TestPaymentFailuresTest {
             results.add(failures.consume(kind));
         }
         return results;
-    }
-
-    /**
-     * 合図を待つ。割り込まれたら、割り込みの状態を戻して戻る。
-     *
-     * @param latch 合図
-     */
-    private static void awaitQuietly(CountDownLatch latch) {
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 }

@@ -2,15 +2,11 @@ package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway.Operation;
+import com.ecsite.support.async.Concurrently;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.function.IntConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -287,38 +283,12 @@ class TestPaymentCallsTest {
      * @throws Exception 記録の処理が失敗したとき
      */
     private static void runConcurrently(IntConsumer record) throws Exception {
-        var start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(THREADS);
-        try {
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            for (var thread = 0; thread < THREADS; thread++) {
-                var offset = thread * RECORDS_PER_THREAD;
-                futures.add(CompletableFuture.runAsync(() -> {
-                    awaitQuietly(start);
-                    for (var i = 0; i < RECORDS_PER_THREAD; i++) {
-                        record.accept(offset + i);
-                    }
-                }, executor));
+        Concurrently.run(THREADS, thread -> {
+            var offset = thread * RECORDS_PER_THREAD;
+            for (var i = 0; i < RECORDS_PER_THREAD; i++) {
+                record.accept(offset + i);
             }
-            start.countDown();
-            for (var future : futures) {
-                future.get();
-            }
-        } finally {
-            executor.shutdownNow();
-        }
-    }
-
-    /**
-     * 合図を待つ。割り込まれたら、割り込みの状態を戻して戻る。
-     *
-     * @param latch 合図
-     */
-    private static void awaitQuietly(CountDownLatch latch) {
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+            return null;
+        });
     }
 }

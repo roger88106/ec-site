@@ -51,6 +51,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
  * テスト用の決済サービス（{@link TestPaymentGateway}）の振る舞いの検証
  *
  * <p>公開の操作だけで確認する。包んだ mock に届いたかは、mock の読み取りの操作と Mockito の spy で確認する。
+ * 例外として、reset の節で、状態の項目の構成だけはリフレクションで確認する。
  */
 @DisplayName("テスト用の決済サービス")
 class TestPaymentGatewayTest {
@@ -281,6 +282,35 @@ class TestPaymentGatewayTest {
         }
 
         @Test
+        @DisplayName("呼ばれた時点の処理が動くときには、呼ばれた回数がすでに記録されている")
+        void recordsCallBeforeRunningAction() {
+            // 準備：処理の中で、呼ばれた回数を読む
+            var pageId = paidPage();
+            var seen = new ArrayList<Integer>();
+            gateway.onFetchAuthorization(() -> seen.add(gateway.fetchAuthorizationCalls()));
+
+            // 操作：呼ぶ
+            gateway.fetchAuthorization(pageId);
+
+            // 確認：処理が動いたとき、回数は 1 だった
+            assertThat(seen).containsExactly(1);
+        }
+
+        @Test
+        @DisplayName("失敗を指定すると、包んだ mock には届かない")
+        void failureDoesNotReachMock() {
+            // 準備：支払の済んだ画面と、1 回の失敗
+            var pageId = paidPage();
+            gateway.failNextAuthorizationFetches(1);
+
+            // 操作と確認：失敗する
+            assertUnavailable(() -> gateway.fetchAuthorization(pageId));
+
+            // 確認：mock に届かない
+            verify(inner, never()).fetchAuthorization(any());
+        }
+
+        @Test
         @DisplayName("呼ばれた時点の処理は、呼ばれるたびに、失敗する回でも動く")
         void runsOnFetchAuthorizationEveryCall() {
             // 準備：呼ばれた時点の処理と、1 回の失敗
@@ -380,9 +410,10 @@ class TestPaymentGatewayTest {
             // 操作と確認：予期しないエラー
             assertSystemFailure(() -> gateway.voidAuthorization(REF_A));
 
-            // 確認：記録に入らない
+            // 確認：記録に入らず、mock に届かない
             assertThat(gateway.voided()).isEmpty();
             assertThat(gateway.voidsOf(REF_A)).isZero();
+            verify(inner, never()).voidAuthorization(any());
         }
 
         @Test
@@ -532,6 +563,30 @@ class TestPaymentGatewayTest {
         }
 
         @Test
+        @DisplayName("接続できない指定と応答が届かない指定の両方では、接続できない回は確定せず、次の回で確定して応答が届かない")
+        void unreachableComesBeforeLostResponse() {
+            // 準備：1 回接続できなくし、1 回応答を届かなくする
+            var firstOrder = newOrderId();
+            var secondOrder = newOrderId();
+            gateway.failNextCaptures(1);
+            gateway.loseNextCaptureResponses(1);
+
+            // 操作：2 回確定する
+            var first = gateway.capture(captureRequest(firstOrder, REF_A));
+            var firstCaptured = gateway.captured();
+            var firstState = inner.fetchCaptureState(REF_A);
+            var second = gateway.capture(captureRequest(secondOrder, REF_B));
+
+            // 確認：1 回目は確定せず、2 回目は確定している。どちらも UNREACHABLE
+            assertThat(first).isEqualTo(CaptureResult.UNREACHABLE);
+            assertThat(firstCaptured).isEmpty();
+            assertThat(firstState).isEqualTo(CaptureState.NOT_CAPTURED);
+            assertThat(second).isEqualTo(CaptureResult.UNREACHABLE);
+            assertThat(gateway.captured()).containsExactly(secondOrder.value());
+            assertThat(inner.fetchCaptureState(REF_B)).isEqualTo(CaptureState.CAPTURED);
+        }
+
+        @Test
         @DisplayName("期限切れにした与信は AUTHORIZATION_EXPIRED になって確定せず、他の与信は確定できる")
         void expiredAuthorizationIsNotCaptured() {
             // 準備：A を期限切れにする
@@ -592,19 +647,22 @@ class TestPaymentGatewayTest {
             // 準備：処理の中で、確定した注文 ID を読む
             var runs = new AtomicInteger();
             var seen = new ArrayList<List<UUID>>();
+            var seenRefs = new ArrayList<Optional<String>>();
+            var first = newOrderId();
             gateway.duringNextCapture(() -> {
                 runs.incrementAndGet();
                 seen.add(gateway.captured());
+                seenRefs.add(gateway.capturedAuthorizationRef(first.value()));
             });
-            var first = newOrderId();
 
             // 操作：2 つの注文を確定する
             gateway.capture(captureRequest(first, REF_A));
             gateway.capture(captureRequest(newOrderId(), REF_B));
 
-            // 確認：1 回だけ動き、動いたときは 1 つ目の注文が確定していた
+            // 確認：1 回だけ動き、動いたときは 1 つ目の注文が確定し、与信の参照も記録されていた
             assertThat(runs).hasValue(1);
             assertThat(seen).containsExactly(List.of(first.value()));
+            assertThat(seenRefs).containsExactly(Optional.of(REF_A));
         }
 
         @Test
@@ -797,6 +855,27 @@ class TestPaymentGatewayTest {
             // 確認：処理は動き、そのときは返金した注文 ID に入っていない
             assertThat(seen).containsExactly(List.of());
         }
+
+        @Test
+        @DisplayName("差し込んだ処理は、成功する回では、金額の記録の後、返金の前に動く")
+        void runsOnRefundOrVoidBetweenAmountRecordAndRefund() {
+            // 準備：処理の中で、金額の記録と返金した注文 ID を読む
+            var orderId = newOrderId();
+            var amounts = new ArrayList<List<Money>>();
+            var refunded = new ArrayList<List<UUID>>();
+            gateway.onRefundOrVoid(() -> {
+                amounts.add(gateway.amountsOf(Operation.REFUND, orderId.value()));
+                refunded.add(gateway.refunded());
+            });
+
+            // 操作：返金する
+            gateway.refund(new RefundRequest(orderId, REF_A, AMOUNT));
+
+            // 確認：処理が動いたとき、金額は記録済みで、返金した注文 ID は空だった。返金は記録された
+            assertThat(amounts).containsExactly(List.of(AMOUNT));
+            assertThat(refunded).containsExactly(List.of());
+            assertThat(gateway.refunded()).containsExactly(orderId.value());
+        }
     }
 
     @Nested
@@ -880,12 +959,18 @@ class TestPaymentGatewayTest {
             // 準備：全ての操作を 1 回ずつ呼んで、記録を作る
             var orderId = newOrderId();
             var pageId = paidPage();
+            openPage(orderId);
             gateway.closePage(pageId);
             gateway.fetchAuthorization(pageId);
             gateway.voidAuthorization(REF_A);
             gateway.capture(new CaptureRequest(orderId, REF_B, AMOUNT));
             gateway.fetchCaptureState(REF_B);
             gateway.refund(new RefundRequest(orderId, REF_B, AMOUNT));
+
+            // 確認（前提）：全ての操作で、同じ注文の金額が記録されている
+            for (var operation : Operation.values()) {
+                assertThat(gateway.amountsOf(operation, orderId.value())).isNotEmpty();
+            }
 
             // 操作：初期化する
             gateway.reset();
@@ -1047,7 +1132,7 @@ class TestPaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("消す状態は 1 つの項目にまとまっていて、reset で消し忘れる項目がない")
+        @DisplayName("初期化する状態は 1 つの項目にまとまっていて、reset で初期化し忘れる項目がない")
         void keepsResettableStateInSingleField() {
             // 操作：インスタンスの項目の名前を集める（static の項目と合成の項目を除く）
             var fieldNames = Arrays.stream(TestPaymentGateway.class.getDeclaredFields())

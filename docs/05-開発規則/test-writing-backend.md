@@ -50,7 +50,7 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `LogCapture
 - 作成の応答の ID（UUID）は、`TestJson.createdId` で読む。
 - `CatalogTestData` を入れる変数の名前は `catalog` にする。
 - 結果の一覧を作る繰り返しは `IntStream…toList()`、副作用の繰り返しは for 文で書く。
-- 同時実行は `Concurrently` で行い、待つ時間に上限（`AsyncEvents.TIMEOUT`）を付ける。
+- 同時実行のテストは `Concurrently` を使って書く。`Concurrently` は、単体テストと統合テストの両方で使うので、`src/test` の `com.ecsite.support.async` に置く。タイムアウトは `Concurrently` が決める（`AsyncEvents.TIMEOUT` と同じ値）。
 
 次の 3 つは手順に含めず、テストが直接書いてよい。
 

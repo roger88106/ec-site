@@ -17,7 +17,9 @@ import java.util.UUID;
  * テストで使う決済サービス
  *
  * <p>本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。
- * 失敗の指定は {@link TestPaymentFailures}、呼ばれた操作の記録は {@link TestPaymentCalls}、操作の途中に差し込む処理は {@link TestPaymentActions} が持ち、このクラスは各操作でそれらを呼ぶ順序を決める。
+ * 失敗の指定は {@link TestPaymentFailures} が持つ。
+ * 呼ばれた操作の記録は {@link TestPaymentCalls}、操作の途中に差し込む処理は {@link TestPaymentActions} が持つ。
+ * このクラスは、各操作でそれらを呼ぶ順序を決める。
  * 本番の jar に入れないため、テストで共有するソースに置く。
  */
 public class TestPaymentGateway implements PaymentGateway {

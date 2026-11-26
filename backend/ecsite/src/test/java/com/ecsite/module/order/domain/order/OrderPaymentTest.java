@@ -78,7 +78,7 @@ class OrderPaymentTest {
     class AcceptPayment {
 
         @Test
-        @DisplayName("AC-146 支払待ちの注文は、与信の成功で「受付」になる")
+        @DisplayName("AC-146 支払待ちの注文は、与信の成功で「受付」になり、支払待ちからの状態の変化のイベントが 1 件登録される")
         void acceptsPendingOrder() {
             // 準備：支払待ちの注文
             var order = pendingOrder();
@@ -90,6 +90,10 @@ class OrderPaymentTest {
             assertThat(changed).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.ACCEPTED);
             assertThat(order.isAwaitingPayment()).isFalse();
+
+            // 確認：支払待ちから受付へのイベントだけで、キャンセルの項目を持たない（イベントは取り出すので最後に確認する）
+            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
+                    OrderStatusChanged.Status.ACCEPTED, null, null);
         }
 
         @Test
@@ -119,20 +123,6 @@ class OrderPaymentTest {
             // 確認：キャンセルのまま
             assertThat(changed).isFalse();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-        }
-
-        @Test
-        @DisplayName("AC-146 与信の成功で、「支払待ち → 受付」の状態の変化のイベントが登録される")
-        void registersAcceptedEvent() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：与信の成功を受ける
-            order.acceptPayment(LATER);
-
-            // 確認：支払待ちから受付へのイベントだけで、キャンセルの項目を持たない
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
-                    OrderStatusChanged.Status.ACCEPTED, null, null);
         }
 
         @Test

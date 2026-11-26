@@ -54,6 +54,16 @@
 
 理由：起票時の件数から、今の件数に合わせて対象を決めるため。
 
+※2：`TestOrders.pending` と 3 ファイルの private の作り方の差（行番号は作業ツリーの現在のファイル）。
+- `TestOrders.pending`：成立のイベントを取り出す（`TestOrders.java` 55 行）。受付・申請・出荷の作り方は持たない。
+- 受付の時刻：注文の日時から、`OrderPaymentTest.java` 443 行は +60 秒、`OrderShipmentTest.java` 495 行は +30 秒、`OrderCancellationTest.java` 671 行は +30 秒。
+- 受付のイベント：`OrderPaymentTest.java` 444 行、`OrderShipmentTest.java` 496 行、`OrderCancellationTest.java` 672 行で取り出す。
+- 申請の時刻と理由：`OrderPaymentTest.java` 457 行は +120 秒と `REQUEST_REASON`、`OrderShipmentTest.java` 507 行は 1 日後と理由なし、`OrderCancellationTest.java` 685 行は +60 秒と「理由」。
+- 申請のイベント：`OrderPaymentTest.java` 458 行、`OrderCancellationTest.java` 686 行で取り出す。`OrderShipmentTest.java` 505〜508 行は取り出さず、申請のイベントが残る。
+- 出荷の時刻と追跡番号：`OrderPaymentTest.java` 471 行は +120 秒と番号の直書き、`OrderShipmentTest.java` 520 行は +1 時間と `TRACKING_NUMBER`。
+- 出荷のイベント：`OrderPaymentTest.java` 472 行、`OrderShipmentTest.java` 521 行で取り出す。
+- `pendingOrder`：`OrderPaymentTest.java` 431 行・`OrderShipmentTest.java` 483 行は `TestOrders.pending` に委譲し、`OrderCancellationTest.java` 670 行は直接呼ぶ。
+
 ## 非機能要件
 
 - **DN-522-1** 本番のコード（`src/main`）、API の契約（`api/openapi/`）、DB の構造（Flyway）は変えない。テストの振る舞いも変えない。

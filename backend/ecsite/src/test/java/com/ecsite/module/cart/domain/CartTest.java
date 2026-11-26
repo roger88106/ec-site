@@ -43,7 +43,7 @@ class CartTest {
     /**
      * カートの品目の数の上限
      */
-    private static final int MAX_ITEMS = 30;
+    private static final int MAX_ITEMS = Cart.MAX_ITEMS;
 
     /**
      * 白のバリアント ID
@@ -147,7 +147,7 @@ class CartTest {
             var cart = newCart();
 
             // 操作と確認：業務のエラー INVALID_CART_QUANTITY で拒否される
-            assertBusinessError(() -> cart.add(WHITE, 11, NOW), CartErrorCode.INVALID_CART_QUANTITY);
+            assertBusinessError(() -> cart.add(WHITE, Cart.MAX_QUANTITY + 1, NOW), CartErrorCode.INVALID_CART_QUANTITY);
         }
 
         @Test
@@ -170,10 +170,10 @@ class CartTest {
             var cart = newCart();
 
             // 操作：白を 10 個入れる
-            cart.add(WHITE, 10, NOW);
+            cart.add(WHITE, Cart.MAX_QUANTITY, NOW);
 
-            // 確認：10 個になる
-            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(10);
+            // 確認：上限と同じ個数になる
+            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(Cart.MAX_QUANTITY);
         }
 
         @Test
@@ -337,7 +337,7 @@ class CartTest {
             var cart = whiteAndBlack();
 
             // 操作と確認：業務のエラー INVALID_CART_QUANTITY で拒否される
-            assertBusinessError(() -> cart.changeQuantity(WHITE, 11, NOW), CartErrorCode.INVALID_CART_QUANTITY);
+            assertBusinessError(() -> cart.changeQuantity(WHITE, Cart.MAX_QUANTITY + 1, NOW), CartErrorCode.INVALID_CART_QUANTITY);
         }
 
         @Test
@@ -359,11 +359,11 @@ class CartTest {
             // 準備：白 2 個、黒 1 個のカート
             var cart = whiteAndBlack();
             // 操作：白の数量を 10 にする
-            cart.changeQuantity(WHITE, 10, NOW);
+            cart.changeQuantity(WHITE, Cart.MAX_QUANTITY, NOW);
 
             // 確認：白が 10 個になる
             assertThat(cart.itemsAt(NOW)).filteredOn(item -> item.variantId().equals(WHITE))
-                    .singleElement().extracting(CartItem::quantity).isEqualTo(10);
+                    .singleElement().extracting(CartItem::quantity).isEqualTo(Cart.MAX_QUANTITY);
         }
 
     }

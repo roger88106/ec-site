@@ -56,6 +56,21 @@ class ValidationErrorTranslatorTest {
     // ============================== 定数 ==============================
 
     /**
+     * sized の上限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
+     */
+    private static final int SIZED_MAX = 50;
+
+    /**
+     * maxSized の上限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
+     */
+    private static final int MAX_SIZED = 10000;
+
+    /**
+     * max の上限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
+     */
+    private static final int MAX_VALUE = 100;
+
+    /**
      * 必須の項目の文
      */
     private static final String REQUIRED = "入力してください。";
@@ -87,10 +102,10 @@ class ValidationErrorTranslatorTest {
     record Sample(
             @NotNull String notNull,
             @NotBlank String notBlank,
-            @Size(min = 1, max = 50) String sized,
-            @Size(max = 10000) String maxSized,
+            @Size(min = 1, max = SIZED_MAX) String sized,
+            @Size(max = MAX_SIZED) String maxSized,
             @Min(0) Long min,
-            @Max(100) Integer max,
+            @Max(MAX_VALUE) Integer max,
             @DecimalMin("0.5") BigDecimal decimalMin,
             @DecimalMax("99.9") BigDecimal decimalMax,
             @Pattern(regexp = "^[A-Z]+$") String pattern,
@@ -182,18 +197,18 @@ class ValidationErrorTranslatorTest {
         @DisplayName("下限が 1 以上の長さの上限は、下限と上限を差し込み、上限ちょうどは通り、上限の 1 つ外は違反の文")
         void sizeWithMinUpperBound() {
             // 操作と確認：1〜50 文字の項目は、50 文字（上限ちょうど）で違反しない
-            assertThat(violationsOf("sized", "x".repeat(50))).isEmpty();
+            assertThat(violationsOf("sized", "x".repeat(SIZED_MAX))).isEmpty();
             // 操作と確認：上限の 1 つ外（51 文字）の違反の文
-            assertThat(messageOf("sized", "x".repeat(51))).isEqualTo("1 文字以上 50 文字以内にしてください。");
+            assertThat(messageOf("sized", "x".repeat(SIZED_MAX + 1))).isEqualTo("1 文字以上 50 文字以内にしてください。");
         }
 
         @Test
         @DisplayName("下限のない長さの上限は、上限だけを差し込み、数は 3 桁ごとに区切り、上限ちょうどは通る")
         void sizeWithoutMinUpperBound() {
             // 操作と確認：10,000 文字（上限ちょうど）で違反しない
-            assertThat(violationsOf("maxSized", "x".repeat(10000))).isEmpty();
+            assertThat(violationsOf("maxSized", "x".repeat(MAX_SIZED))).isEmpty();
             // 操作と確認：上限の 1 つ外（10,001 文字）の違反の文
-            assertThat(messageOf("maxSized", "x".repeat(10001))).isEqualTo("10,000 文字以内にしてください。");
+            assertThat(messageOf("maxSized", "x".repeat(MAX_SIZED + 1))).isEqualTo("10,000 文字以内にしてください。");
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -328,7 +343,7 @@ class ValidationErrorTranslatorTest {
     static Stream<Arguments> ranges() {
         return Stream.of(
                 Arguments.of("min", -1L, "0 以上にしてください。"),
-                Arguments.of("max", 101, "100 以下にしてください。"),
+                Arguments.of("max", MAX_VALUE + 1, "100 以下にしてください。"),
                 Arguments.of("decimalMin", new BigDecimal("0.1"), "0.5 以上にしてください。"),
                 Arguments.of("decimalMax", new BigDecimal("100"), "99.9 以下にしてください。"));
     }

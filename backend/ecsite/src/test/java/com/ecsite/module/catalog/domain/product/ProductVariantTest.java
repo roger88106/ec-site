@@ -209,7 +209,7 @@ class ProductVariantTest {
             var product = productWithAxes("色");
 
             // 操作と確認：50 文字の値で登録できる
-            assertThatCode(() -> product.addVariant(newVariantId(), VariantCode.of("V1"), List.of("あ".repeat(50)), NOW)).doesNotThrowAnyException();
+            assertThatCode(() -> product.addVariant(newVariantId(), VariantCode.of("V1"), List.of("あ".repeat(Product.AXIS_VALUE_MAX_LENGTH)), NOW)).doesNotThrowAnyException();
         }
 
         @Test
@@ -219,7 +219,7 @@ class ProductVariantTest {
             var product = productWithAxes("色");
 
             // 操作と確認：業務のエラー INVALID_AXIS_VALUES で拒否される
-            assertBusinessError(() -> product.addVariant(newVariantId(), VariantCode.of("V2"), List.of("あ".repeat(51)), NOW),
+            assertBusinessError(() -> product.addVariant(newVariantId(), VariantCode.of("V2"), List.of("あ".repeat(Product.AXIS_VALUE_MAX_LENGTH + 1)), NOW),
                     ProductErrorCode.INVALID_AXIS_VALUES);
         }
 

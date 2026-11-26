@@ -49,7 +49,7 @@ class TrackingNumberTest {
             var input = "1234-5678-9012-3456-7890-1234-";
 
             // 確認（前提）：30 文字
-            assertThat(input).hasSize(30);
+            assertThat(input).hasSize(TrackingNumber.MAX_LENGTH);
 
             // 操作と確認：ハイフンを除いた値で受け付ける
             assertThat(TrackingNumber.of(input).value()).isEqualTo("123456789012345678901234");
@@ -59,7 +59,7 @@ class TrackingNumberTest {
         @DisplayName("AC-173 31 文字の送り状番号は拒否される")
         void rejectsThirtyOneCharacters() {
             // 操作と確認：業務のエラー TRACKING_NUMBER_INVALID で拒否される
-            assertBusinessError(() -> TrackingNumber.of("1".repeat(31)), ShippingErrorCode.TRACKING_NUMBER_INVALID);
+            assertBusinessError(() -> TrackingNumber.of("1".repeat(TrackingNumber.MAX_LENGTH + 1)), ShippingErrorCode.TRACKING_NUMBER_INVALID);
         }
     }
 
@@ -115,7 +115,7 @@ class TrackingNumberTest {
         @DisplayName("数字だけの 30 桁は作れる")
         void acceptsThirtyDigits() {
             // 操作と確認：そのままの値を持つ
-            assertThat(new TrackingNumber("1".repeat(30)).value()).isEqualTo("1".repeat(30));
+            assertThat(new TrackingNumber("1".repeat(TrackingNumber.MAX_LENGTH)).value()).isEqualTo("1".repeat(TrackingNumber.MAX_LENGTH));
         }
     }
 }

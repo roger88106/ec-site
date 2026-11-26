@@ -84,7 +84,7 @@ class TaxCategoryTest {
     /**
      * 名称の最大の文字数
      */
-    private static final int NAME_MAX_LENGTH = 50;
+    private static final int NAME_MAX_LENGTH = TaxCategory.NAME_MAX_LENGTH;
 
     /**
      * 基本の税率（%）

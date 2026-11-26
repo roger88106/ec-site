@@ -141,10 +141,10 @@ class OrderCancellationTest {
             var order = acceptedOrder();
 
             // 操作：500 文字の理由で申請する
-            order.requestCancellation("あ".repeat(500), LATER);
+            order.requestCancellation("あ".repeat(Order.REASON_MAX_LENGTH), LATER);
 
             // 確認：切り詰めずに記録する
-            assertThat(order.cancellationRequest().reason()).hasSize(500);
+            assertThat(order.cancellationRequest().reason()).hasSize(Order.REASON_MAX_LENGTH);
         }
 
         @Test
@@ -154,7 +154,7 @@ class OrderCancellationTest {
             var order = acceptedOrder();
 
             // 操作と確認：業務のエラー INVALID_CANCELLATION_REASON で拒否される
-            assertBusinessError(() -> order.requestCancellation("あ".repeat(501), LATER), OrderErrorCode.INVALID_CANCELLATION_REASON);
+            assertBusinessError(() -> order.requestCancellation("あ".repeat(Order.REASON_MAX_LENGTH + 1), LATER), OrderErrorCode.INVALID_CANCELLATION_REASON);
         }
 
         @Test
@@ -485,10 +485,10 @@ class OrderCancellationTest {
             var order = acceptedOrder();
 
             // 操作：500 文字の理由でキャンセルする
-            order.cancelByOperator("あ".repeat(500), true, false, OPERATOR, LATER);
+            order.cancelByOperator("あ".repeat(Order.REASON_MAX_LENGTH), true, false, OPERATOR, LATER);
 
             // 確認：切り詰めずに記録する
-            assertThat(order.cancellation().reason()).hasSize(500);
+            assertThat(order.cancellation().reason()).hasSize(Order.REASON_MAX_LENGTH);
         }
 
         @Test
@@ -498,7 +498,7 @@ class OrderCancellationTest {
             var order = acceptedOrder();
 
             // 操作と確認：業務のエラー INVALID_CANCELLATION_REASON で拒否される
-            assertBusinessError(() -> order.cancelByOperator("あ".repeat(501), true, false, OPERATOR, LATER),
+            assertBusinessError(() -> order.cancelByOperator("あ".repeat(Order.REASON_MAX_LENGTH + 1), true, false, OPERATOR, LATER),
                     OrderErrorCode.INVALID_CANCELLATION_REASON);
         }
 

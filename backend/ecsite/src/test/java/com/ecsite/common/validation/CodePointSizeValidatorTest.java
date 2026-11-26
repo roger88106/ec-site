@@ -22,6 +22,9 @@ class CodePointSizeValidatorTest {
     /** サロゲートペアの文字（UTF-16 では 2、code point では 1） */
     private static final String PAIR = "𠮷";
 
+    /** 上限と下限の値（見本の record の制約の値。見本は本番の定数を持たないため、テストの中で決める） */
+    private static final int BOUND = 2;
+
     private static ValidatorFactory factory;
     private static Validator validator;
 
@@ -36,27 +39,27 @@ class CodePointSizeValidatorTest {
         factory.close();
     }
 
-    private record Text(@Nullable @Size(max = 2) String value) {
+    private record Text(@Nullable @Size(max = BOUND) String value) {
     }
 
-    private record MinText(@Nullable @Size(min = 2) String value) {
+    private record MinText(@Nullable @Size(min = BOUND) String value) {
     }
 
-    private record Items(@Nullable List<@Size(max = 2) String> values) {
+    private record Items(@Nullable List<@Size(max = BOUND) String> values) {
     }
 
     @Test
     @DisplayName("サロゲートペアの文字 2 つは、上限 2 以内で有効")
     void acceptsPairsWithinMax() {
         // 操作と確認：UTF-16 では 4 でも、code point では 2 なので違反なし
-        assertThat(validator.validate(new Text(PAIR.repeat(2)))).isEmpty();
+        assertThat(validator.validate(new Text(PAIR.repeat(BOUND)))).isEmpty();
     }
 
     @Test
     @DisplayName("サロゲートペアの文字 3 つは、上限 2 を超えて無効")
     void rejectsPairsOverMax() {
         // 操作と確認：違反が 1 つ
-        assertThat(validator.validate(new Text(PAIR.repeat(3)))).hasSize(1);
+        assertThat(validator.validate(new Text(PAIR.repeat(BOUND + 1)))).hasSize(1);
     }
 
     @Test
@@ -77,20 +80,20 @@ class CodePointSizeValidatorTest {
     @DisplayName("サロゲートペアの文字 2 つは、下限 2 ちょうどで有効")
     void acceptsPairsAtMin() {
         // 操作と確認：違反なし
-        assertThat(validator.validate(new MinText(PAIR.repeat(2)))).isEmpty();
+        assertThat(validator.validate(new MinText(PAIR.repeat(BOUND)))).isEmpty();
     }
 
     @Test
     @DisplayName("一覧の要素も、サロゲートペアの文字 2 つは有効")
     void acceptsPairsInListElements() {
         // 操作と確認：違反なし
-        assertThat(validator.validate(new Items(List.of(PAIR.repeat(2), "a")))).isEmpty();
+        assertThat(validator.validate(new Items(List.of(PAIR.repeat(BOUND), "a")))).isEmpty();
     }
 
     @Test
     @DisplayName("一覧の要素も、サロゲートペアの文字 3 つは無効")
     void rejectsPairsInListElements() {
         // 操作と確認：違反が 1 つ
-        assertThat(validator.validate(new Items(List.of("a", PAIR.repeat(3))))).hasSize(1);
+        assertThat(validator.validate(new Items(List.of("a", PAIR.repeat(BOUND + 1))))).hasSize(1);
     }
 }

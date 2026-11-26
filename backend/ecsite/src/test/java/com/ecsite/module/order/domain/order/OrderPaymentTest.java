@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertSingleEventWithStatusChange;
 import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertStatusChangedEventOnly;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -207,17 +208,9 @@ class OrderPaymentTest {
             // 確認：支払期限切れのキャンセルの記録
             assertPaymentExpired(order.cancellation());
 
-            // 確認：イベントは取り出すので最後に確認する。全体が 1 件で、キャンセルへの状態の変化だけ
-            // （assertStatusChangedEventOnly は内部で取り出すため、全体の件数の確認と同時に使えない）
-            var events = order.pullEvents();
-            assertThat(events).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class, event -> {
-                assertThat(event.orderId()).isEqualTo(order.id());
-                assertThat(event.occurredAt()).isEqualTo(LATER);
-                assertThat(event.from()).isEqualTo(OrderStatusChanged.Status.PENDING_PAYMENT);
-                assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED);
-                assertThat(event.cancellationKind()).isEqualTo(OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED);
-                assertThat(event.restocked()).isTrue();
-            });
+            // 確認：イベントは取り出すので最後に確認する。全体が 1 件で、支払待ちからキャンセルへの状態の変化
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
+                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED, true);
         }
 
         @Test

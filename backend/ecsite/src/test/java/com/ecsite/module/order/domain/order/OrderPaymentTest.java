@@ -193,7 +193,7 @@ class OrderPaymentTest {
         }
 
         @Test
-        @DisplayName("AC-153、AC-155 支払待ちの注文は、支払の期限切れでキャンセルになり、種類が支払期限切れの記録と、在庫に戻すイベントが 1 件だけ登録される")
+        @DisplayName("AC-153、155 支払待ちの注文は、支払の期限切れでキャンセルになり、種類が支払期限切れの記録と、在庫に戻すイベントが 1 件だけ登録される")
         void registersPaymentExpiredEvent() {
             // 準備：支払待ちの注文
             var order = TestOrders.pending(ORDERED_AT);

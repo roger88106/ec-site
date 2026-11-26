@@ -56,6 +56,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class StorefrontApiTest {
 
+    /**
+     * 1 ページの件数の下限（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+     */
+    private static final int PAGE_SIZE_MIN = 1;
+
+    /**
+     * 1 ページの件数の上限（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+     */
+    private static final int PAGE_SIZE_MAX = 100;
+
+    /**
+     * 検索の文字数の下限（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+     */
+    private static final int KEYWORD_MIN_LENGTH = 1;
+
+    /**
+     * 検索の文字数の上限（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+     */
+    private static final int KEYWORD_MAX_LENGTH = 100;
+
     // ============================== 定数 ==============================
 
     /**
@@ -512,21 +532,21 @@ class StorefrontApiTest {
         @DisplayName("1 ページの件数が下限の 1 なら取得できる")
         void acceptsPageSizeAtMinimum() throws Exception {
             // 操作と確認：取得できる
-            mockMvc.perform(get(BASE + "/products").param("size", "1")).andExpect(status().isOk());
+            mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(PAGE_SIZE_MIN))).andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("1 ページの件数が上限の 100 なら取得できる")
         void acceptsPageSizeAtMaximum() throws Exception {
             // 操作と確認：取得できる
-            mockMvc.perform(get(BASE + "/products").param("size", "100")).andExpect(status().isOk());
+            mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(PAGE_SIZE_MAX))).andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("1 ページの件数が下限の 1 より小さい 0 なら 400")
         void rejectsPageSizeBelowMinimum() throws Exception {
             // 操作と確認：400
-            mockMvc.perform(get(BASE + "/products").param("size", "0"))
+            mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(PAGE_SIZE_MIN - 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
@@ -535,7 +555,7 @@ class StorefrontApiTest {
         @DisplayName("1 ページの件数が上限の 100 より大きい 101 なら 400")
         void rejectsPageSizeAboveMaximum() throws Exception {
             // 操作と確認：400
-            mockMvc.perform(get(BASE + "/products").param("size", "101"))
+            mockMvc.perform(get(BASE + "/products").param("size", String.valueOf(PAGE_SIZE_MAX + 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
@@ -643,21 +663,21 @@ class StorefrontApiTest {
         @DisplayName("キーワードが下限の 1 文字なら検索できる")
         void acceptsKeywordAtMinimum() throws Exception {
             // 操作と確認：検索できる
-            mockMvc.perform(search("あ".repeat(1))).andExpect(status().isOk());
+            mockMvc.perform(search("あ".repeat(KEYWORD_MIN_LENGTH))).andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("キーワードが上限の 100 文字なら検索できる")
         void acceptsKeywordAtMaximum() throws Exception {
             // 操作と確認：検索できる
-            mockMvc.perform(search("あ".repeat(100))).andExpect(status().isOk());
+            mockMvc.perform(search("あ".repeat(KEYWORD_MAX_LENGTH))).andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("キーワードが下限の 1 文字より少ない 0 文字なら 400")
         void rejectsKeywordBelowMinimum() throws Exception {
             // 操作と確認：400
-            mockMvc.perform(search("")).andExpect(status().isBadRequest())
+            mockMvc.perform(search("あ".repeat(KEYWORD_MIN_LENGTH - 1))).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
@@ -665,7 +685,7 @@ class StorefrontApiTest {
         @DisplayName("キーワードが上限の 100 文字より多い 101 文字なら 400")
         void rejectsKeywordAboveMaximum() throws Exception {
             // 操作と確認：400
-            mockMvc.perform(search("あ".repeat(101)))
+            mockMvc.perform(search("あ".repeat(KEYWORD_MAX_LENGTH + 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }

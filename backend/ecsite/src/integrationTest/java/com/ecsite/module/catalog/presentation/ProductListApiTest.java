@@ -38,6 +38,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ProductListApiTest {
 
+    /**
+     * 1 ページの件数の下限（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+     */
+    private static final int PAGE_SIZE_MIN = 1;
+
+    /**
+     * 1 ページの件数の上限（仕様の値。統合テストから見える本番の定数がないため、ここに書く）
+     */
+    private static final int PAGE_SIZE_MAX = 100;
+
     // ============================== 定数 ==============================
 
     /**
@@ -407,7 +417,7 @@ class ProductListApiTest {
         @DisplayName("1 ページの件数が 100 を超えれば 400")
         void rejectsTooLargePageSize() throws Exception {
             // 操作と確認：101 件は、400 で拒否される
-            mockMvc.perform(get(BASE).param("size", "101"))
+            mockMvc.perform(get(BASE).param("size", String.valueOf(PAGE_SIZE_MAX + 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
@@ -416,21 +426,21 @@ class ProductListApiTest {
         @DisplayName("1 ページの件数が下限の 1 なら取得できる")
         void acceptsPageSizeAtMinimum() throws Exception {
             // 操作と確認：取得できる
-            mockMvc.perform(get(BASE).param("size", "1")).andExpect(status().isOk());
+            mockMvc.perform(get(BASE).param("size", String.valueOf(PAGE_SIZE_MIN))).andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("1 ページの件数が上限の 100 なら取得できる")
         void acceptsPageSizeAtMaximum() throws Exception {
             // 操作と確認：取得できる
-            mockMvc.perform(get(BASE).param("size", "100")).andExpect(status().isOk());
+            mockMvc.perform(get(BASE).param("size", String.valueOf(PAGE_SIZE_MAX))).andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("1 ページの件数が 0 なら 400")
         void rejectsZeroPageSize() throws Exception {
             // 操作と確認：400 で拒否される
-            mockMvc.perform(get(BASE).param("size", "0"))
+            mockMvc.perform(get(BASE).param("size", String.valueOf(PAGE_SIZE_MIN - 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }

@@ -26,8 +26,9 @@ class ConfigurationPropertiesValidatedTest {
                 .filter(javaClass -> javaClass.isAnnotatedWith(ConfigurationProperties.class))
                 .toList();
 
-        // 確認：型が見つかっていて（空振りでないこと）、@Validated のない型はない
-        assertThat(properties).hasSizeGreaterThanOrEqualTo(4);
+        // 確認：既知の設定の型が集まっていて（空振りでないこと）、@Validated のない型はない
+        assertThat(properties.stream().map(JavaClass::getSimpleName).toList())
+                .contains("ImgproxyProperties", "OrderProperties", "PaymentProperties", "ReportingProperties");
         assertThat(properties.stream().filter(javaClass -> !javaClass.isAnnotatedWith(Validated.class))
                 .map(JavaClass::getName).toList()).isEmpty();
     }

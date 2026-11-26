@@ -559,9 +559,19 @@ public class OrderTestData {
      */
     public static String orderBody(long expectedTotal, String name) {
         return """
-                {"expectedTotal": %d, "shippingAddress": {"name": "%s", "postalCode": "%s",
+                {"expectedTotal": %d, "shippingAddress": {"name": %s, "postalCode": "%s",
                  "prefectureCode": "%s", "municipalityCode": "%s", "address": "%s", "phone": "%s"}}"""
-                .formatted(expectedTotal, name, POSTAL_CODE, PREFECTURE_CODE, MUNICIPALITY_CODE, ADDRESS, PHONE);
+                .formatted(expectedTotal, jsonString(name), POSTAL_CODE, PREFECTURE_CODE, MUNICIPALITY_CODE, ADDRESS, PHONE);
+    }
+
+    /**
+     * 文字列を JSON の文字列にする（引用符と円記号をエスケープする）。
+     *
+     * @param value 値
+     * @return 引用符で囲んだ JSON の文字列
+     */
+    private static String jsonString(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     /**

@@ -66,7 +66,7 @@ class OrderCancellationTest {
     class Request {
 
         @Test
-        @DisplayName("AC-95、「受付」の注文を申請すると「キャンセル申請中」になり、日時と理由を記録して判断を待ち、「受付 → キャンセル申請中」の状態の変化のイベントが登録される")
+        @DisplayName("AC-95 「受付」の注文を申請すると「キャンセル申請中」になり、日時と理由を記録して判断を待ち、「受付 → キャンセル申請中」の状態の変化のイベントが登録される")
         void registersRequestedEvent() {
             // 準備：受付の注文
             var order = TestOrders.accepted(ORDERED_AT);
@@ -180,7 +180,7 @@ class OrderCancellationTest {
     class Approve {
 
         @Test
-        @DisplayName("AC-101、申請を承認すると、キャンセルになり、承認の記録と申請の承認のキャンセルの記録を残し、在庫に戻す注文キャンセルのイベントが 1 件登録される")
+        @DisplayName("AC-101 申請を承認すると、キャンセルになり、承認の記録と申請の承認のキャンセルの記録を残し、在庫に戻す注文キャンセルのイベントが 1 件登録される")
         void registersApprovedEvent() {
             // 準備：キャンセル申請中の注文
             var order = TestOrders.requested(ORDERED_AT);
@@ -244,7 +244,7 @@ class OrderCancellationTest {
     class Reject {
 
         @Test
-        @DisplayName("AC-102、申請を却下すると「受付」に戻ってキャンセルの記録はなく、却下の結果と判断の日時と運営者を記録し、「キャンセル申請中 → 受付」の状態の変化のイベントが 1 件登録される")
+        @DisplayName("AC-102 申請を却下すると「受付」に戻ってキャンセルの記録はなく、却下の結果と判断の日時と運営者を記録し、「キャンセル申請中 → 受付」の状態の変化のイベントが 1 件登録される")
         void registersRejectedEvent() {
             // 準備：キャンセル申請中の注文
             var order = TestOrders.requested(ORDERED_AT);
@@ -289,7 +289,7 @@ class OrderCancellationTest {
     class CancelByOperator {
 
         @Test
-        @DisplayName("AC-103、運営者は「受付」の注文をキャンセルでき、運営者のキャンセルの記録を残し、在庫に戻す注文キャンセルのイベントが全体で 1 件登録され、前の状態は受付、種類は運営者になる")
+        @DisplayName("AC-103 運営者は「受付」の注文をキャンセルでき、運営者のキャンセルの記録を残し、在庫に戻す注文キャンセルのイベントが全体で 1 件登録され、前の状態は受付、種類は運営者になる")
         void registersOperatorEvent() {
             // 準備：受付の注文
             var order = TestOrders.accepted(ORDERED_AT);
@@ -310,7 +310,7 @@ class OrderCancellationTest {
         }
 
         @Test
-        @DisplayName("AC-103、運営者は在庫に戻す指定で「受付」の注文をキャンセルでき、キャンセルは成立し、運営者のキャンセルの記録と、在庫に戻すイベントが全体で 1 件残る")
+        @DisplayName("AC-103 運営者は在庫に戻す指定で「受付」の注文をキャンセルでき、キャンセルは成立し、運営者のキャンセルの記録と、在庫に戻すイベントが全体で 1 件残る")
         void restocksOnOperatorCancel() {
             // 準備：受付の注文
             var order = TestOrders.accepted(ORDERED_AT);
@@ -329,7 +329,7 @@ class OrderCancellationTest {
         }
 
         @Test
-        @DisplayName("AC-103、運営者は「キャンセル申請中」の注文もキャンセルでき、申請は承認になり、キャンセルの記録を残し、前の状態がキャンセル申請中で種類が運営者、在庫に戻す注文キャンセルのイベントが全体で 1 件登録される")
+        @DisplayName("AC-103 運営者は「キャンセル申請中」の注文もキャンセルでき、申請は承認になり、キャンセルの記録を残し、前の状態がキャンセル申請中で種類が運営者、在庫に戻す注文キャンセルのイベントが全体で 1 件登録される")
         void cancelsRequestedOrder() {
             // 準備：キャンセル申請中の注文
             var order = TestOrders.requested(ORDERED_AT);

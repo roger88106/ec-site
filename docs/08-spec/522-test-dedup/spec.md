@@ -86,6 +86,7 @@
 | `CancellationApiTest` の申請の確認 | 申請そのものを確認するテストのため（DC-522-3）。 |
 | `CancellationApiTest` と `ReturnedOrderCancellationApiTest` の準備 | 両方ともロールバックするテストで、補助の `acceptedOrder` の待ちが使えないため（T522-01-24）。準備は既に `OrderTestData.placeOrder` を使っている。 |
 | `OrderTest` の `accepted`・`requested`・`rejected`（private） | 見積もりから組み立てる別の準備で、`TestOrders` の状態ごとの作り方と意味が違うため。 |
+| `ProductApiTest`・`ProductVariantApiTest`・`CategoryApiTest` の {0, 上限 + 1} の 400 のテスト | 下限の外（0）と上限の外を 1 つのテストに入れている既存の形。直すのは別の作業とし、pull request の「既存の指摘」に書く（本番の挙動は変えない）。 |
 | 本番のコードの「リクエストの誤り」（`GlobalExceptionHandler`・`StripePaymentGateway`） | 名前をそろえる対象はテストだけのため。本番のコードは DN-522-1 で変えない。 |
 | 本番のコードの変更 | DN-522-1。 |
 

@@ -290,56 +290,35 @@ class OrderCancellationTest {
     class CancelByOperator {
 
         @Test
-        @DisplayName("AC-103 運営者は「受付」の注文をキャンセルできる")
-        void cancelsAcceptedOrder() {
-            // 準備：受付の注文
-            var order = TestOrders.accepted(ORDERED_AT);
-
-            // 操作：理由を記録してキャンセルする
-            var cancelled = order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
-
-            // 確認：キャンセル
-            assertThat(cancelled).isTrue();
-            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-        }
-
-        @Test
-        @DisplayName("AC-103 運営者のキャンセルは、種類が運営者で、理由と運営者を記録する")
-        void recordsOperatorCancellation() {
-            // 準備：受付の注文
-            var order = TestOrders.accepted(ORDERED_AT);
-
-            // 操作：理由を記録してキャンセルする
-            order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
-
-            // 確認：運営者のキャンセルの記録
-            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, OPERATOR_REASON, OPERATOR));
-        }
-
-        @Test
-        @DisplayName("AC-103 運営者のキャンセルで、在庫を戻すための注文キャンセルのイベントが登録される")
-        void registersCancelledEvent() {
-            // 準備：受付の注文
-            var order = TestOrders.accepted(ORDERED_AT);
-
-            // 操作：理由を記録してキャンセルする
-            order.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
-
-            // 確認：キャンセルへの状態の変化のイベントだけ
-            OrderEventAssertions.assertCancelledEventOnly(order);
-        }
-
-        @Test
-        @DisplayName("AC-103 運営者のキャンセルのイベントは、前の状態が受付で、種類が運営者で、在庫に戻す")
+        @DisplayName("AC-103、運営者は「受付」の注文をキャンセルでき、運営者のキャンセルの記録を残し、在庫に戻す注文キャンセルのイベントが全体で 1 件登録され、前の状態は受付、種類は運営者になる")
         void registersOperatorEvent() {
             // 準備：受付の注文
             var order = TestOrders.accepted(ORDERED_AT);
 
             // 操作：在庫に戻さない指定でキャンセルする（出荷前は指定によらず戻す）
-            order.cancelByOperator(OPERATOR_REASON, false, false, OPERATOR, LATER);
+            var cancelled = order.cancelByOperator(OPERATOR_REASON, false, false, OPERATOR, LATER);
 
-            // 確認：イベントの前の状態・種類・在庫に戻すか
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.ACCEPTED,
+            // 確認：キャンセル
+            assertThat(cancelled).isTrue();
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+
+            // 確認：運営者のキャンセルの記録（種類、理由、運営者）
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, OPERATOR_REASON, OPERATOR));
+
+            // 準備と操作：在庫に戻す指定でキャンセルする注文（指定の違いで結果が変わらないことを確認する）
+            var restockOrder = TestOrders.accepted(ORDERED_AT);
+            restockOrder.cancelByOperator(OPERATOR_REASON, true, false, OPERATOR, LATER);
+
+            // 確認：在庫に戻す指定の注文も、キャンセルと運営者のキャンセルの記録
+            assertThat(restockOrder.status()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(restockOrder.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, OPERATOR_REASON, OPERATOR));
+
+            // 確認：登録されたイベントは全体で 1 件だけで、受付からキャンセルへの状態の変化。種類は運営者、在庫に戻す（イベントを見るので最後）
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.ACCEPTED,
+                    OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
+
+            // 確認：在庫に戻す指定の注文も、同じ中身のイベントが全体で 1 件
+            assertSingleEventWithStatusChange(restockOrder, LATER, OrderStatusChanged.Status.ACCEPTED,
                     OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.OPERATOR, true);
         }
 

@@ -133,10 +133,7 @@ class ReturnedOrderRefundTest {
         // コミットするので、他のテストとカートを共有しないよう、テストごとの会員で注文する
         email = "returned-" + UUID.randomUUID() + "@example.com";
         var owner = TestTokens.member().subject(UUID.randomUUID()).email(email);
-        orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, ORDERED);
-        // コミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前に出荷やキャンセルをすると、
-        // 楽観ロックで衝突することがある
-        asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId));
+        orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).acceptedOrder(variantId, ORDERED);
         var trackingNumber = ShippingTestData.trackingNumber();
         var shipping = new ShippingTestData(mockMvc, mockCarrier, applicationContext);
         shipping.ship(orderId, Carrier.YAMATO, trackingNumber);

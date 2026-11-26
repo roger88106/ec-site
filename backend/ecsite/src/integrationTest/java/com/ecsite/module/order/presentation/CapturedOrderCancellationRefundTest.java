@@ -175,10 +175,8 @@ class CapturedOrderCancellationRefundTest {
         // コミットするので、他のテストとカートを共有しないよう、テストごとの会員で注文する
         owner = TestTokens.member().subject(UUID.randomUUID()).email("captured-" + UUID.randomUUID() + "@example.com").bearer();
         orders = new OrderTestData(mockMvc, gateway, applicationContext, owner);
-        orderId = orders.placeOrder(variantId, ORDERED);
+        orderId = orders.acceptedOrder(variantId, ORDERED);
         authorizationRef = gateway.authorizationRefOf(orders.paidPageId(orderId));
-        // 支払うとリスナーが非同期で注文を受け付け直す。終わる前に出荷すると、楽観ロックで衝突することがある
-        asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId));
     }
 
     // ============================== テスト ==============================
@@ -235,7 +233,7 @@ class CapturedOrderCancellationRefundTest {
         ship().andExpect(status().isBadGateway());
         clock.setInstant(clock.instant().plus(properties.captureReconcileDelay()));
         PaymentJobs.expireUntil(applicationContext, () -> "CAPTURED".equals(adminOrderUnchecked("$.payment.status")));
-        assertThat(adminOrder("$.payment.status")).isEqualTo("CAPTURED");
+        assertThat(orders.paymentStatus(orderId)).isEqualTo("CAPTURED");
 
         // 操作：運営者がキャンセルする
         mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
@@ -268,7 +266,7 @@ class CapturedOrderCancellationRefundTest {
      * 支払が返金済みになり、キャンセルのイベントと、支払への依頼のイベントのリスナーが全て終わるまで待つ。
      */
     private void awaitRefunded() throws Exception {
-        await().atMost(TIMEOUT).until(() -> "REFUNDED".equals(adminOrder("$.payment.status")));
+        await().atMost(TIMEOUT).until(() -> "REFUNDED".equals(orders.paymentStatus(orderId)));
         asyncEvents.awaitPublishedThenHandled(event -> event instanceof OrderStatusChanged changed
                 && changed.orderId().value().equals(orderId) && changed.to() == OrderStatusChanged.Status.CANCELLED);
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));

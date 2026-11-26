@@ -9,6 +9,7 @@ import com.ecsite.module.payment.application.model.view.PayablePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.http.TestJson;
 import com.ecsite.support.security.TestSecurityConfig;
 import com.jayway.jsonpath.JsonPath;
@@ -303,6 +304,46 @@ public class OrderTestData {
         var orderId = placePendingOrder(variantId, quantity, name);
         pay(orderId);
         return orderId;
+    }
+
+    /**
+     * 決まったお届け先で注文し、支払って「受付」になるのを待つ（コミットするテストで使う）。
+     *
+     * <p>支払うと、与信の成功のリスナーが非同期で注文を受け付け直す。終わる前に出荷やキャンセルをすると、
+     * 楽観ロックで衝突することがあるため、リスナーが終わるまで待つ。
+     * ロールバックするテストでは待てない（イベントがコミットされない）ので、{@link #placeOrder(UUID, int)} を使う。
+     *
+     * @param variantId バリアント ID
+     * @param quantity  数量
+     * @return 注文 ID
+     */
+    public UUID acceptedOrder(UUID variantId, int quantity) throws Exception {
+        var orderId = placeOrder(variantId, quantity);
+        applicationContext.getBean(AsyncEvents.class).awaitHandled(paymentAuthorized(orderId));
+        return orderId;
+    }
+
+    /**
+     * 運営者として注文をキャンセルし、204 を確認する。
+     *
+     * @param orderId 注文 ID
+     * @param body    キャンセルのリクエストの本文（例：{@code {"reason": "理由"}}）
+     */
+    public void cancelByOperator(UUID orderId, String body) throws Exception {
+        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isNoContent());
+    }
+
+    /**
+     * 管理 API で、注文の支払の状態（{@code $.payment.status}）を読む。
+     *
+     * @param orderId 注文 ID
+     * @return 支払の状態
+     */
+    public String paymentStatus(UUID orderId) throws Exception {
+        return JsonPath.read(mockMvc.perform(get("/api/admin/orders/" + orderId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), "$.payment.status");
     }
 
     /**

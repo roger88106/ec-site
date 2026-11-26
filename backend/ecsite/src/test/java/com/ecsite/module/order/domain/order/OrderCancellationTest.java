@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertSingleEventWithStatusChange;
 import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertStatusChangedEventOnly;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,8 +67,8 @@ class OrderCancellationTest {
     class Request {
 
         @Test
-        @DisplayName("AC-95 「受付」の注文を申請すると「キャンセル申請中」になる")
-        void becomesRequested() {
+        @DisplayName("AC-95、「受付」の注文を申請すると「キャンセル申請中」になり、日時と理由を記録して判断を待ち、「受付 → キャンセル申請中」の状態の変化のイベントが登録される")
+        void registersRequestedEvent() {
             // 準備：受付の注文
             var order = TestOrders.accepted(ORDERED_AT);
 
@@ -77,33 +78,13 @@ class OrderCancellationTest {
             // 確認：状態を変えたので true。キャンセル申請中
             assertThat(changed).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
-        }
 
-        @Test
-        @DisplayName("AC-95 申請は、日時と添えた理由を記録し、判断を待つ")
-        void recordsRequest() {
-            // 準備：受付の注文
-            var order = TestOrders.accepted(ORDERED_AT);
-
-            // 操作：理由を添えて申請する
-            order.requestCancellation(REQUEST_REASON, LATER);
-
-            // 確認：判断を待つ申請
+            // 確認：判断を待つ申請（日時と添えた理由を記録）
             assertThat(order.cancellationRequest())
                     .isEqualTo(new CancellationRequest(LATER, REQUEST_REASON, Result.PENDING, null, null));
-        }
 
-        @Test
-        @DisplayName("AC-95 申請すると、「受付 → キャンセル申請中」の状態の変化のイベントが登録される")
-        void registersRequestedEvent() {
-            // 準備：受付の注文
-            var order = TestOrders.accepted(ORDERED_AT);
-
-            // 操作：申請する
-            order.requestCancellation(REQUEST_REASON, LATER);
-
-            // 確認：受付からキャンセル申請中へのイベントだけで、キャンセルの項目を持たない
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.ACCEPTED,
+            // 確認：登録されたイベントは受付からキャンセル申請中への 1 件だけで、キャンセルの項目を持たない（イベントを見るので最後）
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.ACCEPTED,
                     OrderStatusChanged.Status.CANCELLATION_REQUESTED, null, null);
         }
 

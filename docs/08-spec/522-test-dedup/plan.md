@@ -87,6 +87,7 @@
 | `ReturnedOrderCancellationApiTest`（127〜138） | 名前 `標準`、商品 `商品`、価格 `1000` の直書き | `STOCKED` | 既定の会員 | `placeOrder` | なし | 出荷（`TRACKING_NUMBER`） |
 
 - 差は、会員の作り方（既定の会員か、テストごとか、bearer か builder か）、在庫と価格の値（定数か直書きか）、支払後の待ちの有無、続く準備の 4 つ。補助に入れるのは、定数と支払後の待ちを揃えた受付の注文の準備。続く準備（認可の参照、出荷、返品の通知）は、テストの中に残すか、補助の別の操作にする（T522-01-22 で決める）。
+- 計画からの変更（issue 担当が承認）：`CancellationApiTest` と `ReturnedOrderCancellationApiTest` は置き換えない。理由：両方とも `@Transactional`（ロールバック）のテストで、`acceptedOrder` の待ちが使えない。準備は既に `OrderTestData.placeOrder` を使っている。
 - 依存の向き：`ModulithTest` は `ProductionClasses.applicationModules()` で本番のクラスだけを見るため、`com.ecsite.support.data`（統合テストの補助）は検査の対象にならない。`ReportFlowTest` は既に `CatalogTestData` などを同じパッケージから使っており、向きは変わらない。
 
 ## 設定の範囲の検証（DS-522-1：DC-522-5）

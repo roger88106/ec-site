@@ -236,11 +236,11 @@
   - 範囲：上の 4 ファイル
   - 確認方法：絞り込んだ統合テストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`acceptedOrder` と同じ準備の定義が残らない。
   - 結果：絞り込んだ統合テスト 14 件が通る。break-check は `ReportFlowTest` の販売数量の期待値を 1 つずらし、失敗（exit 1）を確認して元に戻した。
-- [ ] **T522-01-24** `CancellationApiTest` と `ReturnedOrderCancellationApiTest` の準備を、`OrderTestData` の呼び出しに置き換える。申請の確認は残す（DC-522-4）。
+- [x] **T522-01-24** `CancellationApiTest` と `ReturnedOrderCancellationApiTest` の準備を、`OrderTestData` の呼び出しに置き換える。申請の確認は残す（DC-522-4）。
   - 依存：T522-01-23
   - 範囲：上の 2 ファイル（`module/order/presentation/` の下）
   - 確認方法：絞り込んだ統合テストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の確認の検査が残る。
-  - 注意：両方とも `@Transactional`（ロールバック）で、`acceptedOrder` は待つため使えない。準備は既に `OrderTestData.placeOrder` を使っているので、置き換えは無いと見込む。issue 担当に確認する。
+  - 結果（計画からの変更、issue 担当が承認）：置き換えない。理由：両方とも `@Transactional`（ロールバック）のテストで、`acceptedOrder` の待ちが使えない。準備は既に `OrderTestData.placeOrder` を使っている。
 - [ ] **T522-01-25** [実行] `./gradlew check` を 1 回実行する（`backend/ecsite/`）。実行の前に、issue 担当のセッションの合図を待つ（DC-522-8）。
   - 依存：T522-01-24
   - 範囲：`backend/ecsite/`

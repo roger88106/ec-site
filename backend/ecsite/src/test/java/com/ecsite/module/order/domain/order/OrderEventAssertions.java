@@ -45,14 +45,39 @@ public final class OrderEventAssertions {
                                                     OrderStatusChanged.@Nullable CancellationKind cancellationKind,
                                                     @Nullable Boolean restocked) {
         assertThat(order.pullEvents()).filteredOn(OrderStatusChanged.class::isInstance).singleElement()
-                .isInstanceOfSatisfying(OrderStatusChanged.class, event -> {
-                    assertThat(event.orderId()).isEqualTo(order.id());
-                    assertThat(event.occurredAt()).isEqualTo(occurredAt);
-                    assertThat(event.from()).isEqualTo(from);
-                    assertThat(event.to()).isEqualTo(to);
-                    assertThat(event.cancellationKind()).isEqualTo(cancellationKind);
-                    assertThat(event.restocked()).isEqualTo(restocked);
-                });
+                .isInstanceOfSatisfying(OrderStatusChanged.class, event ->
+                        assertStatusChangedFields(order, event, occurredAt, from, to, cancellationKind, restocked));
+    }
+
+    /**
+     * 登録されたイベントが全体で 1 件だけ（種類を問わない）で、その中身が期待の状態の変化であることを確認する。
+     *
+     * <p>{@link #assertStatusChangedEventOnly} は種類で絞るが、こちらは全体の件数を 1 件として確認する。
+     *
+     * <p>確認すること：
+     * <ul>
+     *   <li>登録されたイベントが全体で 1 件だけ</li>
+     *   <li>注文 ID がこの注文</li>
+     *   <li>起きた日時</li>
+     *   <li>前の状態と後の状態</li>
+     *   <li>キャンセルの種類（キャンセル以外は null）</li>
+     *   <li>在庫に戻したか（キャンセル以外は null）</li>
+     * </ul>
+     *
+     * @param order            確認する注文
+     * @param occurredAt       起きた日時
+     * @param from             前の状態
+     * @param to               後の状態
+     * @param cancellationKind キャンセルの種類
+     * @param restocked        在庫に戻したか
+     */
+    public static void assertSingleEventWithStatusChange(Order order, Instant occurredAt, OrderStatusChanged.Status from,
+                                                         OrderStatusChanged.Status to,
+                                                         OrderStatusChanged.@Nullable CancellationKind cancellationKind,
+                                                         @Nullable Boolean restocked) {
+        assertThat(order.pullEvents()).singleElement()
+                .isInstanceOfSatisfying(OrderStatusChanged.class, event ->
+                        assertStatusChangedFields(order, event, occurredAt, from, to, cancellationKind, restocked));
     }
 
     /**
@@ -69,5 +94,30 @@ public final class OrderEventAssertions {
     public static void assertCancelledEventOnly(Order order) {
         assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
                 event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
+    }
+
+    /**
+     * 状態の変化のイベントの 6 項目が、期待の値であることを確認する。
+     *
+     * <p>{@link #assertStatusChangedEventOnly} と {@link #assertSingleEventWithStatusChange} の共通の確認。
+     *
+     * @param order            確認する注文
+     * @param event            確認するイベント
+     * @param occurredAt       起きた日時
+     * @param from             前の状態
+     * @param to               後の状態
+     * @param cancellationKind キャンセルの種類
+     * @param restocked        在庫に戻したか
+     */
+    private static void assertStatusChangedFields(Order order, OrderStatusChanged event, Instant occurredAt,
+                                                  OrderStatusChanged.Status from, OrderStatusChanged.Status to,
+                                                  OrderStatusChanged.@Nullable CancellationKind cancellationKind,
+                                                  @Nullable Boolean restocked) {
+        assertThat(event.orderId()).isEqualTo(order.id());
+        assertThat(event.occurredAt()).isEqualTo(occurredAt);
+        assertThat(event.from()).isEqualTo(from);
+        assertThat(event.to()).isEqualTo(to);
+        assertThat(event.cancellationKind()).isEqualTo(cancellationKind);
+        assertThat(event.restocked()).isEqualTo(restocked);
     }
 }

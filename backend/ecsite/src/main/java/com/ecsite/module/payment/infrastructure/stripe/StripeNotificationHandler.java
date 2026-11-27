@@ -79,6 +79,11 @@ class StripeNotificationHandler {
         switch (event.getType()) {
             case SESSION_COMPLETED -> {
                 var session = session(event);
+                // payment モードの完了の通知には必ずあるので、ないのは異常。再送でも直らないが、例外で返して Stripe の通知の記録に残す
+                if (session.getPaymentIntent() == null) {
+                    throw SystemException.of(
+                            "PaymentIntent のない Stripe の与信の成功の通知: id=" + event.getId() + ", pageId=" + session.getId(), null);
+                }
                 receiver.authorized(session.getId(), session.getPaymentIntent());
             }
             case SESSION_EXPIRED -> receiver.pageExpired(session(event).getId());

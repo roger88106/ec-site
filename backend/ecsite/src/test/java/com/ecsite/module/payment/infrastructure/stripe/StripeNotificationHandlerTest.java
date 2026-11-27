@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.stripe.net.Webhook;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import java.util.Objects;
 import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 /**
  * Stripe の通知の受け取りの単体テスト
@@ -209,13 +211,17 @@ class StripeNotificationHandlerTest {
             // 確認（前提）：PaymentIntent を、null に書き換えられている
             assertThat(payload).contains("\"payment_intent\": null");
 
-            // 操作と確認：システムのエラーになる
-            assertSystemError(() -> handler.handle(payload, signature), CommonErrorCode.SYSTEM_ERROR);
+            // 操作：通知を受け取る
+            var error = catchThrowableOfType(SystemException.class, () -> handler.handle(payload, signature));
+
+            // 確認：システムのエラーになる
+            assertThat(error).isNotNull();
+            assertThat(error.getErrorDetail().errorCode().code())
+                    .isNotNull()
+                    .isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode().code());
 
             // 確認：例外のメッセージに、通知の ID と支払画面 ID がある
-            assertThatThrownBy(() -> handler.handle(payload, signature))
-                    .hasMessageContaining(EVENT_ID)
-                    .hasMessageContaining(SESSION_ID);
+            assertThat(error).hasMessageContaining(EVENT_ID).hasMessageContaining(SESSION_ID);
 
             // 確認：何も渡さない
             assertThat(receiver.received).isEmpty();

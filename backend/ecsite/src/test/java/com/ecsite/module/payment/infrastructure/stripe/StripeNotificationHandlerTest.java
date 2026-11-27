@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.stripe.net.Webhook;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import java.util.Objects;
 import static com.ecsite.support.BusinessErrorAssertions.assertSystemError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 /**
  * Stripe の通知の受け取りの単体テスト
@@ -59,6 +61,11 @@ class StripeNotificationHandlerTest {
      * 記録した期限切れの通知の、支払画面 ID
      */
     private static final String EXPIRED_SESSION_ID = "cs_test_a1zewRjUghE0UY9BsbiwwxGmd9XVfiSll2NRfTbJcHbzBjHVBYFqfbZO2N";
+
+    /**
+     * 記録した与信の成功の通知の、通知の ID（Event の ID）
+     */
+    private static final String EVENT_ID = "evt_1UQ8lsCajA2Qja1LGjfJQoOX";
 
     // ============================== 対象 ==============================
 
@@ -190,6 +197,33 @@ class StripeNotificationHandlerTest {
 
             // 操作と確認：システムのエラーになり、何も渡さない
             assertSystemError(() -> handler.handle(payload, signature), CommonErrorCode.SYSTEM_ERROR);
+            assertThat(receiver.received).isEmpty();
+        }
+
+        @Test
+        @DisplayName("BR-17 PaymentIntent のない与信の成功の通知は、システムのエラーにし、何も渡さない")
+        void rejectsMissingPaymentIntent() {
+            // 準備：記録した与信の成功の通知の PaymentIntent を、null にしたもの
+            var payload = recorded("checkout-session-completed.json")
+                    .replace("\"payment_intent\": \"" + PAYMENT_INTENT_ID + "\"", "\"payment_intent\": null");
+            var signature = sign(payload, WEBHOOK_SECRET, NOW);
+
+            // 確認（前提）：PaymentIntent を、null に書き換えられている
+            assertThat(payload).contains("\"payment_intent\": null");
+
+            // 操作：通知を受け取る
+            var error = catchThrowableOfType(SystemException.class, () -> handler.handle(payload, signature));
+
+            // 確認：システムのエラーになる
+            assertThat(error).isNotNull();
+            assertThat(error.getErrorDetail().errorCode().code())
+                    .isNotNull()
+                    .isEqualTo(CommonErrorCode.SYSTEM_ERROR.getCode().code());
+
+            // 確認：例外のメッセージに、通知の ID と支払画面 ID がある
+            assertThat(error).hasMessageContaining(EVENT_ID).hasMessageContaining(SESSION_ID);
+
+            // 確認：何も渡さない
             assertThat(receiver.received).isEmpty();
         }
     }

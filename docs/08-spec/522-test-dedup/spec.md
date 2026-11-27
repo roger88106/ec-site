@@ -42,11 +42,11 @@
 | まとまり | ファイル |
 |----------|----------|
 | 単体テスト（注文の状態、イベントの確認） | `backend/ecsite/src/test/java/com/ecsite/module/order/domain/order/` の `TestOrders.java`、`OrderPaymentTest.java`、`OrderShipmentTest.java`、`OrderCancellationTest.java`、`OrderEventAssertions.java` |
-| 単体テスト（設定の範囲の検証） | `OrderPropertiesTest.java`（`module/order/application/`）、`PaymentPropertiesTest.java`（`module/payment/application/`）、`ImgproxyPropertiesTest.java`（`module/media/infrastructure/converter/`）、`ReportingPropertiesTest.java`（`module/reporting/application/`）、`TestSettings.java`（`support/`） |
+| 単体テスト（設定の範囲の検証） | `OrderPropertiesTest.java`（`module/order/application/`）、`PaymentPropertiesTest.java`（`module/payment/application/`）、`ImgproxyPropertiesTest.java`（`module/media/infrastructure/converter/`）、`ReportingPropertiesTest.java`（`module/reporting/application/`）、`ConfigurationPropertiesValidatedTest.java`（`config/`。`ApplicationContextRunner` の 4 ファイルを消した後の、起動のときの検証の前提の確認。T522-01-08） |
 | 単体テスト（境界の値） | `backend/ecsite/src/test/java/com/ecsite/` の下の 12 ファイル（確定。一覧は tasks の T522-01-02）。11 クラスに `CartTest.java`（`module/cart/domain/`、品目の数の上限と数量の上限の境界）を加えた |
 | 統合テスト（境界の値と拒否の名前） | `backend/ecsite/src/integrationTest/java/com/ecsite/` の下の 5 ファイル（確定）：`module/catalog/presentation/` の `ProductApiTest.java`・`ProductImageApiTest.java`・`ProductListApiTest.java`（品番と商品名の境界）・`ProductVariantApiTest.java`、`module/storefront/presentation/` の `StorefrontApiTest.java`。拒否の「リクエストの誤り」を「400」にそろえる |
 | 統合テストの補助 | `backend/ecsite/src/integrationTest/java/com/ecsite/support/data/OrderTestData.java` |
-| 統合テスト（キャンセル申請の準備） | `backend/ecsite/src/integrationTest/java/com/ecsite/` の 9 ファイル（一覧は tasks） |
+| 統合テスト（キャンセル申請の準備） | `backend/ecsite/src/integrationTest/java/com/ecsite/` の 9 ファイル（一覧は tasks）。そのうち 6 ファイルを変える。`CheckoutCleanupJobTest`・`MemberOrderApiTest`・`StoreOrderShipmentApiTest` は変えない（Non-goals） |
 | 統合テスト（受付の注文の準備） | `CapturedOrderCancellationRefundTest`、`ReportFlowTest`（`module/reporting/presentation/`）、`ReturnedOrderRefundTest`、`CancellationAtomicityTest`、`CancellationApiTest`、`ReturnedOrderCancellationApiTest`（`module/order/presentation/` ほか） |
 | 文書 | `docs/05-開発規則/test-writing-backend.md`（境界の節）、`docs/08-spec/522-test-dedup/` の spec・plan・tasks |
 
@@ -88,6 +88,9 @@
 | `OrderTest` の `accepted`・`requested`・`rejected`（private） | 見積もりから組み立てる別の準備で、`TestOrders` の状態ごとの作り方と意味が違うため。 |
 | `ProductApiTest`・`ProductVariantApiTest`・`CategoryApiTest` の {0, 上限 + 1} の 400 のテスト | 下限の外（0）と上限の外を 1 つのテストに入れている既存の形。直すのは別の作業とし、pull request の「既存の指摘」に書く（本番の挙動は変えない）。 |
 | 本番のコードの「リクエストの誤り」（`GlobalExceptionHandler`・`StripePaymentGateway`） | 名前をそろえる対象はテストだけのため。本番のコードは DN-522-1 で変えない。 |
+| `CheckoutCleanupJobTest`（integrationTest） | 申請が今どおりできること自体を確認するため、申請の呼び出しを準備ではなく操作として残す（T522-01-18）。 |
+| `MemberOrderApiTest` の申請の呼び出し | キャンセル申請そのものの確認（持ち主の 204、他の会員の 404、token なしの 401）で、操作の 204 だけでは表せないため（T522-01-19）。 |
+| `StoreOrderShipmentApiTest` の申請の呼び出し | `rejectsRequest` が申請の応答（400 と `CANCELLATION_NOT_REQUESTABLE`）を確認しているため（T522-01-20）。 |
 | 本番のコードの変更 | DN-522-1。 |
 
 ## Open questions
@@ -190,15 +193,15 @@
 
     | 組 | テスト（ファイル・メソッド） | 準備 | 操作 | 確認 | 統合か別々か（根拠） |
     |----|------|------|------|------|------|
-    | 1 | `OrderPaymentTest.acceptsPendingOrder`、`OrderPaymentTest.registersAcceptedEvent`（★） | 支払待ちの注文（`pendingOrder`） | `acceptPayment(LATER)` | 受付になり、支払を待たない ／ 状態の変化のイベント 1 件（支払待ち → 受付、キャンセルの項目なし） | 統合。準備と操作が同じで、確認は状態とイベント。`registersAcceptedEvent` に状態の確認を入れ、`acceptsPendingOrder` を消す。 |
+    | 1 | `OrderPaymentTest.acceptsPendingOrder`、`OrderPaymentTest.registersAcceptedEvent`（★） | 支払待ちの注文（`pendingOrder`） | `acceptPayment(LATER)` | 受付になり、支払を待たない ／ 状態の変化のイベント 1 件（支払待ち → 受付、キャンセルの項目なし） | 統合。準備と操作が同じで、確認は状態とイベント。結果：`acceptsPendingOrder` に状態の確認を入れて残し、`registersAcceptedEvent` を消す（T522-01-16）。 |
     | 2 | `OrderPaymentTest.cancelsPendingOrder`、`OrderPaymentTest.recordsPaymentExpired`、`OrderPaymentTest.registersCancelledEvent`、`OrderPaymentTest.registersPaymentExpiredEvent`（★） | 支払待ちの注文 | `expirePayment(LATER)` | キャンセル、戻り値 true ／ キャンセルの記録（支払期限切れ、理由と運営者なし） ／ イベント 1 件（支払待ち → キャンセル、支払期限切れ、在庫に戻す）と、イベント全体が 1 件 | 統合。準備と操作が同じで、確認は状態・記録・イベント。`registersPaymentExpiredEvent` に入れ、残り 3 件を消す。`assertStatusChangedEventOnly` は種類で絞るため、`registersCancelledEvent` の「イベント全体が 1 件」は統合後も残す。 |
     | 3 | `OrderShipmentTest.becomesShipped`、`OrderShipmentTest.registersShippedEvent`、`OrderShipmentTest.registersStatusChangedEvent`（★） | 受付の注文 | `ship(YAMATO, 送り状番号, LATER)` | 出荷済み ／ 出荷通知のイベント 1 件（注文 ID、日時、注文番号、配送業者、送り状番号） ／ 状態の変化のイベント 1 件（受付 → 出荷済み） | 一部統合。`becomesShipped` は `registersStatusChangedEvent` に状態の確認を入れて消す（同じ準備・操作で、確認が状態とイベント）。`registersShippedEvent` は別々に残す（確認する種類が出荷通知で、状態の変化のイベントと違うため）。 |
     | 4 | `OrderShipmentTest.recordsNotRestocked`、`OrderShipmentTest.registersNotRestockedEvent`（★） | 出荷済みの注文 | `cancelByOperator(返送の理由, 在庫に戻さない, 返送, 運営者, LATER)` | 戻り値 true、キャンセルの記録は在庫に戻さない ／ 状態の変化のイベント 1 件（出荷済み → キャンセル、運営者、在庫に戻さない） | 統合。準備と操作が同じで、確認は記録とイベント。`registersNotRestockedEvent` に記録の確認を入れ、`recordsNotRestocked` を消す。 |
     | 5 | `OrderCancellationTest.becomesRequested`、`OrderCancellationTest.recordsRequest`、`OrderCancellationTest.registersRequestedEvent`（★） | 受付の注文 | `requestCancellation(申請の理由, LATER)` | 戻り値 true、キャンセル申請中 ／ 申請の記録（日時、理由、判断を待つ） ／ 状態の変化のイベント 1 件（受付 → キャンセル申請中） | 統合。準備と操作が同じで、確認は状態・記録・イベント。`registersRequestedEvent` に入れ、2 件を消す。 |
     | 6 | `OrderCancellationTest.becomesCancelled`、`OrderCancellationTest.recordsApproval`、`OrderCancellationTest.recordsApprovedCancellation`、`OrderCancellationTest.registersCancelledEvent`、`OrderCancellationTest.registersApprovedEvent`（★） | キャンセル申請中の注文 | `approveCancellation(運営者, LATER)` | 戻り値 true、キャンセル ／ 申請の結果が承認、判断の日時 ／ キャンセルの記録（申請の承認、運営者） ／ 状態の変化のイベント 1 件（キャンセル申請中 → キャンセル、申請の承認、在庫に戻す）と、イベント全体が 1 件 | 統合。準備と操作が同じで、確認は状態・申請・記録・イベント。`registersApprovedEvent` に入れ、残り 4 件を消す。`registersCancelledEvent` の「イベント全体が 1 件」は統合後も残す。 |
     | 7 | `OrderCancellationTest.returnsToAccepted`、`OrderCancellationTest.recordsRejection`、`OrderCancellationTest.registersRejectedEvent`（★） | キャンセル申請中の注文 | `rejectCancellation(運営者, LATER)` | 受付、キャンセルの記録なし ／ 申請の結果が却下、判断の日時と運営者 ／ 状態の変化のイベント 1 件（キャンセル申請中 → 受付） | 統合。準備と操作が同じで、確認は状態・申請・イベント。`registersRejectedEvent` に入れ、2 件を消す。 |
-    | 8 | `OrderCancellationTest.cancelsAcceptedOrder`、`OrderCancellationTest.recordsOperatorCancellation`、`OrderCancellationTest.registersCancelledEvent`、`OrderCancellationTest.registersOperatorEvent`（★） | 受付の注文 | `cancelByOperator(在庫の不備, 在庫に戻す指定, 返送でない, 運営者, LATER)`。在庫に戻す指定の値は、受付では結果が変わらない（`alwaysRestocksNotShipped`）ので、組の中で違ってよい | 戻り値 true、キャンセル ／ キャンセルの記録（運営者、理由、運営者） ／ 状態の変化のイベント 1 件（受付 → キャンセル、運営者、在庫に戻す）と、イベント全体が 1 件 | 統合。準備と操作の種類が同じで、確認は状態・記録・イベント。`registersOperatorEvent` に入れ、残り 3 件を消す。`registersCancelledEvent` の「イベント全体が 1 件」は統合後も残す。 |
-    | 9 | `OrderCancellationTest.cancelsRequestedOrder`、`OrderCancellationTest.approvesPendingRequest`、`OrderCancellationTest.registersOperatorEventFromRequested`（★） | キャンセル申請中の注文 | `cancelByOperator(理由, 在庫に戻す, 返送でない, 運営者, LATER)`。3 件の理由の文は違うが、どれも確認しない値なので、統合後は 1 つにそろえる | キャンセル、キャンセルの種類が運営者 ／ 申請の結果が承認 ／ 状態の変化のイベント 1 件（キャンセル申請中 → キャンセル、運営者、在庫に戻す） | 統合。準備と操作が同じで、確認は状態・申請・イベント。`registersOperatorEventFromRequested` に入れ、2 件を消す。 |
+    | 8 | `OrderCancellationTest.cancelsAcceptedOrder`、`OrderCancellationTest.recordsOperatorCancellation`、`OrderCancellationTest.registersCancelledEvent`、`OrderCancellationTest.registersOperatorEvent`（★） | 受付の注文 | `cancelByOperator(在庫の不備, 在庫に戻す指定, 返送でない, 運営者, LATER)`。在庫に戻す指定の値は、受付では結果が変わらない（`alwaysRestocksNotShipped`）ので、組の中で違ってよい | 戻り値 true、キャンセル ／ キャンセルの記録（運営者、理由、運営者） ／ 状態の変化のイベント 1 件（受付 → キャンセル、運営者、在庫に戻す）と、イベント全体が 1 件 | 統合。準備と操作の種類が同じで、確認は状態・記録・イベント。`registersOperatorEvent` に入れ、残り 3 件を消す。ただし、在庫に戻す指定を `true` にした `restocksOnOperatorCancel`（OrderCancellationTest.java）は残す。理由：在庫に戻す指定の両方の値で、受付のキャンセルの結果が同じことを確認するため（指定の違いだけで準備・操作・確認が同じ）。`registersCancelledEvent` の「イベント全体が 1 件」は統合後も残す。 |
+    | 9 | `OrderCancellationTest.cancelsRequestedOrder`、`OrderCancellationTest.approvesPendingRequest`、`OrderCancellationTest.registersOperatorEventFromRequested`（★） | キャンセル申請中の注文 | `cancelByOperator(理由, 在庫に戻す, 返送でない, 運営者, LATER)`。3 件の理由の文は違うが、どれも確認しない値なので、統合後は 1 つにそろえる | キャンセル、キャンセルの種類が運営者 ／ 申請の結果が承認 ／ 状態の変化のイベント 1 件（キャンセル申請中 → キャンセル、運営者、在庫に戻す） | 統合。準備と操作が同じで、確認は状態・申請・イベント。結果：`cancelsRequestedOrder` を残し、残り 2 件を消す（T522-01-16）。 |
 
     - 9 件の呼び出しは、組 1〜9 のそれぞれに 1 件ずつ入る（★）。
     - 表に入れない参考（9 件を含まない同じ準備・操作の組）：`OrderShipmentTest` の `cancelsReturnedOrder`・`recordsRestocked`・`registersCancelledEvent`（出荷済みの注文、返送、在庫に戻す指定の運営者のキャンセル）。統合するかは、T522-01-16 の前に決める。
@@ -245,10 +248,11 @@
   - 範囲：上の 2 ファイル（`module/order/presentation/` の下）
   - 確認方法：絞り込んだ統合テストが通る。通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の確認の検査が残る。
   - 結果（計画からの変更、issue 担当が承認）：置き換えない。理由：両方とも `@Transactional`（ロールバック）のテストで、`acceptedOrder` の待ちが使えない。準備は既に `OrderTestData.placeOrder` を使っている。
-- [ ] **T522-01-25** [実行] `./gradlew check` を 1 回実行する（`backend/ecsite/`）。実行の前に、issue 担当のセッションの合図を待つ（DC-522-8）。
+- [x] **T522-01-25** [実行] `./gradlew check` を 1 回実行する（`backend/ecsite/`）。実行の前に、issue 担当のセッションの合図を待つ（DC-522-8）。
   - 依存：T522-01-24
   - 範囲：`backend/ecsite/`
   - 確認方法：`./gradlew check`（`cpdCheck` を含む）が通る。
+  - 結果（計画からの変更）：issue 担当の合図の後、2d718f27d で `./gradlew check` が通った（13 分 45 秒）。その後にテストを変えたので（段階のレビューと pull request の前の指摘の修正）、最後の状態は CI で確認した。PR #653 の head 3b42a7a0a の CI（run 45878463292、文書は run 45878463229）が成功。CI のジョブは、`./gradlew check -x integrationTest -x coverageReport`（ci.yml:83）、統合テストの 3 shard（ci.yml:193）、coverageReport（ci.yml:274）、PIT（ci.yml:146）で、`./gradlew check` の全ての task を含む。検査した最後の内容は、マージの commit bef11bfd7 と同じ。順序の逆転（T522-01-26 が先に完了）は、この実行を後に置いたため。
 - [x] **T522-01-26** 段階の最後のレビュー。変えたテストを、変更の前後で並べて読み、確認する項目が減っていないことを確認する。[書き方の規則とレビュー](../../05-開発規則/review.md)と照合する。指摘を修正する（DC-522-7）。
   - 依存：T522-01-25
   - 確認する項目：DC-522-1〜10。危険度が高いので、高性能（opus）で行う。
@@ -257,13 +261,28 @@
     | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
     |------|------|--------|------|-------|------|----|------|------|------|
     | 段階 1 | 網羅性と規則（1 役） | 高性能 | 1 | 195475 | 4m36s | 2 | 7 | 9 | 13 |
-| pull request の前 | 組み込み（medium 指定、high 表示） | 組み込み | 1 | — | — | 0 | 0 | 5 | 4 |
-pull request の組み込みのレビューは、指摘 5 件のうち 4 件を直した（直書きの境界値、AC の表記、JSON のエスケープ、空振りの下限）。残りの 1 件（両端を 1 つのテストに入れた既存の形）は、spec の Non-goals に理由を書き、pull request の既存の指摘に回した。
 
     検証役は使わなかった。理由：レビュー役は 1 つで、指摘の場所（file:line）を spec 担当が読んで確認した。高と必須の指摘は全て修正した。推奨は 4 件を修正し、5 件を次の pull request の「推奨の指摘の扱い」に残す（`@Nullable` の付け忘れ、`CapturedOrderCancellationRefundTest` の `adminOrder` の整理、`test-writing-backend.md` の補助の表、plan の計画からの変更の追記、AC 番号の後の読点）。レビューの記録：`.local/review/202611270325-522-stage/result-main.md`。
-- [ ] **T522-01-27** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
+- [x] **T522-01-27** spec の最後のレビュー。指摘を修正し、draft の pull request を作る。
   - 依存：T522-01-26
-- [ ] **T522-01-28** pull request の前のレビュー。指摘を修正し、draft を外す。
+  - 結果（遅れて行った。draft の pull request（#653）は、このレビューの前に作られた）：レビューは 3 観点（spec との一致、ファイルをまたぐ影響、段階をまたぐ影響）で高性能モデルを使い、検証役で判定した。
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | spec との一致 | 高性能 | 1 | 164429 | 3m40s | 0 | 6 | 6 | 6 |
+    | spec の最後 | ファイルをまたぐ影響 | 高性能 | 1 | 157170 | 4m12s | 0 | 0 | 10 | 0 |
+    | spec の最後 | 段階をまたぐ影響 | 高性能 | 1 | 103734 | 1m56s | 0 | 5 | 4 | 5 |
+    | spec の最後 | 検証役（必須の判定） | 高性能 | 1 | 98560 | 2m44s | — | — | — | — |
+
+    検証役の判定：必須の 8 件（重複を除く）は本物 7、一部 1、偽 0。推奨は、重複を除いていない。採用の数は、必須の修正。推奨は pull request の「推奨の指摘の扱い」に残す。レビューの記録：`.local/review/202611280032-522-spec-last/`。
+- [x] **T522-01-28** pull request の前のレビュー。指摘を修正し、draft を外す。
   - 依存：T522-01-27
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | pull request の前 | 組み込み（medium 指定、high 表示） | 組み込み | 1 | — | — | 0 | 0 | 5 | 4 |
+
+    pull request の組み込みのレビューは、指摘 5 件のうち 4 件を直した（直書きの境界値、AC の表記、JSON のエスケープ、空振りの下限）。残りの 1 件（両端を 1 つのテストに入れた既存の形）は、spec の Non-goals に理由を書き、pull request の既存の指摘に回した。
 - [ ] **T522-01-29** spec をアーカイブに移す。
   - 依存：T522-01-28

@@ -5,13 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
-import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -28,63 +23,51 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class PaymentPropertiesTest {
 
-    // ============================== 定数 ==============================
-
-    /**
-     * 必須の戻る先の URL
-     */
-    private static final String RETURN_URL = "ecsite.payment.return-url=http://store/orders/{orderId}";
-
-    // ============================== 対象 ==============================
-
-    /**
-     * 決済の設定だけを読む Spring のコンテキスト
-     */
-    private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
-            .withUserConfiguration(Payment.class);
-
     // ============================== テスト ==============================
 
     @Test
-    @DisplayName("支払の期限が上限の 30 分なら、起動できる")
-    void startsWithDeadlineAtLimit() {
-        // 操作と確認：30 分で起動できる
-        runner.withPropertyValues(RETURN_URL, "ecsite.payment.deadline=30m")
-                .run(context -> assertThat(context).hasNotFailed());
+    @DisplayName("支払の期限が上限の 30 分なら、値の検証を通り、その値になる")
+    void acceptsDeadlineAtLimit() {
+        // 操作：30 分を検証付きで当てはめる
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "deadline", "30m"));
+
+        // 確認：30 分になる
+        assertThat(properties.deadline()).isEqualTo(Duration.ofMinutes(30));
     }
 
     @Test
-    @DisplayName("支払の期限が上限を超えると、起動に失敗し、deadline が知らされる")
-    void failsWithDeadlineOverLimit() {
-        // 操作と確認：31 分では起動に失敗し、原因に設定の名前がある
-        runner.withPropertyValues(RETURN_URL, "ecsite.payment.deadline=31m")
-                .run(context -> {
-                    assertThat(context).hasFailed();
-                    assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("deadline");
-                });
+    @DisplayName("支払の期限が上限を超えると、値の検証で拒否され、deadline が知らされる")
+    void rejectsDeadlineOverLimit() {
+        // 操作と確認：31 分は値の検証で拒否され、原因に設定の名前がある
+        assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "deadline", "31m")))
+                .isInstanceOf(BindException.class)
+                .rootCause().hasMessageContaining("deadline");
     }
 
     @Test
-    @DisplayName("与信の期限が近いとする期間が、与信の有効期間より短ければ、起動できる")
-    void startsWithAuthorizationWarningShorterThanValidity() {
-        // 操作と確認：有効期間 2 日に対して、2 日の 1ms 前で起動できる
-        runner.withPropertyValues(RETURN_URL, "ecsite.payment.authorization-validity=2d",
-                        "ecsite.payment.authorization-warning=172799999ms")
-                .run(context -> assertThat(context).hasNotFailed());
+    @DisplayName("与信の期限が近いとする期間が、与信の有効期間より短ければ、値の検証を通る")
+    void acceptsAuthorizationWarningShorterThanValidity() {
+        // 操作：有効期間 2 日に対して、2 日の 1ms 前を検証付きで当てはめる
+        var properties = TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "authorization-validity", "2d",
+                        "authorization-warning", "172799999ms"));
+
+        // 確認：2 日の 1ms 前になる
+        assertThat(properties.authorizationWarning()).isEqualTo(Duration.ofMillis(172_799_999L));
     }
 
     @Test
-    @DisplayName("与信の期限が近いとする期間が、与信の有効期間と同じなら、起動に失敗し、2 つの設定の名前が知らされる")
-    void failsWithAuthorizationWarningNotShorterThanValidity() {
-        // 操作と確認：有効期間と同じ 2 日では起動に失敗し、原因に 2 つの設定の名前がある
-        runner.withPropertyValues(RETURN_URL, "ecsite.payment.authorization-validity=2d",
-                        "ecsite.payment.authorization-warning=2d")
-                .run(context -> {
-                    assertThat(context).hasFailed();
-                    assertThat(context.getStartupFailure()).rootCause().isInstanceOf(BindValidationException.class)
-                            .hasMessageContaining("authorization-warning").hasMessageContaining("authorization-validity");
-                });
+    @DisplayName("与信の期限が近いとする期間が、与信の有効期間と同じなら、値の検証で拒否され、2 つの設定の名前が知らされる")
+    void rejectsAuthorizationWarningNotShorterThanValidity() {
+        // 操作と確認：有効期間と同じ 2 日は値の検証で拒否され、原因に 2 つの設定の名前がある
+        assertThatThrownBy(() -> TestSettings.bindValidated("ecsite.payment", PaymentProperties.class,
+                Map.of("return-url", "http://store/orders/{orderId}", "authorization-validity", "2d",
+                        "authorization-warning", "2d")))
+                .isInstanceOf(BindException.class)
+                .rootCause().isInstanceOf(BindValidationException.class)
+                .hasMessageContaining("authorization-warning").hasMessageContaining("authorization-validity");
     }
 
     @ParameterizedTest(name = "「{0}」が {1}")
@@ -176,15 +159,5 @@ class PaymentPropertiesTest {
 
         // 確認：10 分
         assertThat(properties.captureReconcileDelay()).isEqualTo(Duration.ofMinutes(10));
-    }
-
-    // ============================== 準備の補助 ==============================
-
-    /**
-     * 決済の設定を有効にする
-     */
-    @Configuration(proxyBeanMethods = false)
-    @EnableConfigurationProperties(PaymentProperties.class)
-    static class Payment {
     }
 }

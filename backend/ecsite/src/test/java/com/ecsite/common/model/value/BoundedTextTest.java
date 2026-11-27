@@ -78,14 +78,14 @@ class BoundedTextTest {
         @DisplayName("サロゲートペアは 1 文字と数え、上限ちょうどなら変わらない")
         void keepsSurrogatePairsAtTheLimit() {
             // 操作と確認：サロゲートペア 3 つはそのまま
-            assertThat(BoundedText.truncate(SURROGATE.repeat(3), LIMIT)).isEqualTo(SURROGATE.repeat(3));
+            assertThat(BoundedText.truncate(SURROGATE.repeat(LIMIT), LIMIT)).isEqualTo(SURROGATE.repeat(LIMIT));
         }
 
         @Test
         @DisplayName("サロゲートペアの文字の途中で切らない")
         void doesNotSplitSurrogatePairs() {
             // 操作と確認：サロゲートペア 4 つは、3 つ（char で 6）になる。char の 3 つ目で切ると壊れる
-            assertThat(BoundedText.truncate(SURROGATE.repeat(4), LIMIT)).isEqualTo(SURROGATE.repeat(3));
+            assertThat(BoundedText.truncate(SURROGATE.repeat(LIMIT + 1), LIMIT)).isEqualTo(SURROGATE.repeat(LIMIT));
         }
     }
 
@@ -111,14 +111,14 @@ class BoundedTextTest {
         @DisplayName("サロゲートペアは 1 文字と数え、上限ちょうどは通る")
         void acceptsSurrogatePairsUpToTheLimit() {
             // 操作と確認：サロゲートペア 3 つは通る
-            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(3), LIMIT)).isTrue();
+            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(LIMIT), LIMIT)).isTrue();
         }
 
         @Test
         @DisplayName("サロゲートペアは 1 文字と数え、上限を 1 文字超えると通らない")
         void rejectsSurrogatePairsOverTheLimit() {
             // 操作と確認：サロゲートペア 4 つは通らない
-            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(4), LIMIT)).isFalse();
+            assertThat(BoundedText.isFilledWithin(SURROGATE.repeat(LIMIT + 1), LIMIT)).isFalse();
         }
 
         @ParameterizedTest(name = "「{0}」")

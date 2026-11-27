@@ -21,7 +21,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -31,7 +30,6 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -182,14 +180,14 @@ class ReportFlowTest {
         orders = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer());
         shipping = new ShippingTestData(mockMvc, mockCarrier, applicationContext);
 
-        var delivered = acceptedOrder(DELIVERED_QUANTITY);
-        var cancelled = acceptedOrder(CANCELLED_QUANTITY);
-        var returned = acceptedOrder(RETURNED_QUANTITY);
+        var delivered = orders.acceptedOrder(variantId, DELIVERED_QUANTITY);
+        var cancelled = orders.acceptedOrder(variantId, CANCELLED_QUANTITY);
+        var returned = orders.acceptedOrder(variantId, RETURNED_QUANTITY);
         shipping.notifyStatus(Carrier.YAMATO, ship(delivered), "配達完了");
-        cancel(cancelled, """
+        orders.cancelByOperator(cancelled, """
                 {"reason": "受付のままキャンセル"}""");
         shipping.notifyStatus(Carrier.YAMATO, ship(returned), "返品");
-        cancel(returned, """
+        orders.cancelByOperator(returned, """
                 {"reason": "返送された", "restock": true}""");
         awaitCollected(Set.of(delivered, cancelled, returned));
     }
@@ -238,19 +236,6 @@ class ReportFlowTest {
     // ============================== 準備の補助 ==============================
 
     /**
-     * 注文して支払い、受付にする（与信の成功のリスナーが終わるまで待つ）。
-     *
-     * @param quantity 数量
-     * @return 注文 ID
-     */
-    private UUID acceptedOrder(int quantity) throws Exception {
-        var orderId = orders.placeOrder(variantId, quantity);
-        // 支払うとリスナーが非同期で注文を受け付け直す。終わる前に出荷やキャンセルをすると、楽観ロックで衝突することがある
-        asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId));
-        return orderId;
-    }
-
-    /**
      * ヤマト運輸で出荷を登録する。
      *
      * @param orderId 注文 ID
@@ -260,19 +245,6 @@ class ReportFlowTest {
         var trackingNumber = ShippingTestData.trackingNumber();
         shipping.ship(orderId, Carrier.YAMATO, trackingNumber);
         return trackingNumber;
-    }
-
-    /**
-     * 運営者のキャンセルを送り、204 を確認する。
-     *
-     * @param orderId 注文 ID
-     * @param body    キャンセルの本文
-     */
-    private void cancel(UUID orderId, String body) throws Exception {
-        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isNoContent());
     }
 
     /**

@@ -1,65 +1,88 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.support.TestSettings;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
-import org.springframework.context.annotation.Configuration;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.BindException;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * レポートの設定の検証
  *
- * <p>会計年度の始まりの月は 1〜12 で、範囲の外では起動に失敗し、設定の名前が知らされることを確認する。
+ * <p>会計年度の始まりの月は 1〜12 で、範囲の外は値の検証で拒否され、設定の名前が知らされることを確認する。
+ * 上限と下限は、それぞれ別のテストにする。
  */
 class ReportingPropertiesTest {
 
-    // ============================== 対象 ==============================
+    // ============================== 定数 ==============================
 
     /**
-     * レポートの設定だけを読む Spring のコンテキスト
+     * レポートの設定の接頭辞
      */
-    private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
-            .withUserConfiguration(Reporting.class);
+    private static final String PREFIX = "ecsite.reporting";
+
+    /**
+     * 会計年度の始まりの月の下限（範囲の端）
+     */
+    private static final int MONTH_MIN = 1;
+
+    /**
+     * 会計年度の始まりの月の上限（範囲の端）
+     */
+    private static final int MONTH_MAX = 12;
 
     // ============================== テスト ==============================
 
-    @ParameterizedTest(name = "「{0}」")
-    @ValueSource(ints = {1, 12})
-    @DisplayName("会計年度の始まりの月が範囲の端なら、起動でき、その月になる")
-    void startsWithMonthAtBounds(int month) {
-        // 操作と確認：起動でき、設定した月を持つ
-        runner.withPropertyValues("ecsite.reporting.fiscal-year-start-month=" + month)
-                .run(context -> {
-                    assertThat(context).hasNotFailed();
-                    assertThat(context.getBean(ReportingProperties.class).fiscalYearStartMonth()).isEqualTo(month);
-                });
+    @Test
+    @DisplayName("会計年度の始まりの月が下限の 1 月なら、値の検証を通り、その月になる")
+    void acceptsMonthAtMinimum() {
+        // 操作：下限の月を検証付きで当てはめる
+        var properties = bind(MONTH_MIN);
+
+        // 確認：設定した月になる
+        assertThat(properties.fiscalYearStartMonth()).isEqualTo(MONTH_MIN);
     }
 
-    @ParameterizedTest(name = "「{0}」")
-    @ValueSource(ints = {0, 13})
-    @DisplayName("会計年度の始まりの月が範囲の外なら、起動に失敗し、fiscalYearStartMonth が知らされる")
-    void failsWithMonthOutOfBounds(int month) {
-        // 操作と確認：起動に失敗し、原因に設定の名前がある
-        runner.withPropertyValues("ecsite.reporting.fiscal-year-start-month=" + month)
-                .run(context -> {
-                    assertThat(context).hasFailed();
-                    assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("fiscalYearStartMonth");
-                });
+    @Test
+    @DisplayName("会計年度の始まりの月が上限の 12 月なら、値の検証を通り、その月になる")
+    void acceptsMonthAtMaximum() {
+        // 操作：上限の月を検証付きで当てはめる
+        var properties = bind(MONTH_MAX);
+
+        // 確認：設定した月になる
+        assertThat(properties.fiscalYearStartMonth()).isEqualTo(MONTH_MAX);
     }
 
-    // ============================== 準備の補助 ==============================
+    @Test
+    @DisplayName("会計年度の始まりの月が下限の 1 月より小さい 0 なら、値の検証で拒否され、fiscalYearStartMonth が知らされる")
+    void rejectsMonthBelowMinimum() {
+        // 操作と確認：値の検証で拒否され、原因に設定の名前がある
+        assertThatThrownBy(() -> bind(MONTH_MIN - 1))
+                .isInstanceOf(BindException.class)
+                .rootCause().hasMessageContaining("fiscalYearStartMonth");
+    }
+
+    @Test
+    @DisplayName("会計年度の始まりの月が上限の 12 月より大きい 13 なら、値の検証で拒否され、fiscalYearStartMonth が知らされる")
+    void rejectsMonthAboveMaximum() {
+        // 操作と確認：値の検証で拒否され、原因に設定の名前がある
+        assertThatThrownBy(() -> bind(MONTH_MAX + 1))
+                .isInstanceOf(BindException.class)
+                .rootCause().hasMessageContaining("fiscalYearStartMonth");
+    }
 
     /**
-     * レポートの設定を有効にする
+     * 会計年度の始まりの月を検証付きで当てはめる。
+     *
+     * @param month 月
+     * @return 当てはめた設定
      */
-    @Configuration(proxyBeanMethods = false)
-    @EnableConfigurationProperties(ReportingProperties.class)
-    static class Reporting {
+    private static ReportingProperties bind(int month) {
+        return TestSettings.bindValidated(PREFIX, ReportingProperties.class,
+                Map.of("fiscal-year-start-month", String.valueOf(month)));
     }
 }

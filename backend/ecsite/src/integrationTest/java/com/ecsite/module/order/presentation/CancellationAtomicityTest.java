@@ -5,7 +5,6 @@ import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.support.MutableClock;
-import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.config.IntegrationTest;
 import com.ecsite.support.data.CatalogTestData;
 import com.ecsite.support.data.InventoryTestData;
@@ -89,9 +88,6 @@ class CancellationAtomicityTest {
     @Autowired
     DSLContext dsl;
 
-    @Autowired
-    AsyncEvents asyncEvents;
-
     @MockitoSpyBean
     StockDirectory stockDirectory;
 
@@ -135,10 +131,8 @@ class CancellationAtomicityTest {
         var product = catalog.product(taxCategoryId, "一貫性の商品", 1000).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, STOCKED);
-        orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, ORDERED);
-        // コミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前にキャンセルすると、
-        // 楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある
-        asyncEvents.awaitHandled(OrderTestData.paymentAuthorized(orderId));
+        // 終わる前にキャンセルすると、楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある
+        orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).acceptedOrder(variantId, ORDERED);
     }
 
     // ============================== テスト ==============================

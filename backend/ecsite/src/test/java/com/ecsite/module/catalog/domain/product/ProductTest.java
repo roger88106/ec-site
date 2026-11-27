@@ -267,14 +267,14 @@ class ProductTest {
         @DisplayName("軸の名前は 30 文字まで指定できる")
         void acceptsAxisNameUpTo30Characters() {
             // 操作と確認：30 文字の軸の名前で登録できる
-            assertThatCode(() -> productWithAxes("あ".repeat(30))).doesNotThrowAnyException();
+            assertThatCode(() -> productWithAxes("あ".repeat(Product.AXIS_NAME_MAX_LENGTH))).doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("軸の名前が 31 文字以上なら拒否される")
         void rejectsAxisNameOver30Characters() {
             // 操作と確認：業務のエラー INVALID_VARIANT_AXES で拒否される
-            assertBusinessError(() -> productWithAxes("あ".repeat(31)), ProductErrorCode.INVALID_VARIANT_AXES);
+            assertBusinessError(() -> productWithAxes("あ".repeat(Product.AXIS_NAME_MAX_LENGTH + 1)), ProductErrorCode.INVALID_VARIANT_AXES);
         }
 
         @Test
@@ -307,14 +307,14 @@ class ProductTest {
         @DisplayName("商品名は 200 文字まで指定できる")
         void acceptsNameUpTo200Characters() {
             // 操作と確認：200 文字の商品名で登録できる
-            assertThatCode(() -> productNamed("あ".repeat(200))).doesNotThrowAnyException();
+            assertThatCode(() -> productNamed("あ".repeat(Product.NAME_MAX_LENGTH))).doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("商品名が 201 文字以上なら拒否される")
         void rejectsNameOver200Characters() {
             // 操作と確認：業務のエラー INVALID_PRODUCT_NAME で拒否される
-            assertBusinessError(() -> productNamed("あ".repeat(201)), ProductErrorCode.INVALID_PRODUCT_NAME);
+            assertBusinessError(() -> productNamed("あ".repeat(Product.NAME_MAX_LENGTH + 1)), ProductErrorCode.INVALID_PRODUCT_NAME);
         }
 
         @Test
@@ -335,14 +335,14 @@ class ProductTest {
         @DisplayName("説明は 10,000 文字まで指定できる")
         void acceptsDescriptionUpTo10000Characters() {
             // 操作と確認：10,000 文字の説明で登録できる
-            assertThatCode(() -> productDescribed("あ".repeat(10_000))).doesNotThrowAnyException();
+            assertThatCode(() -> productDescribed("あ".repeat(Product.DESCRIPTION_MAX_LENGTH))).doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("説明が 10,001 文字以上なら拒否される")
         void rejectsDescriptionOver10000Characters() {
             // 操作と確認：業務のエラー INVALID_PRODUCT_DESCRIPTION で拒否される
-            assertBusinessError(() -> productDescribed("あ".repeat(10_001)), ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
+            assertBusinessError(() -> productDescribed("あ".repeat(Product.DESCRIPTION_MAX_LENGTH + 1)), ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
         }
     }
 
@@ -436,7 +436,7 @@ class ProductTest {
             var product = registered();
 
             // 操作と確認：200 文字の商品名に変えられる
-            assertThatCode(() -> updateName(product, "あ".repeat(200))).doesNotThrowAnyException();
+            assertThatCode(() -> updateName(product, "あ".repeat(Product.NAME_MAX_LENGTH))).doesNotThrowAnyException();
         }
 
         @Test
@@ -446,7 +446,7 @@ class ProductTest {
             var product = registered();
 
             // 操作と確認：業務のエラー INVALID_PRODUCT_NAME で拒否される
-            assertBusinessError(() -> updateName(product, "あ".repeat(201)), ProductErrorCode.INVALID_PRODUCT_NAME);
+            assertBusinessError(() -> updateName(product, "あ".repeat(Product.NAME_MAX_LENGTH + 1)), ProductErrorCode.INVALID_PRODUCT_NAME);
         }
 
         @Test
@@ -456,7 +456,7 @@ class ProductTest {
             var product = registered();
 
             // 操作と確認：10,000 文字の説明に変えられる
-            assertThatCode(() -> updateDescription(product, "あ".repeat(10_000))).doesNotThrowAnyException();
+            assertThatCode(() -> updateDescription(product, "あ".repeat(Product.DESCRIPTION_MAX_LENGTH))).doesNotThrowAnyException();
         }
 
         @Test
@@ -466,7 +466,7 @@ class ProductTest {
             var product = registered();
 
             // 操作と確認：業務のエラー INVALID_PRODUCT_DESCRIPTION で拒否される
-            assertBusinessError(() -> updateDescription(product, "あ".repeat(10_001)), ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
+            assertBusinessError(() -> updateDescription(product, "あ".repeat(Product.DESCRIPTION_MAX_LENGTH + 1)), ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
         }
     }
 

@@ -43,7 +43,7 @@ class CategoryTest {
     /**
      * 名称の上限（文字）
      */
-    private static final int NAME_MAX_LENGTH = 50;
+    private static final int NAME_MAX_LENGTH = Category.NAME_MAX_LENGTH;
 
     /**
      * 登録するカテゴリの ID

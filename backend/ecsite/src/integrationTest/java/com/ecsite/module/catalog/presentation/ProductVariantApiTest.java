@@ -196,7 +196,7 @@ class ProductVariantApiTest {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：英小文字の品番は、リクエストの誤りで拒否される
+            // 操作と確認：英小文字の品番は、400 で拒否される
             products.addVariant(id, "v-1", 0)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -261,7 +261,7 @@ class ProductVariantApiTest {
             // 準備：軸のない商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.addVariant(id, "V".repeat(length), 0)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -288,7 +288,7 @@ class ProductVariantApiTest {
             // 準備：色の軸を持つ商品
             var id = products.product(PRODUCT_CODE, AXIS_COLOR);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.addVariant(id, "V1", 0, "あ".repeat(length))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -313,7 +313,7 @@ class ProductVariantApiTest {
             // 準備：軸が 3 つの商品
             var id = products.product(PRODUCT_CODE, AXIS_COLOR, AXIS_SIZE, AXIS_MATERIAL);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.addVariant(id, "V1", 0, WHITE, SIZE_M, COTTON, "無地")
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -325,7 +325,7 @@ class ProductVariantApiTest {
             // 準備：軸のない商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             mockMvc.perform(post(BASE + "/" + id + "/variants")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
@@ -423,7 +423,7 @@ class ProductVariantApiTest {
             var id = products.product(PRODUCT_CODE);
             products.variantId(id, "V1", 0);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.reorderVariants(id, 1)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -436,7 +436,7 @@ class ProductVariantApiTest {
             var id = products.product(PRODUCT_CODE);
             products.variantId(id, "V1", 0);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             mockMvc.perform(put(BASE + "/" + id + "/variants/order")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""

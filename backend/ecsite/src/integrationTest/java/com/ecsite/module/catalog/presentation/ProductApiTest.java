@@ -330,7 +330,7 @@ class ProductApiTest {
         @Test
         @DisplayName("AC-13 軸が 4 つ以上なら 400")
         void rejectsFourAxes() throws Exception {
-            // 操作と確認：軸を 4 つ指定すると、リクエストの誤りで拒否される
+            // 操作と確認：軸を 4 つ指定すると、400 で拒否される
             products.create("""
                             {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
                              "priceExclTax": %d, "axes": ["%s", "%s", "%s", "柄"]}"""
@@ -342,7 +342,7 @@ class ProductApiTest {
         @Test
         @DisplayName("所属カテゴリの要素が null なら 400")
         void rejectsNullCategoryId() throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.create("""
                             {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
                              "priceExclTax": %d, "categoryIds": [null]}"""
@@ -354,7 +354,7 @@ class ProductApiTest {
         @Test
         @DisplayName("軸の要素が null なら 400")
         void rejectsNullAxis() throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.create("""
                             {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",
                              "priceExclTax": %d, "axes": [null]}"""
@@ -379,7 +379,7 @@ class ProductApiTest {
         @ValueSource(strings = {"abc-001", "-ABC", "ABC-", "ABC--1"})
         @DisplayName("AC-15 商品品番の形式が違えば 400")
         void rejectsInvalidProductCode(String code) throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.create(productJson(code, standard, PRICE_EXCL_TAX))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -388,7 +388,7 @@ class ProductApiTest {
         @Test
         @DisplayName("AC-16 税区分がなければ 400")
         void rejectsMissingTaxCategory() throws Exception {
-            // 操作と確認：税区分を省くと、リクエストの誤りで拒否される
+            // 操作と確認：税区分を省くと、400 で拒否される
             products.create("""
                             {"productCode": "%s", "name": "%s", "description": "", "priceExclTax": %d}"""
                             .formatted(PRODUCT_CODE, NAME, PRICE_EXCL_TAX))
@@ -428,7 +428,7 @@ class ProductApiTest {
         @Test
         @DisplayName("AC-25 税抜価格が 1 円未満なら 400")
         void rejectsPriceLessThanOneYen() throws Exception {
-            // 操作と確認：0 円は、リクエストの誤りで拒否される
+            // 操作と確認：0 円は、400 で拒否される
             products.create(productJson(PRODUCT_CODE, standard, 0))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -437,7 +437,7 @@ class ProductApiTest {
         @Test
         @DisplayName("AC-25 税抜価格が 9,999,999 円を超えれば 400")
         void rejectsPriceOverMaximum() throws Exception {
-            // 操作と確認：10,000,000 円は、リクエストの誤りで拒否される
+            // 操作と確認：10,000,000 円は、400 で拒否される
             products.create(productJson(PRODUCT_CODE, standard, 10_000_000))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -482,7 +482,7 @@ class ProductApiTest {
         @ValueSource(ints = {0, NAME_MAX_LENGTH + 1})
         @DisplayName("商品名が範囲の外の文字数なら 400")
         void rejectsNameOutOfRange(int length) throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.create(createJson(PRODUCT_CODE, "あ".repeat(length), "", AXIS_COLOR))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -502,7 +502,7 @@ class ProductApiTest {
         @Test
         @DisplayName("説明が上限を 1 文字超えれば 400")
         void rejectsDescriptionOverMaximum() throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.create(createJson(PRODUCT_CODE, NAME, "あ".repeat(DESCRIPTION_MAX_LENGTH + 1), AXIS_COLOR))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -523,7 +523,7 @@ class ProductApiTest {
         @ValueSource(ints = {0, AXIS_NAME_MAX_LENGTH + 1})
         @DisplayName("軸の名前が範囲の外の文字数なら 400")
         void rejectsAxisNameOutOfRange(int length) throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.create(createJson(PRODUCT_CODE, NAME, "", "あ".repeat(length)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -544,7 +544,7 @@ class ProductApiTest {
         @ValueSource(ints = {0, CODE_MAX_LENGTH + 1})
         @DisplayName("商品品番が範囲の外の文字数なら 400")
         void rejectsProductCodeOutOfRange(int length) throws Exception {
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.create(createJson("A".repeat(length), NAME, "", AXIS_COLOR))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -576,7 +576,7 @@ class ProductApiTest {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.update(id, nameAndDescriptionJson("あ".repeat(length), ""))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -602,7 +602,7 @@ class ProductApiTest {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.update(id, nameAndDescriptionJson(NAME, "あ".repeat(DESCRIPTION_MAX_LENGTH + 1)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -786,7 +786,7 @@ class ProductApiTest {
             // 準備：所属カテゴリのない商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             products.update(id, """
                             {"name": "%s", "description": "", "taxCategoryId": "%s", "priceExclTax": %d,
                              "categoryIds": [null], "version": 0}""".formatted(NEW_NAME, standard, NEW_PRICE_EXCL_TAX))
@@ -800,7 +800,7 @@ class ProductApiTest {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：0 円は、リクエストの誤りで拒否される
+            // 操作と確認：0 円は、400 で拒否される
             products.update(id, updateJson(standard, 0, 0))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
@@ -812,7 +812,7 @@ class ProductApiTest {
             // 準備：商品
             var id = products.product(PRODUCT_CODE);
 
-            // 操作と確認：10,000,000 円は、リクエストの誤りで拒否される
+            // 操作と確認：10,000,000 円は、400 で拒否される
             products.update(id, updateJson(standard, 10_000_000, 0))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));

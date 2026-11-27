@@ -43,7 +43,7 @@ class CartTest {
     /**
      * カートの品目の数の上限
      */
-    private static final int MAX_ITEMS = 30;
+    private static final int MAX_ITEMS = Cart.MAX_ITEMS;
 
     /**
      * 白のバリアント ID
@@ -130,9 +130,9 @@ class CartTest {
     class QuantityLimit {
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {0, -1, 11})
-        @DisplayName("AC-75 1〜10 の外の数量は拒否される")
-        void rejectsQuantityOutOfRange(int quantity) {
+        @ValueSource(ints = {0, -1})
+        @DisplayName("AC-75 下限の 1 より少ない数量は拒否される")
+        void rejectsQuantityBelowMin(int quantity) {
             // 準備：空のカート
             var cart = newCart();
 
@@ -140,18 +140,40 @@ class CartTest {
             assertBusinessError(() -> cart.add(WHITE, quantity, NOW), CartErrorCode.INVALID_CART_QUANTITY);
         }
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {1, 10})
-        @DisplayName("AC-75 範囲の端の数量は入れられる")
-        void acceptsQuantityAtBoundary(int quantity) {
+        @Test
+        @DisplayName("AC-75 上限の 10 を 1 つ超える数量 11 は拒否される")
+        void rejectsQuantityOneOverMax() {
             // 準備：空のカート
             var cart = newCart();
 
-            // 操作：白を入れる
-            cart.add(WHITE, quantity, NOW);
+            // 操作と確認：業務のエラー INVALID_CART_QUANTITY で拒否される
+            assertBusinessError(() -> cart.add(WHITE, Cart.MAX_QUANTITY + 1, NOW), CartErrorCode.INVALID_CART_QUANTITY);
+        }
 
-            // 確認：入れた数量になる
-            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(quantity);
+        @Test
+        @DisplayName("AC-75 下限ちょうどの数量 1 は入れられる")
+        void acceptsQuantityAtMin() {
+            // 準備：空のカート
+            var cart = newCart();
+
+            // 操作：白を 1 個入れる
+            cart.add(WHITE, 1, NOW);
+
+            // 確認：1 個になる
+            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("AC-75 上限ちょうどの数量 10 は入れられる")
+        void acceptsQuantityAtMax() {
+            // 準備：空のカート
+            var cart = newCart();
+
+            // 操作：白を 10 個入れる
+            cart.add(WHITE, Cart.MAX_QUANTITY, NOW);
+
+            // 確認：上限と同じ個数になる
+            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(Cart.MAX_QUANTITY);
         }
 
         @Test
@@ -298,9 +320,9 @@ class CartTest {
         }
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {0, -1, 11})
-        @DisplayName("AC-78 1〜10 の外の数量への変更は拒否される")
-        void rejectsChangingOutOfRange(int quantity) {
+        @ValueSource(ints = {0, -1})
+        @DisplayName("AC-78 下限の 1 より少ない数量への変更は拒否される")
+        void rejectsChangingBelowMin(int quantity) {
             // 準備：白 2 個、黒 1 個のカート
             var cart = whiteAndBlack();
 
@@ -308,20 +330,44 @@ class CartTest {
             assertBusinessError(() -> cart.changeQuantity(WHITE, quantity, NOW), CartErrorCode.INVALID_CART_QUANTITY);
         }
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {1, 10})
-        @DisplayName("AC-78 範囲の端の数量へは変更できる")
-        void changesToQuantityAtBoundary(int quantity) {
+        @Test
+        @DisplayName("AC-78 上限の 10 を 1 つ超える数量 11 への変更は拒否される")
+        void rejectsChangingOneOverMax() {
             // 準備：白 2 個、黒 1 個のカート
             var cart = whiteAndBlack();
 
-            // 操作：白の数量を変える
-            cart.changeQuantity(WHITE, quantity, NOW);
-
-            // 確認：白が変えた数量になる
-            assertThat(cart.itemsAt(NOW)).filteredOn(item -> item.variantId().equals(WHITE))
-                    .singleElement().extracting(CartItem::quantity).isEqualTo(quantity);
+            // 操作と確認：業務のエラー INVALID_CART_QUANTITY で拒否される
+            assertBusinessError(() -> cart.changeQuantity(WHITE, Cart.MAX_QUANTITY + 1, NOW), CartErrorCode.INVALID_CART_QUANTITY);
         }
+
+        @Test
+        @DisplayName("AC-78 下限ちょうどの数量 1 へは変更できる")
+        void changesToMinQuantity() {
+            // 準備：白 2 個、黒 1 個のカート
+            var cart = whiteAndBlack();
+
+            // 操作：白の数量を 1 にする
+            cart.changeQuantity(WHITE, 1, NOW);
+
+            // 確認：白が 1 個になる
+            assertThat(cart.itemsAt(NOW)).filteredOn(item -> item.variantId().equals(WHITE))
+                    .singleElement().extracting(CartItem::quantity).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("AC-78 上限ちょうどの数量 10 へは変更できる")
+        void changesToMaxQuantity() {
+            // 準備：白 2 個、黒 1 個のカート
+            var cart = whiteAndBlack();
+
+            // 操作：白の数量を 10 にする
+            cart.changeQuantity(WHITE, Cart.MAX_QUANTITY, NOW);
+
+            // 確認：白が 10 個になる
+            assertThat(cart.itemsAt(NOW)).filteredOn(item -> item.variantId().equals(WHITE))
+                    .singleElement().extracting(CartItem::quantity).isEqualTo(Cart.MAX_QUANTITY);
+        }
+
     }
 
     @Nested

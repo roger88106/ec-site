@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertSingleEventWithStatusChange;
 import static com.ecsite.module.order.domain.order.OrderEventAssertions.assertStatusChangedEventOnly;
 import static com.ecsite.support.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,7 +66,7 @@ class OrderPaymentTest {
         @DisplayName("AC-143 成立した注文は「支払待ち」で、支払を待っている")
         void isPendingPayment() {
             // 操作：注文を作る
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 確認：支払待ち
             assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
@@ -78,10 +79,10 @@ class OrderPaymentTest {
     class AcceptPayment {
 
         @Test
-        @DisplayName("AC-146 支払待ちの注文は、与信の成功で「受付」になる")
+        @DisplayName("AC-146 支払待ちの注文は、与信の成功で「受付」になり、支払待ちからの状態の変化のイベントが 1 件登録される")
         void acceptsPendingOrder() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作：与信の成功を受ける
             var changed = order.acceptPayment(LATER);
@@ -90,13 +91,17 @@ class OrderPaymentTest {
             assertThat(changed).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.ACCEPTED);
             assertThat(order.isAwaitingPayment()).isFalse();
+
+            // 確認：支払待ちから受付へのイベントだけで、キャンセルの項目を持たない（イベントは取り出すので最後に確認する）
+            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
+                    OrderStatusChanged.Status.ACCEPTED, null, null);
         }
 
         @Test
         @DisplayName("BR-17 受付の注文が与信の成功を重ねて受けても、何も変わらない")
         void ignoresWhenAccepted() {
             // 準備：受付の注文
-            var order = acceptedOrder();
+            var order = TestOrders.accepted(ORDERED_AT, ORDERED_AT.plusSeconds(60));
 
             // 操作：与信の成功をもう一度受ける
             var changed = order.acceptPayment(LATER);
@@ -110,7 +115,7 @@ class OrderPaymentTest {
         @DisplayName("期限切れでキャンセルになった注文が与信の成功を受けても、キャンセルのまま")
         void ignoresWhenCancelled() {
             // 準備：期限切れでキャンセルになった注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
             order.expirePayment(LATER);
 
             // 操作：与信の成功を受ける
@@ -122,24 +127,10 @@ class OrderPaymentTest {
         }
 
         @Test
-        @DisplayName("AC-146 与信の成功で、「支払待ち → 受付」の状態の変化のイベントが登録される")
-        void registersAcceptedEvent() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：与信の成功を受ける
-            order.acceptPayment(LATER);
-
-            // 確認：支払待ちから受付へのイベントだけで、キャンセルの項目を持たない
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
-                    OrderStatusChanged.Status.ACCEPTED, null, null);
-        }
-
-        @Test
         @DisplayName("BR-17 キャンセル申請中の注文が与信の成功を受けても、状態とイベントを変えない")
         void ignoresWhenCancellationRequested() {
             // 準備：キャンセル申請中の注文
-            var order = requestedOrder();
+            var order = TestOrders.requested(ORDERED_AT, ORDERED_AT.plusSeconds(60), REQUEST_REASON, REQUESTED_AT);
 
             // 操作：与信の成功を受ける
             var changed = order.acceptPayment(LATER);
@@ -154,7 +145,7 @@ class OrderPaymentTest {
         @DisplayName("BR-17 出荷済みの注文が与信の成功を受けても、状態とイベントを変えない")
         void ignoresWhenShipped() {
             // 準備：出荷済みの注文
-            var order = shippedOrder();
+            var order = TestOrders.shipped(ORDERED_AT, ORDERED_AT.plusSeconds(60), "123456789012", ORDERED_AT.plusSeconds(120));
 
             // 操作：与信の成功を受ける
             var changed = order.acceptPayment(LATER);
@@ -171,51 +162,10 @@ class OrderPaymentTest {
     class ExpirePayment {
 
         @Test
-        @DisplayName("AC-153 支払待ちの注文は、支払の期限切れでキャンセルになる")
-        void cancelsPendingOrder() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：支払の期限切れを受ける
-            var changed = order.expirePayment(LATER);
-
-            // 確認：キャンセル
-            assertThat(changed).isTrue();
-            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-        }
-
-        @Test
-        @DisplayName("AC-155 期限切れのキャンセルは、種類が「支払期限切れ」で、運営者と理由の文を持たない")
-        void recordsPaymentExpired() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：支払の期限切れを受ける
-            order.expirePayment(LATER);
-
-            // 確認：支払期限切れのキャンセルの記録
-            assertPaymentExpired(order.cancellation());
-        }
-
-        @Test
-        @DisplayName("AC-153 期限切れのキャンセルで、在庫を戻すための注文キャンセルのイベントが登録される")
-        void registersCancelledEvent() {
-            // 準備：支払待ちの注文
-            var order = pendingOrder();
-
-            // 操作：支払の期限切れを受ける
-            order.expirePayment(LATER);
-
-            // 確認：キャンセルへの状態の変化のイベントだけ
-            assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
-                    event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
-        }
-
-        @Test
         @DisplayName("受付の注文は、支払の期限切れを受けても状態とイベントを変えない")
         void ignoresWhenAccepted() {
             // 準備：受付の注文
-            var order = acceptedOrder();
+            var order = TestOrders.accepted(ORDERED_AT, ORDERED_AT.plusSeconds(60));
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
@@ -230,7 +180,7 @@ class OrderPaymentTest {
         @DisplayName("NFR-7 支払の期限切れを重ねて受けても、イベントは 1 回だけ")
         void expiresOnlyOnce() {
             // 準備：期限切れでキャンセルになり、イベントを取り出した注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
             order.expirePayment(LATER);
             order.pullEvents();
 
@@ -243,16 +193,23 @@ class OrderPaymentTest {
         }
 
         @Test
-        @DisplayName("AC-153 期限切れのイベントは、前の状態が支払待ちで、種類が支払期限切れで、在庫に戻す")
+        @DisplayName("AC-153、155 支払待ちの注文は、支払の期限切れでキャンセルになり、種類が支払期限切れの記録と、在庫に戻すイベントが 1 件だけ登録される")
         void registersPaymentExpiredEvent() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作：支払の期限切れを受ける
-            order.expirePayment(LATER);
+            var changed = order.expirePayment(LATER);
 
-            // 確認：イベントの前の状態・種類・在庫に戻すか
-            assertStatusChangedEventOnly(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
+            // 確認：キャンセルになった
+            assertThat(changed).isTrue();
+            assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+
+            // 確認：支払期限切れのキャンセルの記録
+            assertPaymentExpired(order.cancellation());
+
+            // 確認：イベントは取り出すので最後に確認する。全体が 1 件で、支払待ちからキャンセルへの状態の変化
+            assertSingleEventWithStatusChange(order, LATER, OrderStatusChanged.Status.PENDING_PAYMENT,
                     OrderStatusChanged.Status.CANCELLED, OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED, true);
         }
 
@@ -260,7 +217,7 @@ class OrderPaymentTest {
         @DisplayName("キャンセル申請中の注文は、支払の期限切れを受けても状態・申請・イベントを変えない")
         void ignoresWhenCancellationRequested() {
             // 準備：キャンセル申請中の注文
-            var order = requestedOrder();
+            var order = TestOrders.requested(ORDERED_AT, ORDERED_AT.plusSeconds(60), REQUEST_REASON, REQUESTED_AT);
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
@@ -274,7 +231,7 @@ class OrderPaymentTest {
         @DisplayName("出荷済みの注文は、支払の期限切れを受けてもキャンセルにならない")
         void ignoresWhenShipped() {
             // 準備：出荷済みの注文
-            var order = shippedOrder();
+            var order = TestOrders.shipped(ORDERED_AT, ORDERED_AT.plusSeconds(60), "123456789012", ORDERED_AT.plusSeconds(120));
 
             // 操作：支払の期限切れを受ける
             var changed = order.expirePayment(LATER);
@@ -295,14 +252,14 @@ class OrderPaymentTest {
         @DisplayName("AC-158 支払待ちの注文は、消費者がキャンセルを申請できる操作に出さない")
         void isNotRequestable() {
             // 操作と確認：申請できない
-            assertThat(pendingOrder().isCancellationRequestable()).isFalse();
+            assertThat(TestOrders.pending(ORDERED_AT).isCancellationRequestable()).isFalse();
         }
 
         @Test
         @DisplayName("AC-158 支払待ちの注文へのキャンセルの申請は拒否される")
         void rejectsRequest() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー CANCELLATION_NOT_REQUESTABLE で拒否される
             assertBusinessError(() -> order.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
@@ -312,14 +269,14 @@ class OrderPaymentTest {
         @DisplayName("AC-158 支払待ちの注文は、運営者がキャンセルできる操作に出さない")
         void isNotCancellableByOperator() {
             // 操作と確認：運営者はキャンセルできない
-            assertThat(pendingOrder().isCancellableByOperator(false)).isFalse();
+            assertThat(TestOrders.pending(ORDERED_AT).isCancellableByOperator(false)).isFalse();
         }
 
         @Test
         @DisplayName("AC-158 支払待ちの注文への運営者のキャンセルは拒否され、支払待ちのまま")
         void rejectsOperatorCancellation() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー AWAITING_PAYMENT で拒否される
             assertBusinessError(() -> order.cancelByOperator("理由", true, false, OPERATOR, LATER), OrderErrorCode.AWAITING_PAYMENT);
@@ -332,7 +289,7 @@ class OrderPaymentTest {
         @DisplayName("支払待ちの注文は、申請がないので承認できず、支払待ちのまま")
         void rejectsApproval() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー CANCELLATION_NOT_PENDING で拒否される
             assertBusinessError(() -> order.approveCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
@@ -345,7 +302,7 @@ class OrderPaymentTest {
         @DisplayName("支払待ちの注文は、申請がないので却下できず、支払待ちのまま")
         void rejectsRejection() {
             // 準備：支払待ちの注文
-            var order = pendingOrder();
+            var order = TestOrders.pending(ORDERED_AT);
 
             // 操作と確認：業務のエラー CANCELLATION_NOT_PENDING で拒否される
             assertBusinessError(() -> order.rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
@@ -378,7 +335,7 @@ class OrderPaymentTest {
     }
 
     /**
-     * 操作の後も、注文が {@link #requestedOrder} の申請中のままであることを確認する。
+     * 操作の後も、注文が {@link TestOrders#requested} の申請中のままであることを確認する。
      *
      * <p>確認すること：
      * <ul>
@@ -418,58 +375,4 @@ class OrderPaymentTest {
         assertThat(order.pullEvents()).isEmpty();
     }
 
-    // ============================== 準備の補助 ==============================
-
-    /**
-     * 「支払待ち」の注文を作る。
-     *
-     * <p>成立のイベントは取り出してある。
-     *
-     * @return 支払待ちの注文
-     */
-    private static Order pendingOrder() {
-        return TestOrders.pending(ORDERED_AT);
-    }
-
-    /**
-     * 「受付」の注文を作る。
-     *
-     * <p>与信の成功の後で、状態の変化のイベントは取り出してある。
-     *
-     * @return 受付の注文
-     */
-    private static Order acceptedOrder() {
-        var order = pendingOrder();
-        order.acceptPayment(ORDERED_AT.plusSeconds(60));
-        order.pullEvents();
-        return order;
-    }
-
-    /**
-     * 「キャンセル申請中」の注文を作る。
-     *
-     * <p>状態の変化のイベントは取り出してある。
-     *
-     * @return キャンセル申請中の注文
-     */
-    private static Order requestedOrder() {
-        var order = acceptedOrder();
-        order.requestCancellation(REQUEST_REASON, REQUESTED_AT);
-        order.pullEvents();
-        return order;
-    }
-
-    /**
-     * 「出荷済み」の注文を作る。
-     *
-     * <p>状態の変化と出荷のイベントは取り出してある。
-     *
-     * @return 出荷済みの注文
-     */
-    private static Order shippedOrder() {
-        var order = acceptedOrder();
-        order.ship(Carrier.YAMATO, "123456789012", ORDERED_AT.plusSeconds(120));
-        order.pullEvents();
-        return order;
-    }
 }

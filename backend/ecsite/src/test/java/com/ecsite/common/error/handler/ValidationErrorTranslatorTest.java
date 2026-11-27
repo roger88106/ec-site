@@ -40,6 +40,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +54,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ValidationErrorTranslatorTest {
 
     // ============================== 定数 ==============================
+
+    /**
+     * sized の上限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
+     */
+    private static final int SIZED_MAX = 50;
+
+    /**
+     * maxSized の上限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
+     */
+    private static final int MAX_SIZED = 10000;
+
+    /**
+     * max の上限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
+     */
+    private static final int MAX_VALUE = 100;
 
     /**
      * 必須の項目の文
@@ -86,10 +102,10 @@ class ValidationErrorTranslatorTest {
     record Sample(
             @NotNull String notNull,
             @NotBlank String notBlank,
-            @Size(min = 1, max = 50) String sized,
-            @Size(max = 10000) String maxSized,
+            @Size(min = 1, max = SIZED_MAX) String sized,
+            @Size(max = MAX_SIZED) String maxSized,
             @Min(0) Long min,
-            @Max(100) Integer max,
+            @Max(MAX_VALUE) Integer max,
             @DecimalMin("0.5") BigDecimal decimalMin,
             @DecimalMax("99.9") BigDecimal decimalMax,
             @Pattern(regexp = "^[A-Z]+$") String pattern,
@@ -169,17 +185,30 @@ class ValidationErrorTranslatorTest {
         }
 
         @Test
-        @DisplayName("下限が 1 以上の長さは、下限と上限を差し込む")
-        void sizeWithMin() {
-            // 操作と確認：1〜50 文字の項目に 51 文字の違反の文
-            assertThat(messageOf("sized", "x".repeat(51))).isEqualTo("1 文字以上 50 文字以内にしてください。");
+        @DisplayName("下限が 1 以上の長さの下限は、下限と上限を差し込み、下限ちょうどは通り、下限の 1 つ外は違反の文")
+        void sizeWithMinLowerBound() {
+            // 操作と確認：1〜50 文字の項目は、1 文字（下限ちょうど）で違反しない
+            assertThat(violationsOf("sized", "x")).isEmpty();
+            // 操作と確認：下限の 1 つ外（0 文字）の違反の文
+            assertThat(messageOf("sized", "")).isEqualTo("1 文字以上 50 文字以内にしてください。");
         }
 
         @Test
-        @DisplayName("下限のない長さは、上限だけを差し込み、数は 3 桁ごとに区切る")
-        void sizeWithoutMin() {
-            // 操作と確認：10,000 文字以内の項目に 10,001 文字の違反の文
-            assertThat(messageOf("maxSized", "x".repeat(10001))).isEqualTo("10,000 文字以内にしてください。");
+        @DisplayName("下限が 1 以上の長さの上限は、下限と上限を差し込み、上限ちょうどは通り、上限の 1 つ外は違反の文")
+        void sizeWithMinUpperBound() {
+            // 操作と確認：1〜50 文字の項目は、50 文字（上限ちょうど）で違反しない
+            assertThat(violationsOf("sized", "x".repeat(SIZED_MAX))).isEmpty();
+            // 操作と確認：上限の 1 つ外（51 文字）の違反の文
+            assertThat(messageOf("sized", "x".repeat(SIZED_MAX + 1))).isEqualTo("1 文字以上 50 文字以内にしてください。");
+        }
+
+        @Test
+        @DisplayName("下限のない長さの上限は、上限だけを差し込み、数は 3 桁ごとに区切り、上限ちょうどは通る")
+        void sizeWithoutMinUpperBound() {
+            // 操作と確認：10,000 文字（上限ちょうど）で違反しない
+            assertThat(violationsOf("maxSized", "x".repeat(MAX_SIZED))).isEmpty();
+            // 操作と確認：上限の 1 つ外（10,001 文字）の違反の文
+            assertThat(messageOf("maxSized", "x".repeat(MAX_SIZED + 1))).isEqualTo("10,000 文字以内にしてください。");
         }
 
         @ParameterizedTest(name = "「{0}」")
@@ -314,7 +343,7 @@ class ValidationErrorTranslatorTest {
     static Stream<Arguments> ranges() {
         return Stream.of(
                 Arguments.of("min", -1L, "0 以上にしてください。"),
-                Arguments.of("max", 101, "100 以下にしてください。"),
+                Arguments.of("max", MAX_VALUE + 1, "100 以下にしてください。"),
                 Arguments.of("decimalMin", new BigDecimal("0.1"), "0.5 以上にしてください。"),
                 Arguments.of("decimalMax", new BigDecimal("100"), "99.9 以下にしてください。"));
     }
@@ -349,7 +378,18 @@ class ValidationErrorTranslatorTest {
      * @return 違反の文
      */
     private String messageOf(String property, Object value) {
-        ConstraintViolation<Sample> violation = validator.validateValue(Sample.class, property, value).iterator().next();
+        ConstraintViolation<Sample> violation = violationsOf(property, value).iterator().next();
         return messages.messageOf(violation);
+    }
+
+    /**
+     * 1 つの項目だけに値を入れた見本を検証し、違反の一覧を返す（違反がなければ空）。
+     *
+     * @param property 項目の名前
+     * @param value    値
+     * @return 違反の一覧
+     */
+    private Set<ConstraintViolation<Sample>> violationsOf(String property, Object value) {
+        return validator.validateValue(Sample.class, property, value);
     }
 }

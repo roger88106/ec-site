@@ -251,10 +251,7 @@ class OrderPaymentCartRemovalApiTest {
         awaitCartEmpty();
         orders.add(orders.cart(), variantId, 1);
         asyncEvents.awaitCartChanged(orders.cart());
-        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isNoContent());
+        orders.requestCancellation(orderId);
 
         // 操作：運営者が申請を却下して、受付に戻す
         mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject")).andExpect(status().isNoContent());

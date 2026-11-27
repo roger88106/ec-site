@@ -140,7 +140,7 @@ class OrderStatusChangedEventTest {
             at(1);
             orders.pay(orderId);
             at(2);
-            requestCancellation(orderId);
+            orders.requestCancellation(orderId);
             at(3);
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject")).andExpect(status().isNoContent());
             at(4);
@@ -186,7 +186,7 @@ class OrderStatusChangedEventTest {
         void emitsOnApproval() throws Exception {
             // 準備：受付の注文で、キャンセルを申請する
             var orderId = orders.placeOrder(variantId, 1);
-            requestCancellation(orderId);
+            orders.requestCancellation(orderId);
 
             // 操作：申請を承認する
             mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/approve")).andExpect(status().isNoContent());
@@ -249,8 +249,8 @@ class OrderStatusChangedEventTest {
 
             // 操作：与信の成功を重ねて反映し、キャンセルを 2 回申請する
             OrderPayments.accept(applicationContext, orderId);
-            requestCancellation(orderId);
-            requestCancellation(orderId);
+            orders.requestCancellation(orderId);
+            orders.requestCancellation(orderId);
 
             // 確認：成立、受付、申請中の 3 つだけ
             assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::to)
@@ -290,16 +290,6 @@ class OrderStatusChangedEventTest {
     }
 
     // ============================== 準備の補助 ==============================
-
-    /**
-     * 既定の会員として、キャンセルを申請し、204 を確認する。
-     *
-     * @param orderId 注文 ID
-     */
-    private void requestCancellation(UUID orderId) throws Exception {
-        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
-                .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isNoContent());
-    }
 
     /**
      * 時計を NOW の指定の分の後にする。

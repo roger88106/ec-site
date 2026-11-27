@@ -9,6 +9,7 @@ import com.ecsite.module.payment.application.model.view.PayablePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
+import com.ecsite.support.async.AsyncEvents;
 import com.ecsite.support.http.TestJson;
 import com.ecsite.support.security.TestSecurityConfig;
 import com.jayway.jsonpath.JsonPath;
@@ -34,6 +35,7 @@ import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -305,6 +307,46 @@ public class OrderTestData {
     }
 
     /**
+     * 決まったお届け先で注文し、支払って「受付」になるのを待つ（コミットするテストで使う）。
+     *
+     * <p>支払うと、与信の成功のリスナーが非同期で注文を受け付け直す。終わる前に出荷やキャンセルをすると、
+     * 楽観ロックで衝突することがあるため、リスナーが終わるまで待つ。
+     * ロールバックするテストでは待てない（イベントがコミットされない）ので、{@link #placeOrder(UUID, int)} を使う。
+     *
+     * @param variantId バリアント ID
+     * @param quantity  数量
+     * @return 注文 ID
+     */
+    public UUID acceptedOrder(UUID variantId, int quantity) throws Exception {
+        var orderId = placeOrder(variantId, quantity);
+        applicationContext.getBean(AsyncEvents.class).awaitHandled(paymentAuthorized(orderId));
+        return orderId;
+    }
+
+    /**
+     * 運営者として注文をキャンセルし、204 を確認する。
+     *
+     * @param orderId 注文 ID
+     * @param body    キャンセルのリクエストの本文（例：{@code {"reason": "理由"}}）
+     */
+    public void cancelByOperator(UUID orderId, String body) throws Exception {
+        mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isNoContent());
+    }
+
+    /**
+     * 管理 API で、注文の支払の状態（{@code $.payment.status}）を読む。
+     *
+     * @param orderId 注文 ID
+     * @return 支払の状態
+     */
+    public String paymentStatus(UUID orderId) throws Exception {
+        return JsonPath.read(mockMvc.perform(get("/api/admin/orders/" + orderId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), "$.payment.status");
+    }
+
+    /**
      * 注文する（支払わない）。
      *
      * <p>注文は「支払待ち」で、カートは変わらない。
@@ -405,6 +447,42 @@ public class OrderTestData {
     }
 
     /**
+     * 会員として、注文のキャンセルを申請し、204 を確認する（理由は付けない）。
+     *
+     * @param orderId 注文 ID
+     */
+    public void requestCancellation(UUID orderId) throws Exception {
+        requestCancellation(orderId, null);
+    }
+
+    /**
+     * 会員として、理由を付けて注文のキャンセルを申請し、204 を確認する。
+     *
+     * <p>申請の時刻はサーバーの時計で決まるので、引数に取らない。
+     *
+     * @param orderId 注文 ID
+     * @param reason  申請の理由（{@code null} なら理由を付けない）
+     */
+    public void requestCancellation(UUID orderId, String reason) throws Exception {
+        requestCancellation(orderId, member, reason);
+    }
+
+    /**
+     * 指定した要求者で、理由を付けて注文のキャンセルを申請し、204 を確認する。
+     *
+     * @param orderId   注文 ID
+     * @param requester token などを付ける後処理
+     * @param reason    申請の理由（{@code null} なら理由を付けない）
+     */
+    public void requestCancellation(UUID orderId, RequestPostProcessor requester, String reason) throws Exception {
+        var body = reason == null ? "{}" : """
+                {"reason": "%s"}""".formatted(reason);
+        mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(requester)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isNoContent());
+    }
+
+    /**
      * 支払った注文の、支払画面 ID を返す（mock の与信の参照を求めるのに使う）。
      *
      * @param orderId この補助で支払った注文の ID
@@ -481,9 +559,19 @@ public class OrderTestData {
      */
     public static String orderBody(long expectedTotal, String name) {
         return """
-                {"expectedTotal": %d, "shippingAddress": {"name": "%s", "postalCode": "%s",
+                {"expectedTotal": %d, "shippingAddress": {"name": %s, "postalCode": "%s",
                  "prefectureCode": "%s", "municipalityCode": "%s", "address": "%s", "phone": "%s"}}"""
-                .formatted(expectedTotal, name, POSTAL_CODE, PREFECTURE_CODE, MUNICIPALITY_CODE, ADDRESS, PHONE);
+                .formatted(expectedTotal, jsonString(name), POSTAL_CODE, PREFECTURE_CODE, MUNICIPALITY_CODE, ADDRESS, PHONE);
+    }
+
+    /**
+     * 文字列を JSON の文字列にする（引用符と円記号をエスケープする）。
+     *
+     * @param value 値
+     * @return 引用符で囲んだ JSON の文字列
+     */
+    private static String jsonString(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     /**

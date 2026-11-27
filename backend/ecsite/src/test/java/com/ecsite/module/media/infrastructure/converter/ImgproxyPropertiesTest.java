@@ -6,12 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.BindException;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
-import org.springframework.context.annotation.Configuration;
 
 import java.net.URI;
 import java.time.Duration;
@@ -23,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 画像の変換の設定（ImgproxyProperties）のテスト
  *
- * <p>ログに出ても秘密の値が漏れないことと、品質の範囲（1〜100）の外では起動に失敗することを確認する。
+ * <p>ログに出ても秘密の値が漏れないことと、品質の範囲（1〜100）の外は値の検証で拒否されることを確認する。
  */
 class ImgproxyPropertiesTest {
 
@@ -79,37 +74,53 @@ class ImgproxyPropertiesTest {
     @DisplayName("品質の範囲")
     class QualityRange {
 
-        /**
-         * 変換の設定だけを読む Spring のコンテキスト（必須の URL・鍵・ソルトを設定済み）
-         */
-        private final ApplicationContextRunner runner = new ApplicationContextRunner()
-                .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
-                .withUserConfiguration(Converter.class)
-                .withPropertyValues("ecsite.media.converter.base-url=" + BASE_URL,
-                        "ecsite.media.converter.key=" + KEY, "ecsite.media.converter.salt=" + SALT);
+        @Test
+        @DisplayName("品質が下限の 1 なら、値の検証を通り、その品質になる")
+        void acceptsQualityAtMinimum() {
+            // 操作：下限の品質を検証付きで当てはめる
+            var properties = bindQuality(1);
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {1, 100})
-        @DisplayName("品質が範囲の端なら、起動でき、その品質になる")
-        void startsWithQualityAtBounds(int quality) {
-            // 操作と確認：起動でき、設定した品質を持つ
-            runner.withPropertyValues("ecsite.media.converter.quality=" + quality)
-                    .run(context -> {
-                        assertThat(context).hasNotFailed();
-                        assertThat(context.getBean(ImgproxyProperties.class).quality()).isEqualTo(quality);
-                    });
+            // 確認：設定した品質を持つ
+            assertThat(properties.quality()).isEqualTo(1);
         }
 
-        @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {0, 101})
-        @DisplayName("品質が範囲の外なら、起動に失敗し、quality が知らされる")
-        void failsWithQualityOutOfBounds(int quality) {
-            // 操作と確認：起動に失敗し、原因に設定の名前がある
-            runner.withPropertyValues("ecsite.media.converter.quality=" + quality)
-                    .run(context -> {
-                        assertThat(context).hasFailed();
-                        assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("quality");
-                    });
+        @Test
+        @DisplayName("品質が上限の 100 なら、値の検証を通り、その品質になる")
+        void acceptsQualityAtMaximum() {
+            // 操作：上限の品質を検証付きで当てはめる
+            var properties = bindQuality(100);
+
+            // 確認：設定した品質を持つ
+            assertThat(properties.quality()).isEqualTo(100);
+        }
+
+        @Test
+        @DisplayName("品質が下限の 1 より小さい 0 なら、値の検証で拒否され、quality が知らされる")
+        void rejectsQualityBelowMinimum() {
+            // 操作と確認：値の検証で拒否され、原因に設定の名前がある
+            assertThatThrownBy(() -> bindQuality(0))
+                    .isInstanceOf(BindException.class)
+                    .rootCause().hasMessageContaining("quality");
+        }
+
+        @Test
+        @DisplayName("品質が上限の 100 より大きい 101 なら、値の検証で拒否され、quality が知らされる")
+        void rejectsQualityAboveMaximum() {
+            // 操作と確認：値の検証で拒否され、原因に設定の名前がある
+            assertThatThrownBy(() -> bindQuality(101))
+                    .isInstanceOf(BindException.class)
+                    .rootCause().hasMessageContaining("quality");
+        }
+
+        /**
+         * 品質を指定して、検証付きで変換の設定を当てはめる。
+         *
+         * @param quality 品質
+         * @return 当てはめた設定
+         */
+        private ImgproxyProperties bindQuality(int quality) {
+            return TestSettings.bindValidated("ecsite.media.converter", ImgproxyProperties.class,
+                    Map.of("base-url", BASE_URL, "key", KEY, "salt", SALT, "quality", String.valueOf(quality)));
         }
     }
 
@@ -132,15 +143,5 @@ class ImgproxyPropertiesTest {
 
         // 確認：1ms になる
         assertThat(properties.timeout()).isEqualTo(Duration.ofMillis(1));
-    }
-
-    // ============================== 準備の補助 ==============================
-
-    /**
-     * 変換の設定を有効にする
-     */
-    @Configuration(proxyBeanMethods = false)
-    @EnableConfigurationProperties(ImgproxyProperties.class)
-    static class Converter {
     }
 }

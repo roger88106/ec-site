@@ -458,7 +458,7 @@ class ProductImageApiTest {
             var productId = productWithVariant();
             registerImages(productId, 1);
 
-            // 操作と確認：リクエストの誤りで拒否される
+            // 操作と確認：400 で拒否される
             mockMvc.perform(put(BASE + "/" + productId + "/images/order")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""

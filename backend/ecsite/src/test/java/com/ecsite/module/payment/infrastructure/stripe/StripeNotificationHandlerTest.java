@@ -60,6 +60,11 @@ class StripeNotificationHandlerTest {
      */
     private static final String EXPIRED_SESSION_ID = "cs_test_a1zewRjUghE0UY9BsbiwwxGmd9XVfiSll2NRfTbJcHbzBjHVBYFqfbZO2N";
 
+    /**
+     * 記録した与信の成功の通知の、通知の ID（Event の ID）
+     */
+    private static final String EVENT_ID = "evt_1UQ8lsCajA2Qja1LGjfJQoOX";
+
     // ============================== 対象 ==============================
 
     /**
@@ -190,6 +195,29 @@ class StripeNotificationHandlerTest {
 
             // 操作と確認：システムのエラーになり、何も渡さない
             assertSystemError(() -> handler.handle(payload, signature), CommonErrorCode.SYSTEM_ERROR);
+            assertThat(receiver.received).isEmpty();
+        }
+
+        @Test
+        @DisplayName("BR-17 PaymentIntent のない与信の成功の通知は、システムのエラーにし、何も渡さない")
+        void rejectsMissingPaymentIntent() {
+            // 準備：記録した与信の成功の通知の PaymentIntent を、null にしたもの
+            var payload = recorded("checkout-session-completed.json")
+                    .replace("\"payment_intent\": \"" + PAYMENT_INTENT_ID + "\"", "\"payment_intent\": null");
+            var signature = sign(payload, WEBHOOK_SECRET, NOW);
+
+            // 確認（前提）：PaymentIntent を、null に書き換えられている
+            assertThat(payload).contains("\"payment_intent\": null");
+
+            // 操作と確認：システムのエラーになる
+            assertSystemError(() -> handler.handle(payload, signature), CommonErrorCode.SYSTEM_ERROR);
+
+            // 確認：例外のメッセージに、通知の ID と支払画面 ID がある
+            assertThatThrownBy(() -> handler.handle(payload, signature))
+                    .hasMessageContaining(EVENT_ID)
+                    .hasMessageContaining(SESSION_ID);
+
+            // 確認：何も渡さない
             assertThat(receiver.received).isEmpty();
         }
     }

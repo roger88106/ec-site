@@ -45,6 +45,16 @@ class ImgproxyPropertiesTest {
     private static final int QUALITY = 82;
 
     /**
+     * 品質の下限（本番の ImgproxyProperties は @Min(1) と直書きしているため、テストの中で決める）
+     */
+    private static final int QUALITY_MIN = 1;
+
+    /**
+     * 品質の上限（本番の ImgproxyProperties は @Max(100) と直書きしているため、テストの中で決める）
+     */
+    private static final int QUALITY_MAX = 100;
+
+    /**
      * 確認する設定
      */
     private final ImgproxyProperties properties = new ImgproxyProperties(
@@ -78,27 +88,27 @@ class ImgproxyPropertiesTest {
         @DisplayName("品質が下限の 1 なら、値の検証を通り、その品質になる")
         void acceptsQualityAtMinimum() {
             // 操作：下限の品質を検証付きで当てはめる
-            var properties = bindQuality(1);
+            var properties = bindQuality(QUALITY_MIN);
 
             // 確認：設定した品質を持つ
-            assertThat(properties.quality()).isEqualTo(1);
+            assertThat(properties.quality()).isEqualTo(QUALITY_MIN);
         }
 
         @Test
         @DisplayName("品質が上限の 100 なら、値の検証を通り、その品質になる")
         void acceptsQualityAtMaximum() {
             // 操作：上限の品質を検証付きで当てはめる
-            var properties = bindQuality(100);
+            var properties = bindQuality(QUALITY_MAX);
 
             // 確認：設定した品質を持つ
-            assertThat(properties.quality()).isEqualTo(100);
+            assertThat(properties.quality()).isEqualTo(QUALITY_MAX);
         }
 
         @Test
         @DisplayName("品質が下限の 1 より小さい 0 なら、値の検証で拒否され、quality が知らされる")
         void rejectsQualityBelowMinimum() {
             // 操作と確認：値の検証で拒否され、原因に設定の名前がある
-            assertThatThrownBy(() -> bindQuality(0))
+            assertThatThrownBy(() -> bindQuality(QUALITY_MIN - 1))
                     .isInstanceOf(BindException.class)
                     .rootCause().hasMessageContaining("quality");
         }
@@ -107,7 +117,7 @@ class ImgproxyPropertiesTest {
         @DisplayName("品質が上限の 100 より大きい 101 なら、値の検証で拒否され、quality が知らされる")
         void rejectsQualityAboveMaximum() {
             // 操作と確認：値の検証で拒否され、原因に設定の名前がある
-            assertThatThrownBy(() -> bindQuality(101))
+            assertThatThrownBy(() -> bindQuality(QUALITY_MAX + 1))
                     .isInstanceOf(BindException.class)
                     .rootCause().hasMessageContaining("quality");
         }

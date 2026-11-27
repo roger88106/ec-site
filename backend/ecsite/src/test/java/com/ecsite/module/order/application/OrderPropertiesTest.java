@@ -36,6 +36,11 @@ class OrderPropertiesTest {
      */
     private static final String SETTINGS_PROFILE = "local";
 
+    /**
+     * 支払待ちの注文の上限の下限（本番の OrderProperties は @Min(1) と直書きしているため、テストの中で決める）
+     */
+    private static final int PENDING_ORDER_LIMIT_MIN = 1;
+
     // ============================== テスト ==============================
 
     @Nested
@@ -72,7 +77,7 @@ class OrderPropertiesTest {
         void rejectsLimitBelowOne() {
             // 操作と確認：上限が 0 件は、値の検証で拒否され、原因に設定の名前がある
             assertThatThrownBy(() -> TestSettings.bindValidated(PREFIX, OrderProperties.class,
-                    Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "pending-order-limit", "0")))
+                    Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "pending-order-limit", String.valueOf(PENDING_ORDER_LIMIT_MIN - 1))))
                     .isInstanceOf(BindException.class)
                     .rootCause().hasMessageContaining("pendingOrderLimit");
         }
@@ -82,10 +87,10 @@ class OrderPropertiesTest {
         void acceptsLimitOfOne() {
             // 操作：上限を 1 件に、検証付きで当てはめる
             var properties = TestSettings.bindValidated(PREFIX, OrderProperties.class,
-                    Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "pending-order-limit", "1"));
+                    Map.of("shipping-tax-category-id", "00000000-0000-0000-0000-000000000001", "pending-order-limit", String.valueOf(PENDING_ORDER_LIMIT_MIN)));
 
             // 確認：1 件
-            assertThat(properties.pendingOrderLimit()).isEqualTo(1);
+            assertThat(properties.pendingOrderLimit()).isEqualTo(PENDING_ORDER_LIMIT_MIN);
         }
     }
 

@@ -2,7 +2,7 @@
 
 ステータス：草案　対象：[spec.md](spec.md)
 
-前提：spec の DS-522-1（DC-522-1〜10）と、利用者が承認した確認（下の「利用者に確認すること」の「承認済み」の行）に従う。読む文書は[文書の書き方](../../05-開発規則/writing.md)、[文書の構成](../../05-開発規則/doc-structure.md)、[文書の記号と番号](../../05-開発規則/notation.md)、[テストの書き方](../../05-開発規則/test-writing.md)、[バックエンドのテストの書き方](../../05-開発規則/test-writing-backend.md)。
+前提：spec の DS-522-1（DC-522-1〜10）と、利用者が承認した確認（下の「利用者に確認すること」の「承認済み」の行）に従う。読む文書は[文書の書き方](../../../../05-開発規則/writing.md)、[文書の構成](../../../../05-開発規則/doc-structure.md)、[文書の記号と番号](../../../../05-開発規則/notation.md)、[テストの書き方](../../../../05-開発規則/test-writing.md)、[バックエンドのテストの書き方](../../../../05-開発規則/test-writing-backend.md)。
 
 | 本書の節 | 主な担当 |
 |----------|----------|
@@ -22,7 +22,7 @@
 - 危険度が高いので、重要な観点のレビューと spec の最後のレビューを、高性能（opus）で行う。
 - 実装は汎用の `implementer` に 1 タスクずつ任せる。
 - 1 タスクを 1 commit にする。
-- push の時点は[開発の進め方](../../05-開発規則/workflow.md)の「push のタイミング」に従う。
+- push の時点は[開発の進め方](../../../../05-開発規則/workflow.md)の「push のタイミング」に従う。
 - 変えたクラスの統合テストを絞って実行する。`./gradlew check` は段階の最後に 1 回（tasks の T522-01-25）。実行の前に、issue 担当のセッションの合図を待つ。理由：`./gradlew check` が重く、重い検査の回数を減らすため。
 - 整理のテストは本番のコードが既に通るので、赤の確認をそのまま使えない。扱いは「利用者に確認すること」の 2 番で決める（通ることと、値をずらすと失敗すること〔break-check〕で確認する）。
 
@@ -56,7 +56,7 @@
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
 | `OrderTestData` に申請の操作を追加する | `backend/ecsite/src/integrationTest/java/com/ecsite/support/data/OrderTestData.java` | 9 ファイルから使い、通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。 |
-| 9 ファイルの申請の手順を、補助の呼び出しに置き換える | `OrderStatusChangedEventTest`、`CheckoutCleanupJobTest`、`AdminOrderApiTest`、`CapturedOrderCancellationRefundTest`、`MemberOrderApiTest`、`OrderPaymentApiTest`、`OrderPaymentCartRemovalApiTest`、`ShipmentApiTest`、`StoreOrderShipmentApiTest`（`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/` の下） | 通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の HTTP の呼び出しが残らない。 |
+| 9 ファイルのうち 6 ファイルの申請の手順を、補助の呼び出しに置き換える（残りの 3 件は変えない。spec の Non-goals） | `OrderStatusChangedEventTest`、`AdminOrderApiTest`、`CapturedOrderCancellationRefundTest`、`OrderPaymentApiTest`、`OrderPaymentCartRemovalApiTest`、`ShipmentApiTest`（`backend/ecsite/src/integrationTest/java/com/ecsite/module/order/` の下） | 通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。申請の HTTP の呼び出しが残らない。 |
 
 対象外：`CancellationApiTest`（申請そのものを確認する）。
 
@@ -66,7 +66,7 @@
 
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
-| `OrderTestData` に、受付の注文の準備（在庫、税区分、商品、会員、注文、与信の待ち）を追加する | `OrderTestData.java` | 6 ファイルから使い、通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。 |
+| `OrderTestData` に、受付の注文の準備（注文と与信の待ち。在庫、税区分、商品は呼び出し側に残す。T522-01-22 の結果）を追加する | `OrderTestData.java` | 6 ファイルから使い、通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。 |
 | `OrderTestData` に、運営者のキャンセルと、管理 API で支払の状態を読む処理を追加する | `OrderTestData.java` | 通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。 |
 | 対象の 6 ファイルの準備を、補助の呼び出しに置き換える | `CapturedOrderCancellationRefundTest`、`ReportFlowTest`（`module/reporting/presentation/`）、`ReturnedOrderRefundTest`、`CancellationAtomicityTest`、`CancellationApiTest`、`ReturnedOrderCancellationApiTest`（`module/order/presentation/`） | 通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。`CancellationApiTest` と `ReturnedOrderCancellationApiTest` は、申請の確認を残す。 |
 | 報告のテストから補助のパッケージを使う依存の向きを、境界のテスト（`ModulithTest`）で確認する | `ModulithTest.java`（確認のために読む。変えない） | 結果を 1 行で書く（tasks の T522-01-21）。 |
@@ -95,7 +95,7 @@
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
 | 範囲の検証を、`TestSettings.bindValidated` のテストに移す（4 件） | `OrderPropertiesTest.java`、`PaymentPropertiesTest.java`、`ImgproxyPropertiesTest.java`、`ReportingPropertiesTest.java` | 通る。値を 1 つずらすと失敗することを確認し、元に戻す（break-check）。 |
-| 残す `ApplicationContextRunner` の確認に、残す理由をテストのコメントに書く | 同じ 4 ファイル | レビュー |
+| 4 ファイルとも `ApplicationContextRunner` を消し、起動のときの検証の前提（`@Validated`）を `ConfigurationPropertiesValidatedTest` で確認する | 同じ 4 ファイル | レビュー |
 
 理由：同じ範囲の検証が 2 つの方法で書かれているため。報告の設定のテストは組み立ての確認だけを使うので、範囲の検証は新しく `bindValidated` のテストに書く。
 
@@ -145,5 +145,5 @@
 | 4 | 件数：ステータス変更のイベントの確認は定義を除く 9 件（起票時 13 件）。使う側は 3 ファイル（定義を含めて 4 件） | 今の件数で進める | 今の件数で進める。理由：起票時の値は古いため。 |
 | 5 | 拒否のテストの名前：「400」か「リクエストの誤り」か | A：「400」。B：「リクエストの誤り」 | 承認済み（A：「400」）。理由：「400」が 30 件で、「リクエストの誤り」の 7 件より多いため（※3）。 |
 | 6 | 件数（CancellationApiTest を除く申請の対象 9 件） | 承認済み | 承認済み |
-| 7 | 範囲の検証（4 件を `bindValidated` に移し、残す `ApplicationContextRunner` の理由をコメントに書く） | 承認済み | 承認済み |
+| 7 | 範囲の検証（4 件を `bindValidated` に移し、`ApplicationContextRunner` は全て消す。承認された計画は残す理由のコメントだったので、計画からの変更として承認する） | 承認済み（issue 担当が利用者の委任で承認、2026-11-28。spec の T522-01-30） | 承認済み（同上） |
 | 8 | 受付の注文の準備の対象（`CancellationApiTest`・`ReturnedOrderCancellationApiTest` の準備を含む） | 承認済み | 承認済み |

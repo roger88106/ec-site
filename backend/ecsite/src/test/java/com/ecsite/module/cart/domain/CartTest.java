@@ -46,6 +46,11 @@ class CartTest {
     private static final int MAX_ITEMS = Cart.MAX_ITEMS;
 
     /**
+     * 数量の下限（本番の Cart は下限を定数にせず直書きしているため、テストの中で決める）
+     */
+    private static final int QUANTITY_MIN = 1;
+
+    /**
      * 白のバリアント ID
      */
     private static final VariantId WHITE = new VariantId(UUID.randomUUID());
@@ -130,7 +135,7 @@ class CartTest {
     class QuantityLimit {
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {0, -1})
+        @ValueSource(ints = {QUANTITY_MIN - 1, QUANTITY_MIN - 2})
         @DisplayName("AC-75 下限の 1 より少ない数量は拒否される")
         void rejectsQuantityBelowMin(int quantity) {
             // 準備：空のカート
@@ -157,10 +162,10 @@ class CartTest {
             var cart = newCart();
 
             // 操作：白を 1 個入れる
-            cart.add(WHITE, 1, NOW);
+            cart.add(WHITE, QUANTITY_MIN, NOW);
 
             // 確認：1 個になる
-            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(1);
+            assertThat(cart.itemsAt(NOW).getFirst().quantity()).isEqualTo(QUANTITY_MIN);
         }
 
         @Test
@@ -320,7 +325,7 @@ class CartTest {
         }
 
         @ParameterizedTest(name = "「{0}」")
-        @ValueSource(ints = {0, -1})
+        @ValueSource(ints = {QUANTITY_MIN - 1, QUANTITY_MIN - 2})
         @DisplayName("AC-78 下限の 1 より少ない数量への変更は拒否される")
         void rejectsChangingBelowMin(int quantity) {
             // 準備：白 2 個、黒 1 個のカート
@@ -347,11 +352,11 @@ class CartTest {
             var cart = whiteAndBlack();
 
             // 操作：白の数量を 1 にする
-            cart.changeQuantity(WHITE, 1, NOW);
+            cart.changeQuantity(WHITE, QUANTITY_MIN, NOW);
 
             // 確認：白が 1 個になる
             assertThat(cart.itemsAt(NOW)).filteredOn(item -> item.variantId().equals(WHITE))
-                    .singleElement().extracting(CartItem::quantity).isEqualTo(1);
+                    .singleElement().extracting(CartItem::quantity).isEqualTo(QUANTITY_MIN);
         }
 
         @Test

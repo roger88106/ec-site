@@ -61,6 +61,11 @@ class ValidationErrorTranslatorTest {
     private static final int SIZED_MAX = 50;
 
     /**
+     * sized の下限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
+     */
+    private static final int SIZED_MIN = 1;
+
+    /**
      * maxSized の上限（見本の型 Sample の制約の値。見本は本番の定数を持たないため、テストの中で決める）
      */
     private static final int MAX_SIZED = 10000;
@@ -102,7 +107,7 @@ class ValidationErrorTranslatorTest {
     record Sample(
             @NotNull String notNull,
             @NotBlank String notBlank,
-            @Size(min = 1, max = SIZED_MAX) String sized,
+            @Size(min = SIZED_MIN, max = SIZED_MAX) String sized,
             @Size(max = MAX_SIZED) String maxSized,
             @Min(0) Long min,
             @Max(MAX_VALUE) Integer max,
@@ -188,9 +193,9 @@ class ValidationErrorTranslatorTest {
         @DisplayName("下限が 1 以上の長さの下限は、下限と上限を差し込み、下限ちょうどは通り、下限の 1 つ外は違反の文")
         void sizeWithMinLowerBound() {
             // 操作と確認：1〜50 文字の項目は、1 文字（下限ちょうど）で違反しない
-            assertThat(violationsOf("sized", "x")).isEmpty();
+            assertThat(violationsOf("sized", "x".repeat(SIZED_MIN))).isEmpty();
             // 操作と確認：下限の 1 つ外（0 文字）の違反の文
-            assertThat(messageOf("sized", "")).isEqualTo("1 文字以上 50 文字以内にしてください。");
+            assertThat(messageOf("sized", "x".repeat(SIZED_MIN - 1))).isEqualTo("1 文字以上 50 文字以内にしてください。");
         }
 
         @Test
